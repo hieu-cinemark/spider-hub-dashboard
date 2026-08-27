@@ -29,11 +29,18 @@ const INITIAL: RefreshTokenStreamState = {
 // reconnects and immediately re-hydrates from that snapshot instead of
 // starting from a blank "idle" state, even if a refresh was already
 // mid-flight before the reload.
-export function useRefreshTokenStream(platform: string) {
+// `enabled` (default true, so Facebook/Threads are unaffected) lets a
+// caller skip opening the socket entirely - for a platform with no
+// /<platform>/refresh-token/ws route at all (TikTok has no browser-bootstrap
+// token cache to refresh - see constants.ts's PLATFORMS_WITH_TOKEN_REFRESH),
+// this hook must still be called unconditionally (rules of hooks), but
+// connecting would just retry a 404 forever.
+export function useRefreshTokenStream(platform: string, enabled: boolean = true) {
   const [state, setState] = useState<RefreshTokenStreamState>(INITIAL);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
+    if (!enabled) return;
     let cancelled = false;
     let retryTimer: ReturnType<typeof setTimeout> | undefined;
     let ws: WebSocket | undefined;
@@ -84,7 +91,7 @@ export function useRefreshTokenStream(platform: string) {
       clearTimeout(timeoutRef.current);
       ws?.close();
     };
-  }, [platform]);
+  }, [platform, enabled]);
 
   return state;
 }

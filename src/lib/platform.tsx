@@ -8,15 +8,15 @@ import {
 import type { CSSProperties } from "react";
 
 // Display metadata for platforms that can show up in the `posts` table.
-// facebook/threads are the ones spider-hub itself feeds (via Kafka ->
-// cinemark-api's ingest consumer -> D1); tiktok/instagram would only show
-// up here because they share the same D1 database with cinemark-scraper's
-// own Worker. Anything not listed still renders fine (GlobalOutlined,
-// neutral gray) - this is a display hint, not an allowlist.
+// facebook/threads/tiktok are fed by spider-hub itself (via Kafka ->
+// cinemark-api's ingest consumer -> D1); instagram would only show up here
+// because it shares the same D1 database with cinemark-scraper's own
+// Worker. Anything not listed still renders fine (GlobalOutlined, neutral
+// gray) - this is a display hint, not an allowlist.
 export const PLATFORM_META: Record<string, { label: string; color: string; source: string }> = {
   facebook: { label: "Facebook", color: "#1877F2", source: "spider-hub" },
   threads: { label: "Threads", color: "#000000", source: "spider-hub" },
-  tiktok: { label: "TikTok", color: "#000000", source: "cinemark-scraper" },
+  tiktok: { label: "TikTok", color: "#000000", source: "spider-hub" },
   instagram: { label: "Instagram", color: "#E1306C", source: "cinemark-scraper" },
 };
 

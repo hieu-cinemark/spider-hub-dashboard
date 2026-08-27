@@ -16,13 +16,19 @@ export const TIMESERIES_DAYS = 14;
 export const LOG_LINE_OPTIONS = [100, 300, 1000] as const;
 export const DEFAULT_LOG_LINES = 300;
 
-// Platforms cinemark-api can actually trigger a crawl for (POST /<platform>/run)
-// and that have their own browser-bootstrap token cache to refresh/watch
-// (POST /<platform>/refresh-token, WS /<platform>/refresh-token/ws). Others
-// that may show up in /stats/platforms (tiktok, instagram) are scraped by
-// cinemark-scraper's own Worker, not spider-hub - no button for those here.
-export const TRIGGERABLE_PLATFORMS = ["facebook", "threads"] as const;
+// Platforms cinemark-api can actually trigger a crawl for (POST /<platform>/run).
+// instagram may show up in /stats/platforms too but is scraped entirely by
+// cinemark-scraper's own Worker, not spider-hub - no button for it here.
+export const TRIGGERABLE_PLATFORMS = ["facebook", "threads", "tiktok"] as const;
 export type TriggerablePlatform = (typeof TRIGGERABLE_PLATFORMS)[number];
+
+// Of the triggerable platforms above, only these have their own
+// browser-bootstrap token cache to refresh/watch (POST
+// /<platform>/refresh-token, WS /<platform>/refresh-token/ws) - TikTok's
+// spider-hub identity (cookie/device_id/odin_id) is captured once into
+// platform_accounts and never expires the way a browser session token
+// does, so it has no such route and must not show that card.
+export const PLATFORMS_WITH_TOKEN_REFRESH = ["facebook", "threads"] as const;
 
 // A dashboard-triggered refresh routinely finishes in well under a minute
 // (saved session, headless, no login needed) - this just bounds how long a

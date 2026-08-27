@@ -48,7 +48,14 @@ export default function PlatformDetail({ platform }: { platform: string }) {
 
       {isTriggerable && <PlatformActions platform={platform} />}
 
-      {!isTriggerable && (
+      {!isTriggerable && platformSource(platform) === "spider-hub" && (
+        <Typography.Text type="secondary" className="text-xs">
+          {platformLabel(platform)} is crawled by spider-hub but isn&apos;t wired to a dashboard trigger yet -
+          run it manually (scrapy crawl) until that&apos;s built.
+        </Typography.Text>
+      )}
+
+      {!isTriggerable && platformSource(platform) !== "spider-hub" && (
         <Typography.Text type="secondary" className="text-xs">
           {platformLabel(platform)} is scraped by cinemark-scraper&apos;s own Worker, not spider-hub - no
           trigger button here.

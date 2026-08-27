@@ -8,7 +8,7 @@ import type { Proxy, ProxyInput } from "@/lib/types";
 const PLATFORM_OPTIONS = [
   { value: "all", label: "All platforms (shared)" },
   ...Object.keys(PLATFORM_META)
-    .filter((p) => p === "facebook" || p === "threads")
+    .filter((p) => p === "facebook" || p === "threads" || p === "tiktok")
     .map((p) => ({ value: p, label: PLATFORM_META[p].label })),
 ];
 
