@@ -1,8 +1,9 @@
 "use client";
 
-import { KeyOutlined, LoginOutlined, RadarChartOutlined } from "@ant-design/icons";
+import { KeyOutlined, LoginOutlined } from "@ant-design/icons";
 import { Alert, Button, Card, Form, Input, Typography } from "antd";
 import { useState } from "react";
+import Logo from "@/components/Logo";
 
 export default function LoginScreen({ onSubmit }: { onSubmit: (key: string) => boolean }) {
   const [invalid, setInvalid] = useState(false);
@@ -12,12 +13,16 @@ export default function LoginScreen({ onSubmit }: { onSubmit: (key: string) => b
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#f5f5f7] px-4">
-      <Card className="w-full max-w-sm shadow-sm">
-        <div className="mb-5 flex flex-col items-center gap-2 text-center">
-          <RadarChartOutlined className="text-3xl text-[#2f54eb]" />
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#f5f5f7] px-4">
+      <div
+        className="animate-glow-pulse pointer-events-none absolute h-[420px] w-[420px] rounded-full bg-[#2f54eb] opacity-40 blur-3xl"
+        aria-hidden
+      />
+      <Card className="animate-fade-in-up relative w-full max-w-sm shadow-lg">
+        <div className="mb-5 flex flex-col items-center gap-3 text-center">
+          <Logo size={56} animate />
           <Typography.Title level={4} className="!mb-0">
-            spider-hub dashboard
+            Spider Hub
           </Typography.Title>
           <Typography.Text type="secondary">Enter the access key to continue</Typography.Text>
         </div>

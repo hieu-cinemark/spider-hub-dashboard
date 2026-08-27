@@ -19,7 +19,7 @@ export default function StatCard({
   loading?: boolean;
 }) {
   return (
-    <Card>
+    <Card className="transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md">
       <Statistic
         title={title}
         value={value}

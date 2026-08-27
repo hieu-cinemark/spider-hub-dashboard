@@ -17,8 +17,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "spider-hub dashboard",
-  description: "Post counts per platform and crawl logs for spider-hub.",
+  title: "Spider Hub",
+  description: "Post counts per platform and crawl logs for the spider-hub crawl pipeline.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

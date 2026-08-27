@@ -23,6 +23,15 @@ export default function Providers({ children }: { children: ReactNode }) {
             borderRadius: 8,
             fontFamily: "var(--font-geist-sans), Arial, Helvetica, sans-serif",
           },
+          components: {
+            Card: {
+              borderRadiusLG: 12,
+              boxShadowTertiary: "0 1px 2px 0 rgba(0,0,0,0.04), 0 1px 6px -1px rgba(0,0,0,0.03)",
+            },
+            Button: {
+              borderRadius: 8,
+            },
+          },
         }}
       >
         <AntApp>{children}</AntApp>

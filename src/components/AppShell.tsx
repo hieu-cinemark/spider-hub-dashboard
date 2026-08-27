@@ -1,10 +1,11 @@
 "use client";
 
-import { DashboardOutlined, FileTextOutlined, LogoutOutlined, RadarChartOutlined, SettingOutlined } from "@ant-design/icons";
+import { DashboardOutlined, FileTextOutlined, LogoutOutlined, SettingOutlined } from "@ant-design/icons";
 import { Button, Layout, Menu, Typography } from "antd";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
+import Logo from "@/components/Logo";
 import { logout } from "@/lib/auth";
 
 const { Header, Sider, Content } = Layout;
@@ -33,14 +34,15 @@ export default function AppShell({ children }: { children: ReactNode }) {
       >
         <div className="flex h-full flex-col justify-between">
           <div>
-            <div className="flex items-center gap-2 px-5 py-4">
-              <RadarChartOutlined className="text-xl text-white" />
-              <span className="text-base font-semibold text-white">spider-hub</span>
+            <div className="flex items-center gap-2.5 px-5 py-4">
+              <Logo size={30} />
+              <span className="text-base font-semibold tracking-tight text-white">Spider Hub</span>
             </div>
             <Menu
               theme="dark"
               mode="inline"
               selectedKeys={[pathname]}
+              className="!border-none [&_.ant-menu-item]:!transition-colors [&_.ant-menu-item]:!duration-200"
               items={NAV_ITEMS.map((item) => ({
                 key: item.key,
                 icon: item.icon,
@@ -49,7 +51,12 @@ export default function AppShell({ children }: { children: ReactNode }) {
             />
           </div>
           <div className="border-t border-white/10 p-3">
-            <Button type="text" icon={<LogoutOutlined />} onClick={logout} className="!w-full !justify-start !text-white/85">
+            <Button
+              type="text"
+              icon={<LogoutOutlined />}
+              onClick={logout}
+              className="!w-full !justify-start !text-white/85 !transition-colors hover:!bg-white/10 hover:!text-white"
+            >
               Logout
             </Button>
           </div>
@@ -61,10 +68,14 @@ export default function AppShell({ children }: { children: ReactNode }) {
           style={{ position: "sticky", top: 0, zIndex: 10, width: "100%" }}
         >
           <Typography.Title level={4} className="!mb-0">
-            Crawl Dashboard
+            Dashboard
           </Typography.Title>
         </Header>
-        <Content className="p-6">{children}</Content>
+        <Content className="p-6">
+          <div key={pathname} className="animate-fade-in-up">
+            {children}
+          </div>
+        </Content>
       </Layout>
     </Layout>
   );

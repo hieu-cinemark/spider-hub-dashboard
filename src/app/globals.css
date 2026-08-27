@@ -12,15 +12,74 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* No dark-mode media query here on purpose: this app has one theme (see
+   Providers' ConfigProvider - light only, AntD's Layout/Sider colors are
+   hardcoded to that theme throughout). The create-next-app boilerplate's
+   `prefers-color-scheme: dark` override used to flip body to near-black
+   for anyone with OS dark mode on, which showed through as a black gap
+   below the actual layout content (whose own height is fine, but relying
+   on it to always exactly cover body's background is fragile) - just
+   never define a dark variant instead of trying to keep body's fallback
+   color in sync with the real layout. */
+
+html,
+body {
+  height: 100%;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes logo-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes glow-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-logo-float {
+  animation: logo-float 3.5s ease-in-out infinite;
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 3.5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in-up,
+  .animate-logo-float,
+  .animate-glow-pulse {
+    animation: none;
+  }
 }
