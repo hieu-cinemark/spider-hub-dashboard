@@ -6,14 +6,13 @@ import PageHeader from "@/components/PageHeader";
 import AccountsTable from "@/components/settings/AccountsTable";
 import CronJobsTable from "@/components/settings/CronJobsTable";
 import ProxiesTable from "@/components/settings/ProxiesTable";
+import { useTranslation } from "@/i18n/LocaleProvider";
 
 export default function SettingsPage() {
+  const { t } = useTranslation();
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader
-        title="Settings"
-        description="Manage the accounts and proxies spider-hub crawls with, and see when each cron job last ran."
-      />
+      <PageHeader title={t("settingsTitle")} description={t("settingsDescription")} />
 
       <Tabs
         items={[
@@ -21,7 +20,7 @@ export default function SettingsPage() {
             key: "accounts-proxies",
             label: (
               <span>
-                <KeyOutlined /> Proxy &amp; Accounts
+                <KeyOutlined /> {t("tabProxyAccounts")}
               </span>
             ),
             children: (
@@ -35,7 +34,7 @@ export default function SettingsPage() {
             key: "cron",
             label: (
               <span>
-                <ClockCircleOutlined /> Cron
+                <ClockCircleOutlined /> {t("tabCron")}
               </span>
             ),
             children: <CronJobsTable />,

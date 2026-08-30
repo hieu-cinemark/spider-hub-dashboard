@@ -7,12 +7,14 @@ import { useState } from "react";
 import AddKeywordModal, { type AddKeywordFormValues } from "@/components/AddKeywordModal";
 import { useCreateKeyword, useKeywords } from "@/hooks/useKeywords";
 import { useTriggerCrawl } from "@/hooks/useTriggerCrawl";
+import { useTranslation } from "@/i18n/LocaleProvider";
 
 const { RangePicker } = DatePicker;
 
 type DateRange = [Dayjs | null, Dayjs | null] | null;
 
 export default function CrawlTriggerForm({ platform }: { platform: string }) {
+  const { t } = useTranslation();
   const { data: keywords, isLoading: keywordsLoading } = useKeywords(platform);
   const createKeyword = useCreateKeyword(platform);
   const { runCrawl } = useTriggerCrawl(platform);
@@ -48,7 +50,7 @@ export default function CrawlTriggerForm({ platform }: { platform: string }) {
         <Select
           allowClear
           showSearch
-          placeholder="All enabled keywords"
+          placeholder={t("allEnabledKeywords")}
           style={{ minWidth: 300 }}
           loading={keywordsLoading}
           value={keywordId}
@@ -60,11 +62,11 @@ export default function CrawlTriggerForm({ platform }: { platform: string }) {
           }))}
         />
         <Button icon={<PlusOutlined />} onClick={() => setAddModalOpen(true)}>
-          New keyword
+          {t("newKeyword")}
         </Button>
         <RangePicker value={range} onChange={(values) => setRange(values as DateRange)} allowEmpty={[true, true]} />
         <Button type="primary" icon={<PlayCircleOutlined />} loading={runCrawl.isPending} onClick={handleRun}>
-          Run search crawl
+          {t("runSearchCrawl")}
         </Button>
       </Space>
 

@@ -14,6 +14,7 @@ import DashboardCard from "@/components/DashboardCard";
 import PlatformBadge from "@/components/PlatformBadge";
 import AccountFormModal from "@/components/settings/AccountFormModal";
 import { useAccountMutations, useAccounts } from "@/hooks/useSettings";
+import { useTranslation } from "@/i18n/LocaleProvider";
 import type { Account, AccountInput } from "@/lib/types";
 
 function MaskedText({ value }: { value: string }) {
@@ -33,6 +34,7 @@ function MaskedText({ value }: { value: string }) {
 }
 
 export default function AccountsTable() {
+  const { t } = useTranslation();
   const { data: accounts, isLoading } = useAccounts();
   const { create, update, remove } = useAccountMutations();
   const [modalOpen, setModalOpen] = useState(false);
@@ -59,14 +61,14 @@ export default function AccountsTable() {
         <div className="flex items-center gap-2 py-1">
           <KeyOutlined className="text-[#2f54eb]" />
           <div className="flex flex-col">
-            <span className="text-sm font-semibold text-[#141414]">Authentication credentials</span>
-            <span className="text-xs font-normal text-[#8c8c8c]">Accounts used to log in and crawl each platform.</span>
+            <span className="text-sm font-semibold text-[#141414]">{t("authCredentialsTitle")}</span>
+            <span className="text-xs font-normal text-[#8c8c8c]">{t("authCredentialsDesc")}</span>
           </div>
         </div>
       }
       extra={
         <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-          Add account
+          {t("addAccount")}
         </Button>
       }
     >
@@ -79,16 +81,20 @@ export default function AccountsTable() {
         pagination={false}
         columns={[
           {
-            title: "Platform",
+            title: t("platform"),
             dataIndex: "platform",
             render: (p: string) => <PlatformBadge platform={p} size={24} />,
           },
-          { title: "Account ID", dataIndex: "account_id" },
-          { title: "Email", dataIndex: "email", render: (v: string) => v || <Typography.Text type="secondary">—</Typography.Text> },
-          { title: "Password", dataIndex: "password", render: (v: string) => <MaskedText value={v} /> },
-          { title: "2FA secret", dataIndex: "totp_secret", render: (v: string) => <MaskedText value={v} /> },
+          { title: t("columnAccountId"), dataIndex: "account_id" },
           {
-            title: "Enabled",
+            title: t("columnEmail"),
+            dataIndex: "email",
+            render: (v: string) => v || <Typography.Text type="secondary">—</Typography.Text>,
+          },
+          { title: t("columnPassword"), dataIndex: "password", render: (v: string) => <MaskedText value={v} /> },
+          { title: t("column2fa"), dataIndex: "totp_secret", render: (v: string) => <MaskedText value={v} /> },
+          {
+            title: t("enabled"),
             dataIndex: "enabled",
             render: (enabled: boolean, record: Account) => (
               <Switch
@@ -100,15 +106,15 @@ export default function AccountsTable() {
             ),
           },
           {
-            title: "Actions",
+            title: t("actions"),
             key: "actions",
             render: (_: unknown, record: Account) => (
               <div className="flex gap-2">
                 <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(record)} />
                 <Popconfirm
-                  title="Remove this account?"
+                  title={t("removeAccountConfirm")}
                   onConfirm={() => remove.mutate(record.id)}
-                  okText="Remove"
+                  okText={t("remove")}
                   okButtonProps={{ danger: true }}
                 >
                   <Button size="small" danger icon={<DeleteOutlined />} />

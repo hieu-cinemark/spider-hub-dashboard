@@ -2,15 +2,9 @@
 
 import { Form, Input, Modal, Select, Switch } from "antd";
 import { useEffect } from "react";
+import { useTranslation } from "@/i18n/LocaleProvider";
 import { PLATFORM_META } from "@/lib/platform";
 import type { Proxy, ProxyInput } from "@/lib/types";
-
-const PLATFORM_OPTIONS = [
-  { value: "all", label: "All platforms (shared)" },
-  ...Object.keys(PLATFORM_META)
-    .filter((p) => p === "facebook" || p === "threads" || p === "tiktok")
-    .map((p) => ({ value: p, label: PLATFORM_META[p].label })),
-];
 
 export default function ProxyFormModal({
   open,
@@ -25,7 +19,15 @@ export default function ProxyFormModal({
   onCancel: () => void;
   onSubmit: (input: ProxyInput) => void;
 }) {
+  const { t } = useTranslation();
   const [form] = Form.useForm<ProxyInput>();
+
+  const platformOptions = [
+    { value: "all", label: t("allPlatformsShared") },
+    ...Object.keys(PLATFORM_META)
+      .filter((p) => p === "facebook" || p === "threads" || p === "tiktok")
+      .map((p) => ({ value: p, label: PLATFORM_META[p].label })),
+  ];
 
   useEffect(() => {
     if (open) {
@@ -38,34 +40,29 @@ export default function ProxyFormModal({
   return (
     <Modal
       open={open}
-      title={proxy ? "Edit proxy" : "Add proxy"}
+      title={proxy ? t("editProxy") : t("addProxy")}
       onCancel={onCancel}
       onOk={() => form.validateFields().then(onSubmit)}
       confirmLoading={loading}
       destroyOnHidden
     >
       <Form form={form} layout="vertical" requiredMark={false}>
-        <Form.Item name="platform" label="Platform" rules={[{ required: true }]}>
-          <Select options={PLATFORM_OPTIONS} />
+        <Form.Item name="platform" label={t("platform")} rules={[{ required: true }]}>
+          <Select options={platformOptions} />
         </Form.Item>
-        <Form.Item name="proxy_url" label="Proxy host:port" rules={[{ required: true }]}>
+        <Form.Item name="proxy_url" label={t("proxyHostPort")} rules={[{ required: true }]}>
           <Input placeholder="1.2.3.4:8080" />
         </Form.Item>
-        <Form.Item name="username" label="Username">
+        <Form.Item name="username" label={t("username")}>
           <Input />
         </Form.Item>
-        <Form.Item name="password" label="Password">
+        <Form.Item name="password" label={t("password")}>
           <Input.Password />
         </Form.Item>
-        <Form.Item
-          name="login_use_proxy"
-          label="Use for browser login too"
-          valuePropName="checked"
-          tooltip="Off by default - a proxy IP that doesn't match the account's usual geography is what triggers a captcha on a fresh login. The ongoing replay traffic always uses this proxy regardless of this flag."
-        >
+        <Form.Item name="login_use_proxy" label={t("useForLoginToo")} valuePropName="checked" tooltip={t("useForLoginTooltip")}>
           <Switch />
         </Form.Item>
-        <Form.Item name="enabled" label="Enabled" valuePropName="checked">
+        <Form.Item name="enabled" label={t("enabled")} valuePropName="checked">
           <Switch />
         </Form.Item>
       </Form>

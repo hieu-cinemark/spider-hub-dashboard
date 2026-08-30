@@ -13,21 +13,25 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import Logo from "@/components/Logo";
+import LocaleSwitcher from "@/components/LocaleSwitcher";
+import { useTranslation } from "@/i18n/LocaleProvider";
+import type { TranslationKey } from "@/i18n/translations";
 import { logout } from "@/lib/auth";
 
 const { Header, Sider, Content } = Layout;
 
 const SIDER_WIDTH = 200;
 
-const NAV_ITEMS = [
-  { key: "/", label: "Overview", icon: <DashboardOutlined /> },
-  { key: "/posts", label: "Posts", icon: <UnorderedListOutlined /> },
-  { key: "/logs", label: "Logs", icon: <FileTextOutlined /> },
-  { key: "/settings", label: "Settings", icon: <SettingOutlined /> },
+const NAV_ITEMS: { key: string; labelKey: TranslationKey; icon: ReactNode }[] = [
+  { key: "/", labelKey: "navOverview", icon: <DashboardOutlined /> },
+  { key: "/posts", labelKey: "navPosts", icon: <UnorderedListOutlined /> },
+  { key: "/logs", labelKey: "navLogs", icon: <FileTextOutlined /> },
+  { key: "/settings", labelKey: "navSettings", icon: <SettingOutlined /> },
 ];
 
 export default function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const { t } = useTranslation();
   // `collapsed` mirrors Sider's own breakpoint logic (true below the "lg"
   // breakpoint - narrow/mobile viewports) and also controls the desktop
   // content margin. `mobileOpen` is separate: whether the drawer is
@@ -84,18 +88,19 @@ export default function AppShell({ children }: { children: ReactNode }) {
               items={NAV_ITEMS.map((item) => ({
                 key: item.key,
                 icon: item.icon,
-                label: <Link href={item.key}>{item.label}</Link>,
+                label: <Link href={item.key}>{t(item.labelKey)}</Link>,
               }))}
             />
           </div>
-          <div className="border-t border-white/10 p-3">
+          <div className="flex flex-col gap-2 border-t border-white/10 p-3">
+            <LocaleSwitcher />
             <Button
               type="text"
               icon={<LogoutOutlined />}
               onClick={logout}
               className="!w-full !justify-start !text-white/85 !transition-colors hover:!bg-white/10 hover:!text-white"
             >
-              Logout
+              {t("navLogout")}
             </Button>
           </div>
         </div>
@@ -117,14 +122,14 @@ export default function AppShell({ children }: { children: ReactNode }) {
               icon={<MenuOutlined />}
               onClick={() => setMobileOpen(true)}
               className="!-ml-2 shrink-0"
-              aria-label="Open navigation"
+              aria-label={t("openNavigation")}
             />
           )}
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#2f54eb]/8 text-base text-[#2f54eb]">
             {activeNavItem.icon}
           </span>
           <Typography.Title level={4} className="!mb-0 truncate">
-            {activeNavItem.label}
+            {t(activeNavItem.labelKey)}
           </Typography.Title>
         </Header>
         <Content className="bg-[#f5f5f7] p-3 sm:p-6">

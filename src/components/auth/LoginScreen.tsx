@@ -4,8 +4,10 @@ import { KeyOutlined, LoginOutlined } from "@ant-design/icons";
 import { Alert, Button, Card, Form, Input, Typography } from "antd";
 import { useState } from "react";
 import Logo from "@/components/Logo";
+import { useTranslation } from "@/i18n/LocaleProvider";
 
 export default function LoginScreen({ onSubmit }: { onSubmit: (key: string) => boolean }) {
+  const { t } = useTranslation();
   const [invalid, setInvalid] = useState(false);
 
   function handleFinish(values: { key: string }) {
@@ -24,18 +26,18 @@ export default function LoginScreen({ onSubmit }: { onSubmit: (key: string) => b
           <Typography.Title level={4} className="!mb-0">
             Spider Hub
           </Typography.Title>
-          <Typography.Text type="secondary">Enter the access key to continue</Typography.Text>
+          <Typography.Text type="secondary">{t("enterAccessKey")}</Typography.Text>
         </div>
 
-        {invalid && <Alert type="error" showIcon title="Invalid access key" className="!mb-4" />}
+        {invalid && <Alert type="error" showIcon title={t("invalidAccessKey")} className="!mb-4" />}
 
         <Form layout="vertical" onFinish={handleFinish} onValuesChange={() => setInvalid(false)}>
-          <Form.Item name="key" rules={[{ required: true, message: "Access key is required" }]}>
-            <Input.Password prefix={<KeyOutlined />} placeholder="Access key" autoFocus size="large" />
+          <Form.Item name="key" rules={[{ required: true, message: t("accessKeyRequired") }]}>
+            <Input.Password prefix={<KeyOutlined />} placeholder={t("accessKeyPlaceholder")} autoFocus size="large" />
           </Form.Item>
           <Form.Item className="!mb-0">
             <Button type="primary" htmlType="submit" icon={<LoginOutlined />} block size="large">
-              Continue
+              {t("continueBtn")}
             </Button>
           </Form.Item>
         </Form>

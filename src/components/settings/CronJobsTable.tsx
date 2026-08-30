@@ -4,10 +4,12 @@ import { ClockCircleOutlined } from "@ant-design/icons";
 import { Table, Typography } from "antd";
 import DashboardCard from "@/components/DashboardCard";
 import { useCronJobs } from "@/hooks/useSettings";
+import { useTranslation } from "@/i18n/LocaleProvider";
 import { formatRelativeTime } from "@/lib/format";
 import type { CronJob } from "@/lib/types";
 
 export default function CronJobsTable() {
+  const { t } = useTranslation();
   const { data: jobs, isLoading } = useCronJobs();
 
   return (
@@ -16,11 +18,8 @@ export default function CronJobsTable() {
         <div className="flex items-center gap-2 py-1">
           <ClockCircleOutlined className="text-[#2f54eb]" />
           <div className="flex flex-col">
-            <span className="text-sm font-semibold text-[#141414]">Cron jobs</span>
-            <span className="text-xs font-normal text-[#8c8c8c]">
-              Read-only - these schedules live in a crontab or cinemark-scraper&apos;s wrangler.toml, not a
-              database. Edit them at their source (see &quot;Source&quot; below), not here.
-            </span>
+            <span className="text-sm font-semibold text-[#141414]">{t("cronJobsTitle")}</span>
+            <span className="text-xs font-normal text-[#8c8c8c]">{t("cronJobsDesc")}</span>
           </div>
         </div>
       }
@@ -33,14 +32,19 @@ export default function CronJobsTable() {
         dataSource={jobs ?? []}
         pagination={false}
         columns={[
-          { title: "Job", dataIndex: "name" },
-          { title: "Schedule", dataIndex: "schedule" },
-          { title: "Source", dataIndex: "source", render: (v: string) => <span className="font-mono text-xs">{v}</span> },
-          { title: "Description", dataIndex: "description" },
+          { title: t("columnJob"), dataIndex: "name" },
+          { title: t("columnSchedule"), dataIndex: "schedule" },
           {
-            title: "Last run",
+            title: t("columnSource"),
+            dataIndex: "source",
+            render: (v: string) => <span className="font-mono text-xs">{v}</span>,
+          },
+          { title: t("columnDescription"), dataIndex: "description" },
+          {
+            title: t("columnLastRun"),
             dataIndex: "last_run_at",
-            render: (v: CronJob["last_run_at"]) => (v ? formatRelativeTime(v) : <Typography.Text type="secondary">unknown</Typography.Text>),
+            render: (v: CronJob["last_run_at"]) =>
+              v ? formatRelativeTime(v, t) : <Typography.Text type="secondary">{t("unknown")}</Typography.Text>,
           },
         ]}
       />

@@ -20,7 +20,7 @@ export default function PlatformTotalsChart({ data }: { data: PlatformStat[] }) 
       label={{ text: "count", style: { fontWeight: 600 } }}
       axis={{ y: { title: false, grid: true }, x: { title: false } }}
       legend={false}
-      height={280}
+      height={300}
     />
   );
 }

@@ -7,9 +7,11 @@ import RefreshLogPanel from "@/components/RefreshLogPanel";
 import TokenStatusBadge from "@/components/TokenStatusBadge";
 import { useRefreshTokenStream } from "@/hooks/useRefreshTokenStream";
 import { useTriggerCrawl } from "@/hooks/useTriggerCrawl";
+import { useTranslation } from "@/i18n/LocaleProvider";
 import { PLATFORMS_WITH_TOKEN_REFRESH } from "@/lib/constants";
 
 export default function PlatformActions({ platform }: { platform: string }) {
+  const { t } = useTranslation();
   const hasTokenRefresh = (PLATFORMS_WITH_TOKEN_REFRESH as readonly string[]).includes(platform);
   const { refreshToken } = useTriggerCrawl(platform);
 
@@ -22,7 +24,7 @@ export default function PlatformActions({ platform }: { platform: string }) {
         title={
           <span>
             <PlayCircleOutlined className="mr-2" />
-            Run a crawl
+            {t("runACrawl")}
           </span>
         }
       >
@@ -34,7 +36,7 @@ export default function PlatformActions({ platform }: { platform: string }) {
           title={
             <span>
               <KeyOutlined className="mr-2" />
-              Token
+              {t("token")}
             </span>
           }
         >
@@ -46,22 +48,22 @@ export default function PlatformActions({ platform }: { platform: string }) {
                 disabled={isRefreshing}
                 onClick={() => refreshToken.mutate()}
               >
-                Refresh token
+                {t("refreshToken")}
               </Button>
               <TokenStatusBadge platform={platform} />
               {stream.status === "running" && (
                 <Tag icon={<LoadingOutlined spin />} color="processing">
-                  refreshing…
+                  {t("refreshingEllipsis")}
                 </Tag>
               )}
               {stream.status === "success" && (
                 <Tag icon={<CheckCircleOutlined />} color="success">
-                  refreshed
+                  {t("refreshed")}
                 </Tag>
               )}
               {stream.status === "failed" && (
                 <Tag icon={<CloseCircleOutlined />} color="error">
-                  refresh failed
+                  {t("refreshFailed")}
                 </Tag>
               )}
             </Space>

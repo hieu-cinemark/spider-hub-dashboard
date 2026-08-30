@@ -2,17 +2,20 @@
 
 import { Collapse, Tag, Typography } from "antd";
 import { useEffect, useRef } from "react";
+import { useTranslation } from "@/i18n/LocaleProvider";
 import { LEVEL_BORDER, LEVEL_COLOR, parseLogLine } from "@/lib/logParser";
+import type { TranslationKey } from "@/i18n/translations";
 import type { RefreshStatus } from "@/lib/types";
 
-const STATUS_LABEL: Record<RefreshStatus, string> = {
-  idle: "Idle",
-  running: "Refreshing…",
-  success: "Refresh succeeded",
-  failed: "Refresh failed",
+const STATUS_KEY: Record<RefreshStatus, TranslationKey> = {
+  idle: "refreshStatusIdle",
+  running: "refreshStatusRunning",
+  success: "refreshStatusSuccess",
+  failed: "refreshStatusFailed",
 };
 
 export default function RefreshLogPanel({ lines, status }: { lines: string[]; status: RefreshStatus }) {
+  const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -32,7 +35,7 @@ export default function RefreshLogPanel({ lines, status }: { lines: string[]; st
           key: "log",
           label: (
             <Typography.Text type="secondary" className="text-xs">
-              {STATUS_LABEL[status]} · {lines.length} line{lines.length === 1 ? "" : "s"} (live)
+              {t(STATUS_KEY[status])} · {t(lines.length === 1 ? "lineCount" : "lineCountPlural", { n: lines.length })}
             </Typography.Text>
           ),
           children: (
@@ -56,7 +59,7 @@ export default function RefreshLogPanel({ lines, status }: { lines: string[]; st
                   <span className="min-w-0 flex-1 whitespace-pre-wrap break-all">{line.message || " "}</span>
                 </div>
               ))}
-              {parsed.length === 0 && <span className="text-[#6b7a90]">waiting for output…</span>}
+              {parsed.length === 0 && <span className="text-[#6b7a90]">{t("waitingForOutput")}</span>}
             </div>
           ),
         },

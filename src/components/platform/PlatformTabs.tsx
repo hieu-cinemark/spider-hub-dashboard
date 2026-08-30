@@ -4,11 +4,13 @@ import { AppstoreOutlined } from "@ant-design/icons";
 import { Alert, Skeleton, Tabs } from "antd";
 import { useQueryParam } from "@/hooks/useQueryParam";
 import { usePlatformStats } from "@/hooks/useStats";
+import { useTranslation } from "@/i18n/LocaleProvider";
 import { PlatformIcon, platformLabel } from "@/lib/platform";
 import AllPlatformsOverview from "./AllPlatformsOverview";
 import PlatformDetail from "./PlatformDetail";
 
 export default function PlatformTabs() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useQueryParam("tab", "all");
   const { data: stats, isLoading, error } = usePlatformStats();
 
@@ -19,7 +21,7 @@ export default function PlatformTabs() {
       <Alert
         type="error"
         showIcon
-        title="Could not reach cinemark-api"
+        title={t("couldNotReachApi")}
         description={error.message}
       />
     );
@@ -36,7 +38,7 @@ export default function PlatformTabs() {
           key: "all",
           label: (
             <span>
-              <AppstoreOutlined /> All
+              <AppstoreOutlined /> {t("allTab")}
             </span>
           ),
           children: <AllPlatformsOverview />,

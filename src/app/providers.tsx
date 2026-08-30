@@ -3,6 +3,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { App as AntApp, ConfigProvider } from "antd";
 import { useState, type ReactNode } from "react";
+import { LocaleProvider } from "@/i18n/LocaleProvider";
 
 export default function Providers({ children }: { children: ReactNode }) {
   const [queryClient] = useState(
@@ -50,7 +51,9 @@ export default function Providers({ children }: { children: ReactNode }) {
           },
         }}
       >
-        <AntApp>{children}</AntApp>
+        <AntApp>
+          <LocaleProvider>{children}</LocaleProvider>
+        </AntApp>
       </ConfigProvider>
     </QueryClientProvider>
   );

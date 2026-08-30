@@ -2,6 +2,7 @@
 
 import { Form, Input, Modal, Select, Switch } from "antd";
 import { useEffect } from "react";
+import { useTranslation } from "@/i18n/LocaleProvider";
 import { PLATFORM_META } from "@/lib/platform";
 import type { Account, AccountInput } from "@/lib/types";
 
@@ -22,6 +23,7 @@ export default function AccountFormModal({
   onCancel: () => void;
   onSubmit: (input: AccountInput) => void;
 }) {
+  const { t } = useTranslation();
   const [form] = Form.useForm<AccountInput>();
   const platform = Form.useWatch("platform", form);
   // TikTok has no login/2FA of its own (see spider-hub's
@@ -42,51 +44,47 @@ export default function AccountFormModal({
   return (
     <Modal
       open={open}
-      title={account ? "Edit account" : "Add account"}
+      title={account ? t("editAccount") : t("addAccount")}
       onCancel={onCancel}
       onOk={() => form.validateFields().then(onSubmit)}
       confirmLoading={loading}
       destroyOnHidden
     >
       <Form form={form} layout="vertical" requiredMark={false}>
-        <Form.Item name="platform" label="Platform" rules={[{ required: true }]}>
+        <Form.Item name="platform" label={t("platform")} rules={[{ required: true }]}>
           <Select options={PLATFORM_OPTIONS} disabled={!!account} />
         </Form.Item>
         <Form.Item
           name="account_id"
-          label={isTikTok ? "Device ID" : "Account ID (login email/phone/username)"}
+          label={isTikTok ? t("deviceId") : t("accountIdLabel")}
           rules={[{ required: true }]}
         >
           <Input />
         </Form.Item>
         {!isTikTok && (
           <>
-            <Form.Item name="email" label="Recovery email">
+            <Form.Item name="email" label={t("recoveryEmail")}>
               <Input />
             </Form.Item>
-            <Form.Item name="password" label="Password">
+            <Form.Item name="password" label={t("password")}>
               <Input.Password />
             </Form.Item>
-            <Form.Item name="totp_secret" label="2FA TOTP secret">
+            <Form.Item name="totp_secret" label={t("twoFaSecret")}>
               <Input.Password />
             </Form.Item>
           </>
         )}
         <Form.Item
           name="cookie"
-          label={isTikTok ? "Cookie header (ttwid/msToken/s_v_web_id - captured from a real browser session)" : "Cookie header (skips login if set)"}
+          label={isTikTok ? t("cookieHeaderTikTok") : t("cookieHeaderGeneric")}
           rules={isTikTok ? [{ required: true }] : undefined}
         >
           <Input.TextArea rows={2} />
         </Form.Item>
-        <Form.Item
-          name="token"
-          label={isTikTok ? "Odin ID" : "Token (reserved)"}
-          rules={isTikTok ? [{ required: true }] : undefined}
-        >
+        <Form.Item name="token" label={isTikTok ? t("odinId") : t("tokenReserved")} rules={isTikTok ? [{ required: true }] : undefined}>
           <Input.Password />
         </Form.Item>
-        <Form.Item name="enabled" label="Enabled" valuePropName="checked">
+        <Form.Item name="enabled" label={t("enabled")} valuePropName="checked">
           <Switch />
         </Form.Item>
       </Form>

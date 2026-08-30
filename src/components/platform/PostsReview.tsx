@@ -7,20 +7,14 @@ import DashboardCard from "@/components/DashboardCard";
 import PlatformBadge from "@/components/PlatformBadge";
 import { useQueryParam } from "@/hooks/useQueryParam";
 import { usePosts } from "@/hooks/useStats";
+import { useTranslation } from "@/i18n/LocaleProvider";
 import { POSTS_PAGE_SIZE } from "@/lib/constants";
 import { formatRelativeTime } from "@/lib/format";
 import type { Post } from "@/lib/types";
 import PostDetailModal from "./PostDetailModal";
-import PostMediaThumbnail from "./PostMediaThumbnail";
-
-const PLATFORM_FILTER_OPTIONS = [
-  { value: undefined, label: "All platforms" },
-  { value: "facebook", label: "Facebook" },
-  { value: "threads", label: "Threads" },
-  { value: "tiktok", label: "TikTok" },
-];
 
 export default function PostsReview() {
+  const { t } = useTranslation();
   const [platform, setPlatform] = useState<string | undefined>(undefined);
   const [pageParam, setPageParam] = useQueryParam("page", "1");
   const page = Math.max(0, (Number(pageParam) || 1) - 1);
@@ -28,15 +22,22 @@ export default function PostsReview() {
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const { data, isLoading, isPlaceholderData } = usePosts(platform, page);
 
+  const platformFilterOptions = [
+    { value: undefined, label: t("allPlatformsFilter") },
+    { value: "facebook", label: "Facebook" },
+    { value: "threads", label: "Threads" },
+    { value: "tiktok", label: "TikTok" },
+  ];
+
   return (
     <DashboardCard>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <Typography.Title level={5} className="!mb-0">
-          Recently scraped posts
+          {t("recentlyScrapedPosts")}
         </Typography.Title>
         <Select
           allowClear
-          placeholder="All platforms"
+          placeholder={platformFilterOptions[0].label}
           className="w-full sm:w-auto"
           style={{ minWidth: 180 }}
           value={platform}
@@ -44,7 +45,7 @@ export default function PostsReview() {
             setPlatform(value);
             setPage(0);
           }}
-          options={PLATFORM_FILTER_OPTIONS}
+          options={platformFilterOptions}
         />
       </div>
       <Table<Post>
@@ -53,31 +54,25 @@ export default function PostsReview() {
         scroll={{ x: "max-content" }}
         loading={isLoading || isPlaceholderData}
         dataSource={data?.items ?? []}
-        locale={{ emptyText: <Empty description="No posts yet" /> }}
+        locale={{ emptyText: <Empty description={t("noPostsYet")} /> }}
         onRow={(record) => ({ onClick: () => setSelectedPost(record), className: "cursor-pointer" })}
         pagination={{
           current: page + 1,
           pageSize: POSTS_PAGE_SIZE,
           total: data?.total ?? 0,
           onChange: (nextPage) => setPage(nextPage - 1),
-          showTotal: (total) => `${total.toLocaleString()} posts`,
+          showTotal: (total) => t("postsTotal", { n: total.toLocaleString() }),
           responsive: true,
         }}
         columns={[
           {
-            title: "Platform",
+            title: t("platform"),
             dataIndex: "platform",
             width: 140,
             render: (p: string) => <PlatformBadge platform={p} size={24} />,
           },
           {
-            title: "Media",
-            key: "media",
-            width: 64,
-            render: (_: unknown, record: Post) => <PostMediaThumbnail post={record} />,
-          },
-          {
-            title: "Movie / keyword",
+            title: t("columnMovieKeyword"),
             key: "movie",
             width: 180,
             render: (_: unknown, record: Post) => (
@@ -91,9 +86,9 @@ export default function PostsReview() {
               </div>
             ),
           },
-          { title: "Author", dataIndex: "author", width: 140, render: (v: string | null) => v || "—" },
+          { title: t("columnAuthor"), dataIndex: "author", width: 140, render: (v: string | null) => v || "—" },
           {
-            title: "Content",
+            title: t("columnContent"),
             dataIndex: "content",
             width: 320,
             render: (v: string | null, record: Post) => (
@@ -114,7 +109,7 @@ export default function PostsReview() {
             ),
           },
           {
-            title: "Engagement",
+            title: t("columnEngagement"),
             key: "engagement",
             width: 170,
             render: (_: unknown, record: Post) => (
@@ -132,10 +127,10 @@ export default function PostsReview() {
             ),
           },
           {
-            title: "Scraped",
+            title: t("columnScraped"),
             dataIndex: "scraped_at",
             width: 110,
-            render: (v: string) => formatRelativeTime(v),
+            render: (v: string) => formatRelativeTime(v, t),
           },
         ]}
       />
