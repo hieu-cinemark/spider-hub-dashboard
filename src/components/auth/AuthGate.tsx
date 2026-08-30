@@ -1,8 +1,16 @@
 "use client";
 
 import { Skeleton } from "antd";
-import { useSyncExternalStore, type ReactNode } from "react";
-import { AUTH_PENDING, REQUIRED_AUTH_KEY, getAuthServerSnapshot, getAuthSnapshot, login, subscribeAuth } from "@/lib/auth";
+import { useEffect, useSyncExternalStore, type ReactNode } from "react";
+import {
+  AUTH_PENDING,
+  REQUIRED_AUTH_KEY,
+  getAuthServerSnapshot,
+  getAuthSnapshot,
+  login,
+  resyncAuth,
+  subscribeAuth,
+} from "@/lib/auth";
 import LoginScreen from "./LoginScreen";
 
 function AuthChecking() {
@@ -17,6 +25,14 @@ function AuthChecking() {
 
 export default function AuthGate({ children }: { children: ReactNode }) {
   const storedKey = useSyncExternalStore(subscribeAuth, getAuthSnapshot, getAuthServerSnapshot);
+
+  // Belt-and-suspenders: force one resync right after this component
+  // mounts, instead of relying solely on React's own post-hydration
+  // recheck - see resyncAuth's docstring for why that alone wasn't always
+  // enough to escape the AUTH_PENDING skeleton on a cold dev-server start.
+  useEffect(() => {
+    resyncAuth();
+  }, []);
 
   if (!REQUIRED_AUTH_KEY) return <>{children}</>;
   // Neutral loading state for the one render between hydration and

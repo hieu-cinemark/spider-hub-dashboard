@@ -35,6 +35,18 @@ export function getAuthServerSnapshot(): string {
   return AUTH_PENDING;
 }
 
+// Forces AuthGate's useSyncExternalStore to re-read localStorage right
+// away. React is supposed to do this on its own the instant hydration
+// commits, but on a cold `next dev` start (the route's first-ever compile,
+// slower than normal) that automatic recheck can lag behind - AuthGate was
+// then stuck showing AUTH_PENDING's loading skeleton until something else
+// (a manual reload) forced a re-render. Calling this once from AuthGate's
+// own useEffect makes the resync unconditional instead of depending on
+// that timing.
+export function resyncAuth(): void {
+  notify();
+}
+
 export function login(key: string): boolean {
   if (!REQUIRED_AUTH_KEY || key !== REQUIRED_AUTH_KEY) return false;
   window.localStorage.setItem(AUTH_STORAGE_KEY, key);

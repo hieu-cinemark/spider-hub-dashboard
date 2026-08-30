@@ -16,7 +16,12 @@ import type { CSSProperties } from "react";
 export const PLATFORM_META: Record<string, { label: string; color: string; source: string }> = {
   facebook: { label: "Facebook", color: "#1877F2", source: "spider-hub" },
   threads: { label: "Threads", color: "#000000", source: "spider-hub" },
-  tiktok: { label: "TikTok", color: "#000000", source: "spider-hub" },
+  // TikTok's real mark has no single brand color (it's a black/cyan/pink
+  // duotone), but reusing Threads' black here made the two indistinguishable
+  // wherever both show up side by side (the "all platforms" timeseries
+  // chart, the Posts platform tag) - standing in with TikTok's cyan accent
+  // instead keeps every platform visually distinct.
+  tiktok: { label: "TikTok", color: "#00F2EA", source: "spider-hub" },
   instagram: { label: "Instagram", color: "#E1306C", source: "cinemark-scraper" },
 };
 
@@ -26,6 +31,35 @@ export function platformLabel(platform: string): string {
 
 export function platformColor(platform: string): string {
   return PLATFORM_META[platform]?.color ?? "#8c8c8c";
+}
+
+// A soft ~10%-opacity tint of a platform's color, for an icon badge's
+// background (icon itself stays the solid color) - works for every
+// platform color regardless of how light or dark it is, unlike a solid
+// background with a white icon (TikTok's cyan is too light for white to
+// read against it). Every PLATFORM_META color (and the gray fallback) is a
+// 6-digit hex, so appending a 2-digit alpha suffix is always valid.
+export function platformSoftBg(platform: string): string {
+  return `${platformColor(platform)}1A`;
+}
+
+// Builds a G2 (@ant-design/plots) `scale.color` domain/range pair so a
+// chart's colorField lines up with the same colors used everywhere else in
+// the dashboard (StatCard icons, the Posts platform tag) - instead of
+// leaving color assignment to the chart library's own default categorical
+// palette, which has no idea these platforms already have fixed colors.
+export function platformColorScale(rawPlatforms: string[]): { domain: string[]; range: string[] } {
+  const unique = Array.from(new Set(rawPlatforms));
+  return { domain: unique.map(platformLabel), range: unique.map(platformColor) };
+}
+
+// "YYYY-MM-DD" (as returned by cinemark-api's timeseries endpoint) ->
+// "Aug 28" - 14 full ISO dates crammed onto one chart's x-axis is the kind
+// of thing that's technically correct but unreadable.
+export function formatShortDay(day: string): string {
+  const parsed = new Date(`${day}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) return day;
+  return parsed.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
 export function platformSource(platform: string): string {

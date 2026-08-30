@@ -7,6 +7,8 @@ import type {
   LogTailResponse,
   Movie,
   PlatformStat,
+  PostPage,
+  PostsQuery,
   Proxy,
   ProxyInput,
   RunScraperParams,
@@ -37,6 +39,14 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export const api = {
   platformStats: () => request<PlatformStat[]>("/stats/platforms"),
   timeseries: (days = 14) => request<TimeseriesPoint[]>(`/stats/timeseries?days=${days}`),
+  posts: ({ platform, limit, offset }: PostsQuery) =>
+    request<PostPage>(
+      `/stats/posts?${new URLSearchParams({
+        ...(platform ? { platform } : {}),
+        limit: String(limit),
+        offset: String(offset),
+      })}`,
+    ),
   spiderHubLogs: (lines = 300) => request<LogTailResponse>(`/logs/spider-hub?lines=${lines}`),
   ingestLogs: (lines = 300) => request<LogTailResponse>(`/logs/ingest?lines=${lines}`),
   tokenStatus: (platform: string) => request<TokenStatus>(`/${platform}/token-status`),

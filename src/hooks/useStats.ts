@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import { QUERY_KEYS, REFRESH_INTERVAL_MS, TIMESERIES_DAYS } from "@/lib/constants";
+import { POSTS_PAGE_SIZE, QUERY_KEYS, REFRESH_INTERVAL_MS, TIMESERIES_DAYS } from "@/lib/constants";
 
 export function usePlatformStats() {
   return useQuery({
@@ -15,5 +15,14 @@ export function useTimeseries(days: number = TIMESERIES_DAYS) {
     queryKey: QUERY_KEYS.timeseries(days),
     queryFn: () => api.timeseries(days),
     refetchInterval: REFRESH_INTERVAL_MS.timeseries,
+  });
+}
+
+export function usePosts(platform: string | undefined, page: number) {
+  const offset = page * POSTS_PAGE_SIZE;
+  return useQuery({
+    queryKey: QUERY_KEYS.posts(platform, offset),
+    queryFn: () => api.posts({ platform, limit: POSTS_PAGE_SIZE, offset }),
+    placeholderData: (previous) => previous,
   });
 }

@@ -1,11 +1,19 @@
 "use client";
 
-import { DeleteOutlined, EditOutlined, EyeInvisibleOutlined, EyeOutlined, PlusOutlined } from "@ant-design/icons";
-import { Button, Popconfirm, Switch, Table, Tag, Typography } from "antd";
+import {
+  DeleteOutlined,
+  EditOutlined,
+  EyeInvisibleOutlined,
+  EyeOutlined,
+  KeyOutlined,
+  PlusOutlined,
+} from "@ant-design/icons";
+import { Button, Popconfirm, Switch, Table, Typography } from "antd";
 import { useState } from "react";
+import DashboardCard from "@/components/DashboardCard";
+import PlatformBadge from "@/components/PlatformBadge";
 import AccountFormModal from "@/components/settings/AccountFormModal";
 import { useAccountMutations, useAccounts } from "@/hooks/useSettings";
-import { platformColor, platformLabel } from "@/lib/platform";
 import type { Account, AccountInput } from "@/lib/types";
 
 function MaskedText({ value }: { value: string }) {
@@ -46,14 +54,25 @@ export default function AccountsTable() {
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex justify-end">
+    <DashboardCard
+      title={
+        <div className="flex items-center gap-2 py-1">
+          <KeyOutlined className="text-[#2f54eb]" />
+          <div className="flex flex-col">
+            <span className="text-sm font-semibold text-[#141414]">Authentication credentials</span>
+            <span className="text-xs font-normal text-[#8c8c8c]">Accounts used to log in and crawl each platform.</span>
+          </div>
+        </div>
+      }
+      extra={
         <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
           Add account
         </Button>
-      </div>
+      }
+    >
       <Table
         size="small"
+        scroll={{ x: "max-content" }}
         loading={isLoading}
         rowKey="id"
         dataSource={accounts ?? []}
@@ -62,7 +81,7 @@ export default function AccountsTable() {
           {
             title: "Platform",
             dataIndex: "platform",
-            render: (p: string) => <Tag color={platformColor(p)}>{platformLabel(p)}</Tag>,
+            render: (p: string) => <PlatformBadge platform={p} size={24} />,
           },
           { title: "Account ID", dataIndex: "account_id" },
           { title: "Email", dataIndex: "email", render: (v: string) => v || <Typography.Text type="secondary">—</Typography.Text> },
@@ -106,6 +125,6 @@ export default function AccountsTable() {
         onCancel={() => setModalOpen(false)}
         onSubmit={handleSubmit}
       />
-    </div>
+    </DashboardCard>
   );
 }

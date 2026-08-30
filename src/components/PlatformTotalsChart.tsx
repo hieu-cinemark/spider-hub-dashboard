@@ -2,7 +2,7 @@
 
 import { Column } from "@ant-design/plots";
 import type { PlatformStat } from "@/lib/types";
-import { platformLabel } from "@/lib/platform";
+import { platformColorScale, platformLabel } from "@/lib/platform";
 
 export default function PlatformTotalsChart({ data }: { data: PlatformStat[] }) {
   const chartData = data.map((row) => ({
@@ -16,8 +16,9 @@ export default function PlatformTotalsChart({ data }: { data: PlatformStat[] }) 
       xField="platform"
       yField="count"
       colorField="platform"
+      scale={{ color: platformColorScale(data.map((row) => row.platform)) }}
       label={{ text: "count", style: { fontWeight: 600 } }}
-      axis={{ y: { title: false }, x: { title: false } }}
+      axis={{ y: { title: false, grid: true }, x: { title: false } }}
       legend={false}
       height={280}
     />

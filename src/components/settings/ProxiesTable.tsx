@@ -1,11 +1,19 @@
 "use client";
 
-import { DeleteOutlined, EditOutlined, EyeInvisibleOutlined, EyeOutlined, PlusOutlined } from "@ant-design/icons";
-import { Button, Popconfirm, Switch, Table, Tag, Typography } from "antd";
+import {
+  DeleteOutlined,
+  EditOutlined,
+  EyeInvisibleOutlined,
+  EyeOutlined,
+  GlobalOutlined,
+  PlusOutlined,
+} from "@ant-design/icons";
+import { Button, Popconfirm, Switch, Table, Typography } from "antd";
 import { useState } from "react";
+import DashboardCard from "@/components/DashboardCard";
+import PlatformBadge from "@/components/PlatformBadge";
 import ProxyFormModal from "@/components/settings/ProxyFormModal";
 import { useProxies, useProxyMutations } from "@/hooks/useSettings";
-import { platformColor, platformLabel } from "@/lib/platform";
 import type { Proxy, ProxyInput } from "@/lib/types";
 
 function MaskedText({ value }: { value: string }) {
@@ -46,14 +54,25 @@ export default function ProxiesTable() {
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex justify-end">
+    <DashboardCard
+      title={
+        <div className="flex items-center gap-2 py-1">
+          <GlobalOutlined className="text-[#2f54eb]" />
+          <div className="flex flex-col">
+            <span className="text-sm font-semibold text-[#141414]">Network proxies</span>
+            <span className="text-xs font-normal text-[#8c8c8c]">Per-platform or shared proxy used for crawl requests.</span>
+          </div>
+        </div>
+      }
+      extra={
         <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
           Add proxy
         </Button>
-      </div>
+      }
+    >
       <Table
         size="small"
+        scroll={{ x: "max-content" }}
         loading={isLoading}
         rowKey="id"
         dataSource={proxies ?? []}
@@ -62,7 +81,7 @@ export default function ProxiesTable() {
           {
             title: "Platform",
             dataIndex: "platform",
-            render: (p: string) => (p === "all" ? <Tag>All (shared)</Tag> : <Tag color={platformColor(p)}>{platformLabel(p)}</Tag>),
+            render: (p: string) => <PlatformBadge platform={p} label={p === "all" ? "All (shared)" : undefined} size={24} />,
           },
           { title: "Proxy", dataIndex: "proxy_url", render: (v: string) => <span className="font-mono text-xs">{v}</span> },
           { title: "Username", dataIndex: "username" },
@@ -117,6 +136,6 @@ export default function ProxiesTable() {
         onCancel={() => setModalOpen(false)}
         onSubmit={handleSubmit}
       />
-    </div>
+    </DashboardCard>
   );
 }

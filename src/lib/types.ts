@@ -10,6 +10,41 @@ export interface TimeseriesPoint {
   count: number;
 }
 
+export interface Post {
+  id: string;
+  platform: string;
+  external_id: string;
+  url: string | null;
+  author: string | null;
+  content: string | null;
+  media_type: string | number | null;
+  media_url: string | null;
+  like_count: number;
+  reply_count: number;
+  repost_count: number;
+  quote_count: number;
+  reshare_count: number;
+  view_count: number;
+  posted_at: string | null;
+  scraped_at: string;
+  keyword_match: boolean;
+  keyword: string | null;
+  movie_title: string | null;
+}
+
+export interface PostPage {
+  items: Post[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface PostsQuery {
+  platform?: string;
+  limit: number;
+  offset: number;
+}
+
 export interface LogTailResponse {
   ok: boolean;
   source: string;

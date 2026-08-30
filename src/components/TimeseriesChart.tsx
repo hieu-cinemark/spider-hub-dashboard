@@ -2,7 +2,7 @@
 
 import { Line } from "@ant-design/plots";
 import type { TimeseriesPoint } from "@/lib/types";
-import { platformLabel } from "@/lib/platform";
+import { formatShortDay, platformColorScale, platformLabel } from "@/lib/platform";
 
 export default function TimeseriesChart({ data }: { data: TimeseriesPoint[] }) {
   const chartData = data.map((row) => ({
@@ -17,9 +17,16 @@ export default function TimeseriesChart({ data }: { data: TimeseriesPoint[] }) {
       xField="day"
       yField="count"
       colorField="platform"
+      scale={{ color: platformColorScale(data.map((row) => row.platform)) }}
       point={{ shape: "circle", size: 3 }}
-      axis={{ y: { title: false }, x: { title: false } }}
-      height={280}
+      smooth
+      axis={{
+        y: { title: false, grid: true },
+        x: { title: false, labelFormatter: formatShortDay },
+      }}
+      tooltip={{ title: (d: { day: string }) => formatShortDay(d.day) }}
+      legend={{ color: { position: "top" } }}
+      height={300}
     />
   );
 }

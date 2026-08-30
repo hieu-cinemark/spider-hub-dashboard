@@ -31,6 +31,22 @@ export default function Providers({ children }: { children: ReactNode }) {
             Button: {
               borderRadius: 8,
             },
+            Table: {
+              borderRadiusLG: 10,
+              headerBg: "#fafafa",
+              headerColor: "#8c8c8c",
+              headerSplitColor: "transparent",
+              cellPaddingBlock: 12,
+              rowHoverBg: "#f5f7ff",
+            },
+            Menu: {
+              // Spaces the dark Sider's nav items out into distinct rounded
+              // pills (itemBorderRadius already inherits the global 8px)
+              // instead of the cramped default of touching, full-width rows.
+              itemMarginBlock: 4,
+              itemMarginInline: 12,
+              darkItemBg: "transparent",
+            },
           },
         }}
       >

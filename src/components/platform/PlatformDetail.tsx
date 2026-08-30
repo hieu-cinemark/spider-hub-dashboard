@@ -1,9 +1,10 @@
 "use client";
 
 import { ClockCircleOutlined, DatabaseOutlined } from "@ant-design/icons";
-import { Card, Col, Empty, Row, Skeleton, Typography } from "antd";
+import { Col, Empty, Row, Skeleton, Typography } from "antd";
 import dynamic from "next/dynamic";
 import { useTimeseries, usePlatformStats } from "@/hooks/useStats";
+import DashboardCard from "@/components/DashboardCard";
 import StatCard from "@/components/StatCard";
 import PlatformActions from "@/components/platform/PlatformActions";
 import { TRIGGERABLE_PLATFORMS } from "@/lib/constants";
@@ -62,11 +63,11 @@ export default function PlatformDetail({ platform }: { platform: string }) {
         </Typography.Text>
       )}
 
-      <Card title={`${platformLabel(platform)} - daily posts (last 14 days)`}>
+      <DashboardCard title={`${platformLabel(platform)} - daily posts (last 14 days)`}>
         {timeseriesLoading && <Skeleton active />}
         {!timeseriesLoading && series.length === 0 && <Empty description="No posts in this window" />}
         {!timeseriesLoading && series.length > 0 && <TimeseriesChart data={series} />}
-      </Card>
+      </DashboardCard>
     </div>
   );
 }

@@ -1,6 +1,8 @@
 "use client";
 
+import { ClockCircleOutlined } from "@ant-design/icons";
 import { Table, Typography } from "antd";
+import DashboardCard from "@/components/DashboardCard";
 import { useCronJobs } from "@/hooks/useSettings";
 import { formatRelativeTime } from "@/lib/format";
 import type { CronJob } from "@/lib/types";
@@ -9,14 +11,23 @@ export default function CronJobsTable() {
   const { data: jobs, isLoading } = useCronJobs();
 
   return (
-    <div className="flex flex-col gap-3">
-      <Typography.Text type="secondary" className="text-xs">
-        Read-only reference - these schedules live in a crontab or
-        cinemark-scraper&apos;s wrangler.toml, not a database. Edit them at their
-        source (see &quot;Source&quot; below), not here.
-      </Typography.Text>
+    <DashboardCard
+      title={
+        <div className="flex items-center gap-2 py-1">
+          <ClockCircleOutlined className="text-[#2f54eb]" />
+          <div className="flex flex-col">
+            <span className="text-sm font-semibold text-[#141414]">Cron jobs</span>
+            <span className="text-xs font-normal text-[#8c8c8c]">
+              Read-only - these schedules live in a crontab or cinemark-scraper&apos;s wrangler.toml, not a
+              database. Edit them at their source (see &quot;Source&quot; below), not here.
+            </span>
+          </div>
+        </div>
+      }
+    >
       <Table
         size="small"
+        scroll={{ x: "max-content" }}
         loading={isLoading}
         rowKey="name"
         dataSource={jobs ?? []}
@@ -33,6 +44,6 @@ export default function CronJobsTable() {
           },
         ]}
       />
-    </div>
+    </DashboardCard>
   );
 }

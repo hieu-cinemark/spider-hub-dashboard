@@ -1,8 +1,10 @@
 "use client";
 
 import { ClockCircleOutlined, DatabaseOutlined } from "@ant-design/icons";
-import { Card, Col, Empty, Row, Skeleton, Table } from "antd";
+import { Col, Empty, Row, Skeleton, Table } from "antd";
 import dynamic from "next/dynamic";
+import DashboardCard from "@/components/DashboardCard";
+import PlatformBadge from "@/components/PlatformBadge";
 import StatCard from "@/components/StatCard";
 import { useTimeseries, usePlatformStats } from "@/hooks/useStats";
 import { formatRelativeTime } from "@/lib/format";
@@ -37,22 +39,22 @@ export default function AllPlatformsOverview() {
 
       <Row gutter={[16, 16]}>
         <Col xs={24} lg={10}>
-          <Card title="Posts per platform">
+          <DashboardCard title="Posts per platform">
             {statsLoading && <Skeleton active />}
             {!statsLoading && (stats?.length ?? 0) === 0 && <Empty description="No posts yet" />}
             {!statsLoading && (stats?.length ?? 0) > 0 && <PlatformTotalsChart data={stats!} />}
-          </Card>
+          </DashboardCard>
         </Col>
         <Col xs={24} lg={14}>
-          <Card title="Daily posts, last 14 days">
+          <DashboardCard title="Daily posts, last 14 days">
             {timeseriesLoading && <Skeleton active />}
             {!timeseriesLoading && (timeseries?.length ?? 0) === 0 && <Empty description="No posts in this window" />}
             {!timeseriesLoading && (timeseries?.length ?? 0) > 0 && <TimeseriesChart data={timeseries!} />}
-          </Card>
+          </DashboardCard>
         </Col>
       </Row>
 
-      <Card
+      <DashboardCard
         title={
           <span>
             <ClockCircleOutlined className="mr-2" />
@@ -62,6 +64,7 @@ export default function AllPlatformsOverview() {
       >
         <Table
           size="small"
+          scroll={{ x: "max-content" }}
           pagination={false}
           loading={statsLoading}
           dataSource={stats ?? []}
@@ -70,12 +73,7 @@ export default function AllPlatformsOverview() {
             {
               title: "Platform",
               dataIndex: "platform",
-              render: (p: string) => (
-                <span>
-                  <PlatformIcon platform={p} className="mr-2" style={{ color: platformColor(p) }} />
-                  {platformLabel(p)}
-                </span>
-              ),
+              render: (p: string) => <PlatformBadge platform={p} size={24} />,
             },
             { title: "Posts collected", dataIndex: "count" },
             {
@@ -85,7 +83,7 @@ export default function AllPlatformsOverview() {
             },
           ]}
         />
-      </Card>
+      </DashboardCard>
     </div>
   );
 }

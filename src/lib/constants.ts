@@ -37,9 +37,12 @@ export const PLATFORMS_WITH_TOKEN_REFRESH = ["facebook", "threads"] as const;
 // server's "gave up watching" line has a chance to arrive first.
 export const REFRESH_WATCH_TIMEOUT_MS = 200_000;
 
+export const POSTS_PAGE_SIZE = 20;
+
 export const QUERY_KEYS = {
   platformStats: ["platform-stats"] as const,
   timeseries: (days: number) => ["timeseries", days] as const,
   tokenStatus: (platform: string) => ["token-status", platform] as const,
   logs: (kind: "spider-hub" | "ingest", lines: number) => ["logs", kind, lines] as const,
+  posts: (platform: string | undefined, offset: number) => ["posts", platform, offset] as const,
 };

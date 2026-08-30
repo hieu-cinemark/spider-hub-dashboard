@@ -1,16 +1,12 @@
 "use client";
 
-import { DashboardOutlined } from "@ant-design/icons";
-import { Typography } from "antd";
+import PageHeader from "@/components/PageHeader";
 import PlatformTabs from "@/components/platform/PlatformTabs";
 
 export default function OverviewPage() {
   return (
     <div className="flex flex-col gap-6">
-      <Typography.Title level={3} className="!mb-0">
-        <DashboardOutlined className="mr-2" />
-        Overview
-      </Typography.Title>
+      <PageHeader title="Overview" description="System metrics and platform collection status." />
       <PlatformTabs />
     </div>
   );
