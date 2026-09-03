@@ -46,7 +46,11 @@ export default function PlatformDetail({ platform }: { platform: string }) {
           />
         </Col>
         <Col xs={24} sm={12} lg={8}>
-          <StatCard title={t("fedBy")} value={platformSource(platform)} icon={<DatabaseOutlined />} />
+          <StatCard
+            title={t("fedBy")}
+            value={platformSource(platform) === "spider-hub" ? t("sourceCollector") : t("sourceOtherSystem")}
+            icon={<DatabaseOutlined />}
+          />
         </Col>
       </Row>
 

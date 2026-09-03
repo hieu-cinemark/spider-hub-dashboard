@@ -2,7 +2,6 @@
 
 import { ClockCircleOutlined, KeyOutlined } from "@ant-design/icons";
 import { Tabs } from "antd";
-import PageHeader from "@/components/PageHeader";
 import AccountsTable from "@/components/settings/AccountsTable";
 import CronJobsTable from "@/components/settings/CronJobsTable";
 import ProxiesTable from "@/components/settings/ProxiesTable";
@@ -12,8 +11,6 @@ export default function SettingsPage() {
   const { t } = useTranslation();
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title={t("settingsTitle")} description={t("settingsDescription")} />
-
       <Tabs
         items={[
           {

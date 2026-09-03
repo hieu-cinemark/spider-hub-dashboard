@@ -3,6 +3,7 @@ import type {
   AccountInput,
   ApiErrorBody,
   CronJob,
+  JobStatus,
   Keyword,
   LogTailResponse,
   Movie,
@@ -13,6 +14,7 @@ import type {
   ProxyInput,
   RunScraperParams,
   RunScraperResponse,
+  StopScraperResponse,
   TimeseriesPoint,
   TokenStatus,
   TriggerTokenRefreshResponse,
@@ -61,6 +63,8 @@ export const api = {
     request<RunScraperResponse>(`/${platform}/run`, { method: "POST", body: JSON.stringify(params) }),
   refreshToken: (platform: string) =>
     request<TriggerTokenRefreshResponse>(`/${platform}/refresh-token`, { method: "POST" }),
+  jobStatus: (platform: string) => request<JobStatus>(`/${platform}/job-status`),
+  stopCrawl: (platform: string) => request<StopScraperResponse>(`/${platform}/stop`, { method: "POST" }),
 
   // Settings: platform_accounts / platform_proxies (Supabase, see
   // cinemark-api/app/services/platform_config_db.py)

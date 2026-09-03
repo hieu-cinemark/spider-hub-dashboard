@@ -36,7 +36,17 @@ export default function AccountFormModal({
   useEffect(() => {
     if (open) {
       form.setFieldsValue(
-        account ?? { platform: "facebook", account_id: "", password: "", totp_secret: "", cookie: "", token: "", email: "", enabled: true },
+        account ?? {
+          platform: "facebook",
+          account_id: "",
+          password: "",
+          totp_secret: "",
+          cookie: "",
+          token: "",
+          email: "",
+          email_password: "",
+          enabled: true,
+        },
       );
     }
   }, [open, account, form]);
@@ -49,6 +59,8 @@ export default function AccountFormModal({
       onOk={() => form.validateFields().then(onSubmit)}
       confirmLoading={loading}
       destroyOnHidden
+      centered
+      styles={{ body: { maxHeight: "calc(100vh - 260px)", overflowY: "auto", paddingRight: 4 } }}
     >
       <Form form={form} layout="vertical" requiredMark={false}>
         <Form.Item name="platform" label={t("platform")} rules={[{ required: true }]}>
@@ -65,6 +77,9 @@ export default function AccountFormModal({
           <>
             <Form.Item name="email" label={t("recoveryEmail")}>
               <Input />
+            </Form.Item>
+            <Form.Item name="email_password" label={t("recoveryEmailPassword")}>
+              <Input.Password />
             </Form.Item>
             <Form.Item name="password" label={t("password")}>
               <Input.Password />

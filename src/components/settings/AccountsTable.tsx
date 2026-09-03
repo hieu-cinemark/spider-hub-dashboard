@@ -91,6 +91,11 @@ export default function AccountsTable() {
             dataIndex: "email",
             render: (v: string) => v || <Typography.Text type="secondary">—</Typography.Text>,
           },
+          {
+            title: t("columnEmailPassword"),
+            dataIndex: "email_password",
+            render: (v: string) => <MaskedText value={v} />,
+          },
           { title: t("columnPassword"), dataIndex: "password", render: (v: string) => <MaskedText value={v} /> },
           { title: t("column2fa"), dataIndex: "totp_secret", render: (v: string) => <MaskedText value={v} /> },
           {

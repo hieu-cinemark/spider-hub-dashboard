@@ -9,6 +9,12 @@ export const REFRESH_INTERVAL_MS = {
   timeseries: 30_000,
   tokenStatus: 30_000,
   logs: 8_000,
+  // Faster than the others - this drives whether the Stop button shows at
+  // all, and a crawl job can finish in well under 30s (a single-page
+  // TikTok hashtag, a small keyword sweep), so the slower cadence above
+  // would leave a finished job's Stop button visible long after there's
+  // nothing left to stop.
+  jobStatus: 5_000,
 } as const;
 
 export const TIMESERIES_DAYS = 14;
@@ -43,6 +49,7 @@ export const QUERY_KEYS = {
   platformStats: ["platform-stats"] as const,
   timeseries: (days: number) => ["timeseries", days] as const,
   tokenStatus: (platform: string) => ["token-status", platform] as const,
+  jobStatus: (platform: string) => ["job-status", platform] as const,
   logs: (kind: "spider-hub" | "ingest", lines: number) => ["logs", kind, lines] as const,
   posts: (platform: string | undefined, offset: number) => ["posts", platform, offset] as const,
 };

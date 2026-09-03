@@ -31,5 +31,18 @@ export function useTriggerCrawl(platform: string) {
     onError: (err) => message.error(err instanceof Error ? err.message : "Request failed"),
   });
 
-  return { runCrawl, refreshToken };
+  const stopCrawl = useMutation({
+    mutationFn: () => api.stopCrawl(platform),
+    onSuccess: (res) => {
+      if (res.stopped) message.success(`${platformLabel(platform)}: stop requested`);
+      else message.info(`${platformLabel(platform)}: nothing running to stop`);
+      // Don't wait for the next poll - the running job is what gates the
+      // Stop button's own visibility, so a stale "still running" read here
+      // would let someone click Stop again on a job already being killed.
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.jobStatus(platform) });
+    },
+    onError: (err) => message.error(err instanceof Error ? err.message : "Request failed"),
+  });
+
+  return { runCrawl, refreshToken, stopCrawl };
 }

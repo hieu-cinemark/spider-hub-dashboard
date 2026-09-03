@@ -83,6 +83,7 @@ export interface Account {
   cookie: string;
   token: string;
   email: string;
+  email_password: string;
   enabled: boolean;
   created_at: string;
   updated_at: string;
@@ -120,6 +121,17 @@ export interface TokenStatus {
   valid: boolean;
   account: string | null;
   expires_in_seconds: number | null;
+}
+
+export interface JobStatus {
+  running: boolean;
+  keyword: string | null;
+  keyword_id: string | null;
+  started_at: number | null;
+}
+
+export interface StopScraperResponse {
+  stopped: boolean;
 }
 
 export interface ApiErrorBody {

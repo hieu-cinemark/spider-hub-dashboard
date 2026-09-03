@@ -8,7 +8,7 @@ import {
   SettingOutlined,
   UnorderedListOutlined,
 } from "@ant-design/icons";
-import { Button, Layout, Menu, Typography } from "antd";
+import { Button, Layout, Menu } from "antd";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
@@ -52,8 +52,6 @@ export default function AppShell({ children }: { children: ReactNode }) {
     setRenderedPathname(pathname);
     setMobileOpen(false);
   }
-
-  const activeNavItem = NAV_ITEMS.find((item) => item.key === pathname) ?? NAV_ITEMS[0];
 
   return (
     <Layout hasSider className="min-h-screen">
@@ -106,17 +104,17 @@ export default function AppShell({ children }: { children: ReactNode }) {
         </div>
       </Sider>
       <Layout style={{ marginInlineStart: collapsed ? 0 : SIDER_WIDTH, transition: "margin-inline-start 0.2s" }}>
-        <Header
-          className="flex items-center gap-2.5 !bg-white !px-4 sm:!px-6"
-          style={{
-            position: "sticky",
-            top: 0,
-            zIndex: 10,
-            width: "100%",
-            boxShadow: "0 1px 2px 0 rgba(0,0,0,0.04), 0 2px 8px -2px rgba(0,0,0,0.05)",
-          }}
-        >
-          {collapsed && (
+        {collapsed && (
+          <Header
+            className="flex items-center !bg-white !px-4 sm:!px-6"
+            style={{
+              position: "sticky",
+              top: 0,
+              zIndex: 10,
+              width: "100%",
+              boxShadow: "0 1px 2px 0 rgba(0,0,0,0.04), 0 2px 8px -2px rgba(0,0,0,0.05)",
+            }}
+          >
             <Button
               type="text"
               icon={<MenuOutlined />}
@@ -124,14 +122,8 @@ export default function AppShell({ children }: { children: ReactNode }) {
               className="!-ml-2 shrink-0"
               aria-label={t("openNavigation")}
             />
-          )}
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#2f54eb]/8 text-base text-[#2f54eb]">
-            {activeNavItem.icon}
-          </span>
-          <Typography.Title level={4} className="!mb-0 truncate">
-            {t(activeNavItem.labelKey)}
-          </Typography.Title>
-        </Header>
+          </Header>
+        )}
         <Content className="bg-[#f5f5f7] p-3 sm:p-6">
           <div key={pathname} className="animate-fade-in-up">
             {children}
