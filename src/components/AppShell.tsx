@@ -18,7 +18,7 @@ import { useTranslation } from "@/i18n/LocaleProvider";
 import type { TranslationKey } from "@/i18n/translations";
 import { logout } from "@/lib/auth";
 
-const { Header, Sider, Content } = Layout;
+const { Header, Sider, Content, Footer } = Layout;
 
 const SIDER_WIDTH = 200;
 
@@ -129,6 +129,12 @@ export default function AppShell({ children }: { children: ReactNode }) {
             {children}
           </div>
         </Content>
+        <Footer
+          className="text-center text-xs text-[#8c8c8c]"
+          style={{ background: "#f5f5f7", padding: "12px 24px" }}
+        >
+          Spider Hub © {new Date().getFullYear()}
+        </Footer>
       </Layout>
     </Layout>
   );
