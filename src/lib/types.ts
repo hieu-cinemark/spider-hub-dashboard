@@ -45,6 +45,48 @@ export interface PostsQuery {
   offset: number;
 }
 
+// Facebook-only for now - see cinemark-api's get_comment_mapper.
+export interface Comment {
+  id: string;
+  post_id: string;
+  platform: string;
+  external_id: string;
+  message: string | null;
+  author_name: string | null;
+  author_id: string | null;
+  author_url: string | null;
+  author_profile_picture: string | null;
+  reactions_count: number;
+  replies_count: number;
+  posted_at: string | null;
+  scraped_at: string;
+}
+
+export interface RunCommentsResponse {
+  published: boolean;
+}
+
+export interface CommentWithPost extends Comment {
+  post_content: string | null;
+  post_url: string | null;
+  post_author: string | null;
+  movie_title: string | null;
+}
+
+export interface CommentPage {
+  items: CommentWithPost[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface CommentsQuery {
+  platform?: string;
+  movieId?: string;
+  limit: number;
+  offset: number;
+}
+
 export interface LogTailResponse {
   ok: boolean;
   source: string;
@@ -72,6 +114,7 @@ export interface RunScraperParams {
   keyword_id?: string;
   start_date?: string;
   end_date?: string;
+  max_pages?: number;
 }
 
 export interface Account {
@@ -87,9 +130,17 @@ export interface Account {
   enabled: boolean;
   created_at: string;
   updated_at: string;
+  // Written by POST /settings/accounts/{id}/check (see cinemark-api's
+  // app/services/account_health.py) - null until the first check ever
+  // runs. status is a plain string ("ok" | "warning" | "disabled" |
+  // "unknown"), not an enum, matching the Postgres column.
+  last_checked_at: string | null;
+  last_check_status: string | null;
 }
 
-export type AccountInput = Partial<Omit<Account, "id" | "created_at" | "updated_at">>;
+export type AccountInput = Partial<
+  Omit<Account, "id" | "created_at" | "updated_at" | "last_checked_at" | "last_check_status">
+>;
 
 export interface Proxy {
   id: number;
@@ -128,6 +179,7 @@ export interface JobStatus {
   keyword: string | null;
   keyword_id: string | null;
   started_at: number | null;
+  type: string | null;
 }
 
 export interface StopScraperResponse {

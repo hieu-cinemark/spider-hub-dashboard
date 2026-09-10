@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  CommentOutlined,
   DashboardOutlined,
   FileTextOutlined,
   LogoutOutlined,
@@ -8,7 +9,7 @@ import {
   SettingOutlined,
   UnorderedListOutlined,
 } from "@ant-design/icons";
-import { Button, Layout, Menu } from "antd";
+import { Button, Layout, Menu, Typography } from "antd";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
@@ -18,16 +19,18 @@ import { useTranslation } from "@/i18n/LocaleProvider";
 import type { TranslationKey } from "@/i18n/translations";
 import { logout } from "@/lib/auth";
 
-const { Header, Sider, Content, Footer } = Layout;
+const { Header, Sider, Content } = Layout;
 
 const SIDER_WIDTH = 200;
 
-const NAV_ITEMS: { key: string; labelKey: TranslationKey; icon: ReactNode }[] = [
-  { key: "/", labelKey: "navOverview", icon: <DashboardOutlined /> },
-  { key: "/posts", labelKey: "navPosts", icon: <UnorderedListOutlined /> },
-  { key: "/logs", labelKey: "navLogs", icon: <FileTextOutlined /> },
-  { key: "/settings", labelKey: "navSettings", icon: <SettingOutlined /> },
-];
+const NAV_ITEMS: { key: string; labelKey: TranslationKey; icon: ReactNode }[] =
+  [
+    { key: "/", labelKey: "navOverview", icon: <DashboardOutlined /> },
+    { key: "/posts", labelKey: "navPosts", icon: <UnorderedListOutlined /> },
+    { key: "/comments", labelKey: "navComments", icon: <CommentOutlined /> },
+    { key: "/logs", labelKey: "navLogs", icon: <FileTextOutlined /> },
+    { key: "/settings", labelKey: "navSettings", icon: <SettingOutlined /> },
+  ];
 
 export default function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -53,6 +56,8 @@ export default function AppShell({ children }: { children: ReactNode }) {
     setMobileOpen(false);
   }
 
+  const activeNavItem = NAV_ITEMS.find((item) => item.key === pathname) ?? NAV_ITEMS[0];
+
   return (
     <Layout hasSider className="min-h-screen">
       {mobileOpen && (
@@ -70,13 +75,22 @@ export default function AppShell({ children }: { children: ReactNode }) {
         collapsed={collapsed && !mobileOpen}
         onBreakpoint={setCollapsed}
         className="!bg-[#001529]"
-        style={{ position: "fixed", insetInlineStart: 0, top: 0, bottom: 0, overflow: "auto", zIndex: 30 }}
+        style={{
+          position: "fixed",
+          insetInlineStart: 0,
+          top: 0,
+          bottom: 0,
+          overflow: "auto",
+          zIndex: 30,
+        }}
       >
         <div className="flex h-full flex-col justify-between">
           <div>
             <div className="flex items-center gap-2.5 px-5 py-4">
               <Logo size={30} />
-              <span className="text-base font-semibold tracking-tight text-white">Spider Hub</span>
+              <span className="text-base font-semibold tracking-tight text-white">
+                Spider Hub
+              </span>
             </div>
             <Menu
               theme="dark"
@@ -90,51 +104,53 @@ export default function AppShell({ children }: { children: ReactNode }) {
               }))}
             />
           </div>
-          <div className="flex flex-col gap-2 border-t border-white/10 p-3">
-            <LocaleSwitcher />
-            <Button
-              type="text"
-              icon={<LogoutOutlined />}
-              onClick={logout}
-              className="!w-full !justify-start !text-white/85 !transition-colors hover:!bg-white/10 hover:!text-white"
-            >
+        </div>
+      </Sider>
+      <Layout
+        style={{
+          marginInlineStart: collapsed ? 0 : SIDER_WIDTH,
+          transition: "margin-inline-start 0.2s",
+        }}
+      >
+        <Header
+          className="flex items-center justify-between !bg-white !px-4 sm:!px-6"
+          style={{
+            position: "sticky",
+            top: 0,
+            zIndex: 10,
+            width: "100%",
+            boxShadow: "0 1px 2px 0 rgba(0,0,0,0.04), 0 2px 8px -2px rgba(0,0,0,0.05)",
+          }}
+        >
+          <div className="flex items-center gap-2.5">
+            {collapsed && (
+              <Button
+                type="text"
+                icon={<MenuOutlined />}
+                onClick={() => setMobileOpen(true)}
+                className="!-ml-2 shrink-0"
+                aria-label={t("openNavigation")}
+              />
+            )}
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#2f54eb]/8 text-base text-[#2f54eb]">
+              {activeNavItem.icon}
+            </span>
+            <Typography.Title level={4} className="!mb-0 truncate">
+              {t(activeNavItem.labelKey)}
+            </Typography.Title>
+          </div>
+          <div className="flex items-center gap-2">
+            <LocaleSwitcher variant="light" />
+            <Button type="text" icon={<LogoutOutlined />} onClick={logout} className="!text-[#595959]">
               {t("navLogout")}
             </Button>
           </div>
-        </div>
-      </Sider>
-      <Layout style={{ marginInlineStart: collapsed ? 0 : SIDER_WIDTH, transition: "margin-inline-start 0.2s" }}>
-        {collapsed && (
-          <Header
-            className="flex items-center !bg-white !px-4 sm:!px-6"
-            style={{
-              position: "sticky",
-              top: 0,
-              zIndex: 10,
-              width: "100%",
-              boxShadow: "0 1px 2px 0 rgba(0,0,0,0.04), 0 2px 8px -2px rgba(0,0,0,0.05)",
-            }}
-          >
-            <Button
-              type="text"
-              icon={<MenuOutlined />}
-              onClick={() => setMobileOpen(true)}
-              className="!-ml-2 shrink-0"
-              aria-label={t("openNavigation")}
-            />
-          </Header>
-        )}
+        </Header>
         <Content className="bg-[#f5f5f7] p-3 sm:p-6">
           <div key={pathname} className="animate-fade-in-up">
             {children}
           </div>
         </Content>
-        <Footer
-          className="text-center text-xs text-[#8c8c8c]"
-          style={{ background: "#f5f5f7", padding: "12px 24px" }}
-        >
-          Spider Hub © {new Date().getFullYear()}
-        </Footer>
       </Layout>
     </Layout>
   );

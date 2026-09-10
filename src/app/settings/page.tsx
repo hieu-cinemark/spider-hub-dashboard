@@ -5,6 +5,7 @@ import { Tabs } from "antd";
 import AccountsTable from "@/components/settings/AccountsTable";
 import CronJobsTable from "@/components/settings/CronJobsTable";
 import ProxiesTable from "@/components/settings/ProxiesTable";
+import SettingsSummary from "@/components/settings/SettingsSummary";
 import { useTranslation } from "@/i18n/LocaleProvider";
 
 export default function SettingsPage() {
@@ -22,6 +23,7 @@ export default function SettingsPage() {
             ),
             children: (
               <div className="flex flex-col gap-6">
+                <SettingsSummary />
                 <AccountsTable />
                 <ProxiesTable />
               </div>

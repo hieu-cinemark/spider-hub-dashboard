@@ -97,6 +97,7 @@ export default function ProxiesTable() {
           {
             title: t("columnUseForLogin"),
             dataIndex: "login_use_proxy",
+            align: "center",
             render: (v: boolean, record: Proxy) => (
               <Switch
                 size="small"
@@ -109,6 +110,7 @@ export default function ProxiesTable() {
           {
             title: t("enabled"),
             dataIndex: "enabled",
+            align: "center",
             render: (enabled: boolean, record: Proxy) => (
               <Switch
                 size="small"

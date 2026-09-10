@@ -1,7 +1,7 @@
 "use client";
 
 import { PlayCircleOutlined, PlusOutlined, StopOutlined } from "@ant-design/icons";
-import { Button, DatePicker, Select, Space, Typography } from "antd";
+import { Button, DatePicker, InputNumber, Select, Space, Typography } from "antd";
 import type { Dayjs } from "dayjs";
 import { useState } from "react";
 import AddKeywordModal, { type AddKeywordFormValues } from "@/components/AddKeywordModal";
@@ -21,14 +21,11 @@ export default function CrawlTriggerForm({ platform }: { platform: string }) {
   const { runCrawl, stopCrawl } = useTriggerCrawl(platform);
   const { data: jobStatus } = useJobStatus(platform);
 
-  // TikTok's hashtag feed has no date filter to sweep - see
-  // crawl_request_consumer.py's _run_spider, whose tiktok branch never
-  // reads start_date/end_date at all. Showing the range picker there let
-  // someone pick a range that silently did nothing.
   const supportsDateRange = platform !== "tiktok";
 
   const [keywordId, setKeywordId] = useState<string | undefined>(undefined);
   const [range, setRange] = useState<DateRange>(null);
+  const [maxPages, setMaxPages] = useState<number | null>(null);
   const [addModalOpen, setAddModalOpen] = useState(false);
 
   function handleRun() {
@@ -37,6 +34,7 @@ export default function CrawlTriggerForm({ platform }: { platform: string }) {
       keyword_id: keywordId,
       start_date: start ? start.format("YYYY-MM-DD") : undefined,
       end_date: end ? end.format("YYYY-MM-DD") : undefined,
+      max_pages: maxPages ?? undefined,
     });
   }
 
@@ -75,16 +73,27 @@ export default function CrawlTriggerForm({ platform }: { platform: string }) {
         {supportsDateRange && (
           <RangePicker value={range} onChange={(values) => setRange(values as DateRange)} allowEmpty={[true, true]} />
         )}
+        <Space.Compact>
+          <Button disabled>{t("maxPages")}</Button>
+          <InputNumber
+            min={1}
+            max={1000}
+            style={{ width: 100 }}
+            placeholder={t("maxPagesPlaceholder")}
+            value={maxPages}
+            onChange={(value) => setMaxPages(value)}
+          />
+        </Space.Compact>
         <Button type="primary" icon={<PlayCircleOutlined />} loading={runCrawl.isPending} onClick={handleRun}>
           {t("runSearchCrawl")}
         </Button>
-        {jobStatus?.running && (
+        {jobStatus?.running && jobStatus.type !== "refresh_token" && (
           <Button danger icon={<StopOutlined />} loading={stopCrawl.isPending} onClick={() => stopCrawl.mutate()}>
             {t("stopCrawl")}
           </Button>
         )}
       </Space>
-      {jobStatus?.running && (
+      {jobStatus?.running && jobStatus.type !== "refresh_token" && (
         <Typography.Text type="secondary" style={{ display: "block", marginTop: 8 }}>
           {t("jobRunningFor", { keyword: jobStatus.keyword ?? "" })}
         </Typography.Text>

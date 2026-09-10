@@ -5,16 +5,16 @@
 export const AUTH_STORAGE_KEY = "spider-hub-dashboard.auth-key";
 
 export const REFRESH_INTERVAL_MS = {
-  stats: 30_000,
-  timeseries: 30_000,
+  stats: 1_800_000,
+  timeseries: 1_800_000,
   tokenStatus: 30_000,
   logs: 8_000,
-  // Faster than the others - this drives whether the Stop button shows at
-  // all, and a crawl job can finish in well under 30s (a single-page
-  // TikTok hashtag, a small keyword sweep), so the slower cadence above
-  // would leave a finished job's Stop button visible long after there's
-  // nothing left to stop.
   jobStatus: 5_000,
+  accounts: 30_000,
+  // While the comments panel is open (see useComments) - a triggered crawl
+  // runs async (Kafka -> spider-hub -> ingest), so this is what actually
+  // surfaces new rows without the viewer having to close/reopen the modal.
+  comments: 5_000,
 } as const;
 
 export const TIMESERIES_DAYS = 14;
@@ -27,6 +27,10 @@ export const DEFAULT_LOG_LINES = 300;
 // cinemark-scraper's own Worker, not spider-hub - no button for it here.
 export const TRIGGERABLE_PLATFORMS = ["facebook", "threads", "tiktok"] as const;
 export type TriggerablePlatform = (typeof TRIGGERABLE_PLATFORMS)[number];
+
+// Platforms spider-hub has a comments spider for at all (see its
+// crawl_request_consumer.py's COMMENTS_SPIDER_BY_PLATFORM).
+export const COMMENT_SUPPORTED_PLATFORMS = ["facebook", "threads", "tiktok"] as const;
 
 // Of the triggerable platforms above, only these have their own
 // browser-bootstrap token cache to refresh/watch (POST
@@ -44,6 +48,7 @@ export const PLATFORMS_WITH_TOKEN_REFRESH = ["facebook", "threads"] as const;
 export const REFRESH_WATCH_TIMEOUT_MS = 200_000;
 
 export const POSTS_PAGE_SIZE = 20;
+export const COMMENTS_PAGE_SIZE = 20;
 
 export const QUERY_KEYS = {
   platformStats: ["platform-stats"] as const,
@@ -52,4 +57,6 @@ export const QUERY_KEYS = {
   jobStatus: (platform: string) => ["job-status", platform] as const,
   logs: (kind: "spider-hub" | "ingest", lines: number) => ["logs", kind, lines] as const,
   posts: (platform: string | undefined, offset: number) => ["posts", platform, offset] as const,
+  comments: (postId: string) => ["comments", postId] as const,
+  allComments: (offset: number) => ["all-comments", offset] as const,
 };

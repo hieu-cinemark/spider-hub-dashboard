@@ -19,6 +19,7 @@ const en = {
   // AppShell (nav)
   navOverview: "Overview",
   navPosts: "Posts",
+  navComments: "Comments",
   navLogs: "Logs",
   navSettings: "Settings",
   navLogout: "Logout",
@@ -67,8 +68,11 @@ const en = {
   refreshFailed: "refresh failed",
   allEnabledKeywords: "All enabled keywords",
   newKeyword: "New keyword",
+  maxPages: "Max pages",
+  maxPagesPlaceholder: "Default",
   runSearchCrawl: "Collect now",
   stopCrawl: "Stop",
+  cancelRefreshToken: "Cancel",
   jobRunningFor: "Collecting now: {keyword}",
   refreshStatusIdle: "Idle",
   refreshStatusRunning: "Refreshing…",
@@ -116,6 +120,26 @@ const en = {
   columnPassword: "Password",
   column2fa: "2FA secret",
   removeAccountConfirm: "Remove this account?",
+  searchAccountsPlaceholder: "Search by account ID, email, or platform...",
+  columnHealth: "Status",
+  columnLastChecked: "Last checked",
+  checkAccountAction: "Check",
+  resetCookiesAction: "Reset cookies",
+  // account.last_check_status - see lib/accountHealth.ts. checkNeverChecked
+  // is a FE-only label (last_check_status is null, no check ever ran) -
+  // distinct from checkStatusUnknown, which is a real backend value
+  // (checked, but this platform has no health-check strategy yet).
+  checkStatusOk: "Working",
+  checkStatusWarning: "Degraded",
+  checkStatusDisabled: "Disabled",
+  checkStatusUnknown: "No signal available",
+  checkNeverChecked: "Not checked yet",
+
+  // SettingsSummary
+  totalAccountsStat: "Total accounts",
+  activeAccountsStat: "Enabled",
+  pausedAccountsStat: "Disabled",
+  activeProxiesStat: "Active proxies",
 
   // ProxiesTable
   networkProxiesTitle: "Network proxies",
@@ -165,6 +189,22 @@ const en = {
   // PostDetailModal
   postDetail: "Post detail",
   openOriginal: "Open original",
+  commentsTitle: "Comments",
+  fetchComments: "Fetch comments",
+  commentsRequested: "Requested - comments will appear here shortly",
+  noCommentsYet: "No comments collected yet",
+  commentsUnavailable: "Comments aren't available for this platform yet",
+
+  // PostsReview bulk selection
+  fetchCommentsSelected: "Fetch comments for {n} selected",
+  commentsRequestedBulk: "Requested comments for {n} posts",
+  commentsRequestedBulkPartial: "Requested {published} of {requested} posts (some failed to queue)",
+  selectFacebookPostsHint: "Select posts below to fetch their comments",
+
+  // CommentsReview (dedicated Comments tab)
+  recentlyCollectedComments: "Recently collected comments",
+  commentsTotal: "{n} comments",
+  columnOnPost: "On post",
 
   // LoginScreen
   enterAccessKey: "Enter the access key to continue",
@@ -188,13 +228,47 @@ const en = {
 
   openNavigation: "Open navigation",
 
+  // PlatformTabs refresh button
+  statsUpdatedAt: "Updated {time}",
+
   // Locale switcher itself
   language: "Language",
+
+  // Toasts - useTriggerCrawl / useSettings
+  toastCrawlPublished: "{platform}: sent collection request for {published}/{requested} keyword(s)",
+  toastTokenRefreshRequested: "{platform}: login refresh requested",
+  toastTokenRefreshFailed: "Couldn't send the refresh request. Please try again.",
+  toastStopRequested: "{platform}: stop requested",
+  toastNothingToStop: "{platform}: nothing running to stop",
+  toastAccountAdded: "Account added",
+  toastAccountUpdated: "Account updated",
+  toastAccountRemoved: "Account removed",
+  toastProxyAdded: "Proxy added",
+  toastProxyUpdated: "Proxy updated",
+  toastProxyRemoved: "Proxy removed",
+  toastAccountChecked: "Check result: {status}",
+  toastCookiesResetRequested: "Cookie reset requested",
+  toastCookiesResetFailed: "Could not request cookie reset",
+
+  // API error codes (cinemark-api's error.code - see app/core/errors.py) ->
+  // user-facing text. Every AppError subclass the backend raises has a fixed
+  // code, so this is a closed set; requestFailed/requestFailedStatus below
+  // are the fallback for anything outside it (e.g. the browser's own network
+  // error when the request never reached the server at all).
+  errorNotFound: "Not found",
+  errorUnauthorized: "You're not signed in",
+  errorForbidden: "You don't have access to do that",
+  errorValidation: "Some of this information isn't valid",
+  errorConflict: "That already exists",
+  errorInternal: "Something went wrong. Please try again.",
+  requestFailed: "Request failed",
+  requestFailedStatus: "Request failed ({status})",
 } as const;
 
 const vi: Record<keyof typeof en, string> = {
   navOverview: "Tổng quan",
   navPosts: "Bài viết",
+  navComments: "Bình luận",
   navLogs: "Nhật ký",
   navSettings: "Cài đặt",
   navLogout: "Đăng xuất",
@@ -239,8 +313,11 @@ const vi: Record<keyof typeof en, string> = {
   refreshFailed: "làm mới thất bại",
   allEnabledKeywords: "Tất cả từ khoá đang bật",
   newKeyword: "Thêm từ khoá",
+  maxPages: "Số trang tối đa",
+  maxPagesPlaceholder: "Mặc định",
   runSearchCrawl: "Thu thập ngay",
   stopCrawl: "Dừng",
+  cancelRefreshToken: "Huỷ",
   jobRunningFor: "Đang thu thập: {keyword}",
   refreshStatusIdle: "Chưa chạy",
   refreshStatusRunning: "Đang làm mới…",
@@ -259,8 +336,8 @@ const vi: Record<keyof typeof en, string> = {
 
   editAccount: "Sửa tài khoản",
   addAccount: "Thêm tài khoản",
-  deviceId: "Device ID",
-  accountIdLabel: "Account ID (email/số điện thoại/username đăng nhập)",
+  deviceId: "ID Thiết bị",
+  accountIdLabel: "ID Tài khoản (Email/số điện thoại/username đăng nhập)",
   recoveryEmail: "Email khôi phục",
   recoveryEmailPassword: "Mật khẩu email khôi phục",
   twoFaSecret: "Mã bí mật 2FA",
@@ -278,12 +355,27 @@ const vi: Record<keyof typeof en, string> = {
 
   authCredentialsTitle: "Tài khoản đăng nhập",
   authCredentialsDesc: "Tài khoản dùng để đăng nhập và thu thập bài viết từng nền tảng.",
-  columnAccountId: "Account ID",
+  columnAccountId: "ID Tài khoản",
   columnEmail: "Email",
   columnEmailPassword: "Mật khẩu email",
   columnPassword: "Mật khẩu",
   column2fa: "Mã 2FA",
   removeAccountConfirm: "Xoá tài khoản này?",
+  searchAccountsPlaceholder: "Tìm theo ID tài khoản, email hoặc nền tảng...",
+  columnHealth: "Trạng thái",
+  columnLastChecked: "Kiểm tra gần nhất",
+  checkAccountAction: "Kiểm tra",
+  resetCookiesAction: "Reset cookie",
+  checkStatusOk: "Đang hoạt động tốt",
+  checkStatusWarning: "Có dấu hiệu bất thường",
+  checkStatusDisabled: "Đã tắt",
+  checkStatusUnknown: "Chưa có tín hiệu",
+  checkNeverChecked: "Chưa kiểm tra",
+
+  totalAccountsStat: "Tổng tài khoản",
+  activeAccountsStat: "Đang bật",
+  pausedAccountsStat: "Đang tắt",
+  activeProxiesStat: "Proxy đang hoạt động",
 
   networkProxiesTitle: "Proxy mạng",
   networkProxiesDesc: "Proxy riêng từng nền tảng hoặc dùng chung khi thu thập bài viết.",
@@ -326,6 +418,20 @@ const vi: Record<keyof typeof en, string> = {
 
   postDetail: "Chi tiết bài viết",
   openOriginal: "Xem bài gốc",
+  commentsTitle: "Bình luận",
+  fetchComments: "Lấy bình luận",
+  commentsRequested: "Đã yêu cầu - bình luận sẽ hiện ra đây sau ít phút",
+  noCommentsYet: "Chưa thu thập bình luận nào",
+  commentsUnavailable: "Nền tảng này chưa hỗ trợ xem bình luận",
+
+  fetchCommentsSelected: "Lấy bình luận cho {n} bài đã chọn",
+  commentsRequestedBulk: "Đã yêu cầu lấy bình luận cho {n} bài viết",
+  commentsRequestedBulkPartial: "Đã yêu cầu {published}/{requested} bài viết (một số bài lỗi khi gửi yêu cầu)",
+  selectFacebookPostsHint: "Chọn các bài bên dưới để lấy bình luận",
+
+  recentlyCollectedComments: "Bình luận mới thu thập",
+  commentsTotal: "{n} bình luận",
+  columnOnPost: "Thuộc bài viết",
 
   enterAccessKey: "Nhập mã truy cập để tiếp tục",
   invalidAccessKey: "Mã truy cập không đúng",
@@ -346,7 +452,33 @@ const vi: Record<keyof typeof en, string> = {
 
   openNavigation: "Mở điều hướng",
 
+  statsUpdatedAt: "Cập nhật {time}",
+
   language: "Ngôn ngữ",
+
+  toastCrawlPublished: "{platform}: đã gửi yêu cầu thu thập cho {published}/{requested} từ khoá",
+  toastTokenRefreshRequested: "{platform}: đã gửi yêu cầu làm mới đăng nhập",
+  toastTokenRefreshFailed: "Không gửi được yêu cầu làm mới. Vui lòng thử lại.",
+  toastStopRequested: "{platform}: đã gửi yêu cầu dừng",
+  toastNothingToStop: "{platform}: không có gì đang chạy để dừng",
+  toastAccountAdded: "Đã thêm tài khoản",
+  toastAccountUpdated: "Đã cập nhật tài khoản",
+  toastAccountRemoved: "Đã xoá tài khoản",
+  toastProxyAdded: "Đã thêm proxy",
+  toastProxyUpdated: "Đã cập nhật proxy",
+  toastProxyRemoved: "Đã xoá proxy",
+  toastAccountChecked: "Kết quả kiểm tra: {status}",
+  toastCookiesResetRequested: "Đã gửi yêu cầu reset cookie",
+  toastCookiesResetFailed: "Không gửi được yêu cầu reset cookie",
+
+  errorNotFound: "Không tìm thấy",
+  errorUnauthorized: "Bạn chưa đăng nhập",
+  errorForbidden: "Bạn không có quyền thực hiện việc này",
+  errorValidation: "Một số thông tin không hợp lệ",
+  errorConflict: "Đã tồn tại rồi",
+  errorInternal: "Đã có lỗi xảy ra. Vui lòng thử lại.",
+  requestFailed: "Yêu cầu thất bại",
+  requestFailedStatus: "Yêu cầu thất bại ({status})",
 };
 
 export const translations = { en, vi };

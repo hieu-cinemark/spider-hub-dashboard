@@ -1,14 +1,14 @@
 "use client";
 
 import { HeartOutlined, LinkOutlined, MessageOutlined, RetweetOutlined } from "@ant-design/icons";
-import { Empty, Select, Space, Table, Typography } from "antd";
-import { useState } from "react";
+import { Button, Empty, Select, Space, Table, Typography } from "antd";
+import { type Key, useState } from "react";
 import DashboardCard from "@/components/DashboardCard";
 import PlatformBadge from "@/components/PlatformBadge";
 import { useQueryParam } from "@/hooks/useQueryParam";
-import { usePosts } from "@/hooks/useStats";
+import { usePosts, useRunCommentsBulk } from "@/hooks/useStats";
 import { useTranslation } from "@/i18n/LocaleProvider";
-import { POSTS_PAGE_SIZE } from "@/lib/constants";
+import { COMMENT_SUPPORTED_PLATFORMS, POSTS_PAGE_SIZE } from "@/lib/constants";
 import { formatRelativeTime } from "@/lib/format";
 import type { Post } from "@/lib/types";
 import PostDetailModal from "./PostDetailModal";
@@ -20,7 +20,14 @@ export default function PostsReview() {
   const page = Math.max(0, (Number(pageParam) || 1) - 1);
   const setPage = (nextPage: number) => setPageParam(String(nextPage + 1));
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+  // Cleared on every page/filter change (new `data.items`) rather than kept
+  // across pages - Table's own rowSelection only knows about rows on the
+  // currently rendered page, so a key surviving a page turn would silently
+  // point at a post no longer visible/selectable, and a bulk-fetch button
+  // stuck showing a mismatched count.
+  const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([]);
   const { data, isLoading, isPlaceholderData } = usePosts(platform, page);
+  const runCommentsBulk = useRunCommentsBulk();
 
   const platformFilterOptions = [
     { value: undefined, label: t("allPlatformsFilter") },
@@ -28,6 +35,11 @@ export default function PostsReview() {
     { value: "threads", label: "Threads" },
     { value: "tiktok", label: "TikTok" },
   ];
+
+  function goToPage(nextPage: number) {
+    setSelectedRowKeys([]);
+    setPage(nextPage);
+  }
 
   return (
     <DashboardCard>
@@ -43,11 +55,32 @@ export default function PostsReview() {
           value={platform}
           onChange={(value) => {
             setPlatform(value);
-            setPage(0);
+            goToPage(0);
           }}
           options={platformFilterOptions}
         />
       </div>
+      {selectedRowKeys.length > 0 && (
+        <div className="mb-3 flex items-center justify-between rounded-md bg-[#f0f5ff] px-3 py-2">
+          <Typography.Text className="text-sm">{t("selectFacebookPostsHint")}</Typography.Text>
+          <Button
+            size="small"
+            type="primary"
+            loading={runCommentsBulk.isPending}
+            onClick={() => {
+              const byId = new Map((data?.items ?? []).map((p) => [p.id, p]));
+              const posts = selectedRowKeys
+                .map((key) => byId.get(String(key)))
+                .filter((p): p is Post => p !== undefined)
+                .map((p) => ({ platform: p.platform, postId: p.id }));
+              runCommentsBulk.mutate(posts);
+              setSelectedRowKeys([]);
+            }}
+          >
+            {t("fetchCommentsSelected", { n: String(selectedRowKeys.length) })}
+          </Button>
+        </div>
+      )}
       <Table<Post>
         size="small"
         rowKey="id"
@@ -56,11 +89,22 @@ export default function PostsReview() {
         dataSource={data?.items ?? []}
         locale={{ emptyText: <Empty description={t("noPostsYet")} /> }}
         onRow={(record) => ({ onClick: () => setSelectedPost(record), className: "cursor-pointer" })}
+        rowSelection={{
+          selectedRowKeys,
+          onChange: setSelectedRowKeys,
+          // Comments crawling is facebook-only (see cinemark-api's
+          // get_comment_mapper) - a non-facebook row simply can't be
+          // selected, rather than letting it through and failing silently
+          // once the bulk request reaches the backend.
+          getCheckboxProps: (record: Post) => ({
+            disabled: !(COMMENT_SUPPORTED_PLATFORMS as readonly string[]).includes(record.platform),
+          }),
+        }}
         pagination={{
           current: page + 1,
           pageSize: POSTS_PAGE_SIZE,
           total: data?.total ?? 0,
-          onChange: (nextPage) => setPage(nextPage - 1),
+          onChange: (nextPage) => goToPage(nextPage - 1),
           showTotal: (total) => t("postsTotal", { n: total.toLocaleString() }),
           responsive: true,
         }}
