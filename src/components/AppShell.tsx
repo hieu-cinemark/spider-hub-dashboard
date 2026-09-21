@@ -6,63 +6,119 @@ import {
   FileTextOutlined,
   LogoutOutlined,
   MenuOutlined,
+  PlaySquareOutlined,
   SettingOutlined,
+  ThunderboltOutlined,
   UnorderedListOutlined,
 } from "@ant-design/icons";
-import { Button, Layout, Menu, Typography } from "antd";
+import { Badge, Button, Layout, Menu, Tag, Typography } from "antd";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useMemo, useState, type ReactNode } from "react";
 import Logo from "@/components/Logo";
 import LocaleSwitcher from "@/components/LocaleSwitcher";
+import ThemeToggle from "@/components/ThemeToggle";
+import { useCrawlHealth } from "@/hooks/useCrawlHealth";
+import { useJobsSnapshot, type JobsPollMode } from "@/hooks/useJobs";
 import { useTranslation } from "@/i18n/LocaleProvider";
 import type { TranslationKey } from "@/i18n/translations";
 import { logout } from "@/lib/auth";
 
 const { Header, Sider, Content } = Layout;
 
-const SIDER_WIDTH = 200;
+const SIDER_WIDTH = 236;
 
-const NAV_ITEMS: { key: string; labelKey: TranslationKey; icon: ReactNode }[] =
-  [
-    { key: "/", labelKey: "navOverview", icon: <DashboardOutlined /> },
-    { key: "/posts", labelKey: "navPosts", icon: <UnorderedListOutlined /> },
-    { key: "/comments", labelKey: "navComments", icon: <CommentOutlined /> },
-    { key: "/logs", labelKey: "navLogs", icon: <FileTextOutlined /> },
-    { key: "/settings", labelKey: "navSettings", icon: <SettingOutlined /> },
-  ];
+type NavItem = { key: string; labelKey: TranslationKey; icon: ReactNode; section: "ops" | "data" | "system" };
+
+const NAV_ITEMS: NavItem[] = [
+  { key: "/", labelKey: "navOverview", icon: <DashboardOutlined />, section: "ops" },
+  { key: "/jobs", labelKey: "navJobs", icon: <ThunderboltOutlined />, section: "ops" },
+  { key: "/posts", labelKey: "navPosts", icon: <UnorderedListOutlined />, section: "data" },
+  { key: "/comments", labelKey: "navComments", icon: <CommentOutlined />, section: "data" },
+  { key: "/movies", labelKey: "navMovies", icon: <PlaySquareOutlined />, section: "data" },
+  { key: "/logs", labelKey: "navLogs", icon: <FileTextOutlined />, section: "system" },
+  { key: "/settings", labelKey: "navSettings", icon: <SettingOutlined />, section: "system" },
+];
+
+function pathToKey(pathname: string): string {
+  const match = NAV_ITEMS.find((item) => item.key !== "/" && pathname.startsWith(item.key));
+  return match?.key ?? "/";
+}
 
 export default function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { t } = useTranslation();
-  // `collapsed` mirrors Sider's own breakpoint logic (true below the "lg"
-  // breakpoint - narrow/mobile viewports) and also controls the desktop
-  // content margin. `mobileOpen` is separate: whether the drawer is
-  // currently pulled out over the content on one of those narrow
-  // viewports. Without this split, a narrow-viewport user had literally no
-  // way back into the nav once Sider auto-collapsed to 0 width - there was
-  // no trigger at all (Sider's own `collapsible` was never turned on).
+  const selected = pathToKey(pathname);
+  const opsSurface = selected === "/" || selected === "/jobs" || selected === "/logs";
+
+  const jobsMode: JobsPollMode = selected === "/" || selected === "/jobs" ? "live" : "slow";
+  const { data: jobs } = useJobsSnapshot(jobsMode);
+  const { health } = useCrawlHealth(opsSurface);
+
+  const liveCount = (jobs?.running.length ?? 0) + (jobs?.queued.length ?? 0);
+  const runningLabel = jobs?.running[0]?.label || jobs?.queued[0]?.label || "";
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  // Closing the drawer on navigation, not on outside-click alone, so
-  // tapping a nav link doesn't leave it stuck open behind the new page.
-  // Adjusting state during render (React's documented pattern for "reset
-  // when a prop changes") instead of an effect - an effect here would
-  // commit the still-open drawer for one frame before the reset re-render.
   const [renderedPathname, setRenderedPathname] = useState(pathname);
   if (renderedPathname !== pathname) {
     setRenderedPathname(pathname);
     setMobileOpen(false);
   }
 
-  const activeNavItem = NAV_ITEMS.find((item) => item.key === pathname) ?? NAV_ITEMS[0];
+  const activeNavItem = NAV_ITEMS.find((item) => item.key === selected) ?? NAV_ITEMS[0];
+
+  const menuItems = useMemo(() => {
+    const sections: { id: NavItem["section"]; labelKey: TranslationKey }[] = [
+      { id: "ops", labelKey: "navSectionOps" },
+      { id: "data", labelKey: "navSectionData" },
+      { id: "system", labelKey: "navSectionSystem" },
+    ];
+
+    return sections.flatMap((section) => {
+      const rows = NAV_ITEMS.filter((item) => item.section === section.id);
+      return [
+        {
+          type: "group" as const,
+          key: `section-${section.id}`,
+          label: <span className="nav-section-label !px-0 !pt-2 !pb-0">{t(section.labelKey)}</span>,
+          children: rows.map((item) => ({
+            key: item.key,
+            icon:
+              item.key === "/logs" && health.errorCount > 0 ? (
+                <Badge size="small" count={health.errorCount} overflowCount={99} offset={[6, 0]}>
+                  {item.icon}
+                </Badge>
+              ) : item.key === "/jobs" && liveCount > 0 ? (
+                <Badge size="small" count={liveCount} overflowCount={99} offset={[6, 0]}>
+                  {item.icon}
+                </Badge>
+              ) : (
+                item.icon
+              ),
+            label: (
+              <Link
+                href={
+                  item.key === "/logs" && health.errorCount > 0
+                    ? "/logs?log=spider-hub&level=error"
+                    : item.key
+                }
+              >
+                {t(item.labelKey)}
+              </Link>
+            ),
+          })),
+        },
+      ];
+    });
+  }, [t, health.errorCount, liveCount]);
 
   return (
     <Layout hasSider className="min-h-screen">
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-20 bg-black/45 lg:hidden"
+          className="fixed inset-0 z-20 bg-[#0b1220]/55 lg:hidden"
           onClick={() => setMobileOpen(false)}
           aria-hidden
         />
@@ -74,7 +130,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
         trigger={null}
         collapsed={collapsed && !mobileOpen}
         onBreakpoint={setCollapsed}
-        className="!bg-[#001529]"
+        className="app-sider"
         style={{
           position: "fixed",
           insetInlineStart: 0,
@@ -84,26 +140,28 @@ export default function AppShell({ children }: { children: ReactNode }) {
           zIndex: 30,
         }}
       >
-        <div className="flex h-full flex-col justify-between">
-          <div>
-            <div className="flex items-center gap-2.5 px-5 py-4">
-              <Logo size={30} />
-              <span className="text-base font-semibold tracking-tight text-white">
-                Spider Hub
-              </span>
-            </div>
-            <Menu
-              theme="dark"
-              mode="inline"
-              selectedKeys={[pathname]}
-              className="!border-none [&_.ant-menu-item]:!transition-colors [&_.ant-menu-item]:!duration-200"
-              items={NAV_ITEMS.map((item) => ({
-                key: item.key,
-                icon: item.icon,
-                label: <Link href={item.key}>{t(item.labelKey)}</Link>,
-              }))}
+        <div className="flex h-full flex-col">
+          <div className="relative overflow-hidden px-5 pb-5 pt-5">
+            <div
+              className="pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full bg-teal-400/20 blur-2xl animate-glow-pulse"
+              aria-hidden
             />
+            <div className="relative flex items-center gap-3">
+              <Logo size={34} animate />
+              <div className="min-w-0 leading-tight">
+                <div className="truncate text-[15px] font-semibold tracking-tight text-white">Spider Hub</div>
+                <div className="truncate text-[11px] tracking-wide text-white/40 uppercase">{t("appTagline")}</div>
+              </div>
+            </div>
           </div>
+          <Menu
+            theme="dark"
+            mode="inline"
+            selectedKeys={[selected]}
+            className="!flex-1 !border-none !bg-transparent"
+            items={menuItems}
+          />
+          <div className="px-5 py-4 text-[11px] text-white/30">Cinemark · crawl ops</div>
         </div>
       </Sider>
       <Layout
@@ -112,17 +170,8 @@ export default function AppShell({ children }: { children: ReactNode }) {
           transition: "margin-inline-start 0.2s",
         }}
       >
-        <Header
-          className="flex items-center justify-between !bg-white !px-4 sm:!px-6"
-          style={{
-            position: "sticky",
-            top: 0,
-            zIndex: 10,
-            width: "100%",
-            boxShadow: "0 1px 2px 0 rgba(0,0,0,0.04), 0 2px 8px -2px rgba(0,0,0,0.05)",
-          }}
-        >
-          <div className="flex items-center gap-2.5">
+        <Header className="app-header sticky top-0 z-20 flex items-center justify-between !px-4 sm:!px-6">
+          <div className="flex min-w-0 items-center gap-3">
             {collapsed && (
               <Button
                 type="text"
@@ -132,22 +181,34 @@ export default function AppShell({ children }: { children: ReactNode }) {
                 aria-label={t("openNavigation")}
               />
             )}
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#2f54eb]/8 text-base text-[#2f54eb]">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--accent)]/12 text-base text-[var(--accent)]">
               {activeNavItem.icon}
             </span>
-            <Typography.Title level={4} className="!mb-0 truncate">
+            <Typography.Title level={4} className="!mb-0 truncate !font-semibold !tracking-tight">
               {t(activeNavItem.labelKey)}
             </Typography.Title>
+            {liveCount > 0 && (
+              <Tag
+                color="processing"
+                className="!mr-0 inline-flex max-w-[280px] cursor-pointer items-center gap-1.5 truncate"
+                onClick={() => router.push("/jobs")}
+              >
+                <span className="queue-live-dot" />
+                {t("crawlQueueCount", { n: liveCount })}
+                {runningLabel ? ` · ${runningLabel}` : ""}
+              </Tag>
+            )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
+            <ThemeToggle />
             <LocaleSwitcher variant="light" />
-            <Button type="text" icon={<LogoutOutlined />} onClick={logout} className="!text-[#595959]">
+            <Button type="text" icon={<LogoutOutlined />} onClick={logout} className="!text-[var(--ink-soft)]">
               {t("navLogout")}
             </Button>
           </div>
         </Header>
-        <Content className="bg-[#f5f5f7] p-3 sm:p-6">
-          <div key={pathname} className="animate-fade-in-up">
+        <Content className="page-canvas p-4 sm:p-7">
+          <div key={pathname} className="mx-auto max-w-[1280px] animate-fade-in-up">
             {children}
           </div>
         </Content>

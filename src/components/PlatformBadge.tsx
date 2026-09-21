@@ -1,3 +1,4 @@
+import { Tooltip } from "antd";
 import { PlatformIcon, platformColor, platformLabel, platformSoftBg } from "@/lib/platform";
 
 // A platform's icon in a soft-tinted rounded-square badge, optionally with
@@ -16,7 +17,7 @@ export default function PlatformBadge({
   showLabel?: boolean;
   size?: number;
 }) {
-  return (
+  const badge = (
     <span className="inline-flex items-center gap-2">
       <span
         className="inline-flex shrink-0 items-center justify-center rounded-lg"
@@ -30,7 +31,9 @@ export default function PlatformBadge({
       >
         <PlatformIcon platform={platform} />
       </span>
-      {showLabel && <span className="text-sm font-medium text-[#262626]">{label ?? platformLabel(platform)}</span>}
+      {showLabel && <span className="text-sm font-medium text-[var(--ink)]">{label ?? platformLabel(platform)}</span>}
     </span>
   );
+  if (showLabel) return badge;
+  return <Tooltip title={label ?? platformLabel(platform)}>{badge}</Tooltip>;
 }

@@ -5,17 +5,13 @@ import { SUPPORTED_LOCALES, type Locale } from "@/i18n/translations";
 
 const LOCALE_LABEL: Record<Locale, string> = { en: "EN", vi: "VI" };
 
-// "dark" (default) is tuned for the Sider's navy background (translucent
-// white pill); "light" is for placing this on a white/light surface (the
-// header) instead, where the dark-variant's near-invisible translucent
-// white background and white-on-white selected state wouldn't read at all.
 export default function LocaleSwitcher({ variant = "dark" }: { variant?: "dark" | "light" }) {
   const { locale, setLocale, t } = useTranslation();
   const isLight = variant === "light";
 
   return (
     <div
-      className={`flex items-center gap-1 rounded-lg p-0.5 ${isLight ? "bg-black/5" : "bg-white/10"}`}
+      className={`flex items-center gap-1 rounded-full p-0.5 ${isLight ? "bg-[var(--paper-deep)]" : "bg-white/10"}`}
       role="group"
       aria-label={t("language")}
     >
@@ -24,13 +20,13 @@ export default function LocaleSwitcher({ variant = "dark" }: { variant?: "dark" 
           key={option}
           type="button"
           onClick={() => setLocale(option)}
-          className={`rounded-md px-2 py-1 text-xs font-medium transition-colors ${
+          className={`rounded-full px-2.5 py-1 text-xs font-semibold tracking-wide transition-colors ${
             option === locale
               ? isLight
-                ? "bg-white text-[#0f172a] shadow-sm"
-                : "bg-white text-[#0f172a]"
+                ? "bg-[var(--card)] text-[var(--ink)] shadow-sm"
+                : "bg-white text-[#12141a]"
               : isLight
-                ? "text-[#595959] hover:text-[#141414]"
+                ? "text-[var(--muted)] hover:text-[var(--ink)]"
                 : "text-white/70 hover:text-white"
           }`}
         >

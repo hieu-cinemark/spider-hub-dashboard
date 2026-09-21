@@ -11,7 +11,7 @@ import Image from "next/image";
 export default function Logo({ size = 36, animate = false }: { size?: number; animate?: boolean }) {
   return (
     <span
-      className={`inline-flex shrink-0 items-center justify-center rounded-xl bg-[#0f172a] shadow-sm ${animate ? "animate-logo-float" : ""}`}
+      className={`inline-flex shrink-0 items-center justify-center rounded-2xl bg-[#12141a] shadow-sm ${animate ? "animate-logo-float" : ""}`}
       style={{ width: size, height: size, padding: size * 0.16 }}
     >
       <Image

@@ -9,7 +9,7 @@ const ERROR_CODE_KEYS: Record<string, TranslationKey> = {
   not_found: "errorNotFound",
   unauthorized: "errorUnauthorized",
   forbidden: "errorForbidden",
-  validation_error: "errorValidation",
+  no_saved_session: "errorNoSavedSession",
   conflict: "errorConflict",
   upstream_error: "couldNotReachApi",
   internal_error: "errorInternal",

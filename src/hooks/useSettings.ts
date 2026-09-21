@@ -4,11 +4,23 @@ import { useTranslation } from "@/i18n/LocaleProvider";
 import { checkStatusLabelKey } from "@/lib/accountHealth";
 import { api } from "@/lib/api";
 import { translateApiError } from "@/lib/apiError";
-import { REFRESH_INTERVAL_MS } from "@/lib/constants";
-import type { AccountInput, ProxyInput } from "@/lib/types";
+import { REFRESH_INTERVAL_MS, QUERY_KEYS } from "@/lib/constants";
+import type {
+  AccountInput,
+  AiSettingsInput,
+  CrawlScheduleInput,
+  FilterKeywordInput,
+  NurtureInput,
+  ImportCommitParams,
+  ImportParseParams,
+  ProxyInput,
+} from "@/lib/types";
 
-const ACCOUNTS_KEY = ["settings", "accounts"];
+const ACCOUNTS_KEY = QUERY_KEYS.settingsAccounts;
+const CRAWL_SCHEDULE_KEY = ["settings", "crawl-schedule"];
 const PROXIES_KEY = ["settings", "proxies"];
+const FILTER_KEYWORDS_KEY = ["settings", "filter-keywords"];
+const AI_SETTINGS_KEY = ["settings", "ai"];
 
 export function useAccounts() {
   // `enabled` and last_check_status/last_checked_at can change from
@@ -70,6 +82,21 @@ export function useAccountMutations() {
     onError,
   });
 
+  const nurture = useMutation({
+    mutationFn: (input: NurtureInput) => api.nurtureAccounts(input),
+    onSuccess: (res) => {
+      if (res.ok) message.success(t("toastNurtureQueued", { n: res.queued }));
+      else message.warning(t("toastNurtureFailed"));
+      queryClient.invalidateQueries({ queryKey: ["job-status"] });
+    },
+    onError,
+  });
+
+  const totpCode = useMutation({
+    mutationFn: (id: number) => api.getTotpCode(id),
+    onError,
+  });
+
   const resetCookies = useMutation({
     mutationFn: (id: number) => api.resetTiktokCookies(id),
     onSuccess: (res) => {
@@ -79,7 +106,43 @@ export function useAccountMutations() {
     onError,
   });
 
-  return { create, update, remove, check, resetCookies };
+  const resetProxy = useMutation({
+    mutationFn: (id: number) => api.resetAccountProxy(id),
+    onSuccess: () => {
+      message.success(t("toastProxyResetRequested"));
+      invalidate();
+      queryClient.invalidateQueries({ queryKey: PROXIES_KEY });
+    },
+    onError,
+  });
+
+  const setProxy = useMutation({
+    mutationFn: ({ id, proxyId }: { id: number; proxyId: number }) => api.setAccountProxy(id, proxyId),
+    onSuccess: () => {
+      message.success(t("toastProxyResetRequested"));
+      invalidate();
+      queryClient.invalidateQueries({ queryKey: PROXIES_KEY });
+    },
+    onError,
+  });
+
+  // No bulk enable/disable - `enabled` is pool-owned now (see AccountsTable's
+  // now-read-only Switch column), not something to flip in bulk from here.
+  const bulkRemove = useMutation({
+    mutationFn: async (ids: number[]) => {
+      const results = await Promise.allSettled(ids.map((id) => api.deleteAccount(id)));
+      const failed = results.filter((r) => r.status === "rejected").length;
+      return { failed, total: ids.length };
+    },
+    onSuccess: ({ failed, total }) => {
+      if (failed > 0) message.warning(t("toastBulkPartialFailure", { failed, total }));
+      else message.success(t("toastBulkRemoved", { total }));
+      invalidate();
+    },
+    onError,
+  });
+
+  return { create, update, remove, check, nurture, totpCode, resetCookies, resetProxy, setProxy, bulkRemove };
 }
 
 export function useProxies() {
@@ -124,6 +187,108 @@ export function useProxyMutations() {
   return { create, update, remove };
 }
 
-export function useCronJobs() {
-  return useQuery({ queryKey: ["cron-jobs"], queryFn: api.cronJobs, refetchInterval: 60_000 });
+export function useFilterKeywords() {
+  return useQuery({ queryKey: FILTER_KEYWORDS_KEY, queryFn: () => api.filterKeywords() });
+}
+
+export function useFilterKeywordMutations() {
+  const { message } = App.useApp();
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: FILTER_KEYWORDS_KEY });
+
+  const onError = (err: unknown) => message.error(translateApiError(err, t));
+
+  const create = useMutation({
+    mutationFn: (input: FilterKeywordInput) => api.createFilterKeyword(input),
+    onSuccess: () => {
+      message.success(t("toastFilterKeywordAdded"));
+      invalidate();
+    },
+    onError,
+  });
+
+  const update = useMutation({
+    mutationFn: ({ id, input }: { id: number; input: FilterKeywordInput }) => api.updateFilterKeyword(id, input),
+    onSuccess: () => {
+      message.success(t("toastFilterKeywordUpdated"));
+      invalidate();
+    },
+    onError,
+  });
+
+  const remove = useMutation({
+    mutationFn: (id: number) => api.deleteFilterKeyword(id),
+    onSuccess: () => {
+      message.success(t("toastFilterKeywordRemoved"));
+      invalidate();
+    },
+    onError,
+  });
+
+  return { create, update, remove };
+}
+
+export function useImportMutations() {
+  const { message } = App.useApp();
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const onError = (err: unknown) => message.error(translateApiError(err, t));
+
+  const parse = useMutation({
+    mutationFn: (params: ImportParseParams) => api.importParse(params),
+    onError,
+  });
+
+  const commit = useMutation({
+    mutationFn: (params: ImportCommitParams) => api.importCommit(params),
+    onSuccess: (res, params) => {
+      if (res.failed > 0) message.warning(t("toastImportPartial", { created: res.created, failed: res.failed }));
+      else message.success(t("toastImportDone", { created: res.created }));
+      const key = params.target === "accounts" ? ACCOUNTS_KEY : PROXIES_KEY;
+      queryClient.invalidateQueries({ queryKey: key });
+    },
+    onError,
+  });
+
+  return { parse, commit };
+}
+
+export function useCrawlSchedule() {
+  return useQuery({ queryKey: CRAWL_SCHEDULE_KEY, queryFn: api.crawlSchedule });
+}
+
+export function useSetCrawlSchedule() {
+  const { message } = App.useApp();
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ platform, input }: { platform: string; input: CrawlScheduleInput }) =>
+      api.setCrawlSchedule(platform, input),
+    onSuccess: () => {
+      message.success(t("toastCrawlScheduleUpdated"));
+      queryClient.invalidateQueries({ queryKey: CRAWL_SCHEDULE_KEY });
+    },
+    onError: (err: unknown) => message.error(translateApiError(err, t)),
+  });
+}
+
+export function useAiSettings() {
+  return useQuery({ queryKey: AI_SETTINGS_KEY, queryFn: api.aiSettings });
+}
+
+export function useSetAiSettings() {
+  const { message } = App.useApp();
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: AiSettingsInput) => api.setAiSettings(input),
+    onSuccess: () => {
+      message.success(t("toastAiSettingsUpdated"));
+      queryClient.invalidateQueries({ queryKey: AI_SETTINGS_KEY });
+    },
+    onError: (err: unknown) => message.error(translateApiError(err, t)),
+  });
 }

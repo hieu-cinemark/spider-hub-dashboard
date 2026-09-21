@@ -3,7 +3,15 @@ import { App } from "antd";
 import { useTranslation } from "@/i18n/LocaleProvider";
 import { api } from "@/lib/api";
 import { translateApiError } from "@/lib/apiError";
-import { COMMENTS_PAGE_SIZE, POSTS_PAGE_SIZE, QUERY_KEYS, REFRESH_INTERVAL_MS, TIMESERIES_DAYS } from "@/lib/constants";
+import { usePollingInterval } from "@/hooks/usePollingInterval";
+import {
+  COMMENTS_PAGE_SIZE,
+  POSTS_PAGE_SIZE,
+  QUERY_KEYS,
+  REFRESH_INTERVAL_MS,
+  TIMESERIES_DAYS,
+  TOP_POSTS_LIMIT,
+} from "@/lib/constants";
 
 export function usePlatformStats() {
   return useQuery({
@@ -25,6 +33,39 @@ export function useTimeseries(days: number = TIMESERIES_DAYS) {
   });
 }
 
+export function useCommentCounts() {
+  return useQuery({
+    queryKey: QUERY_KEYS.commentCounts,
+    queryFn: api.commentCounts,
+    staleTime: REFRESH_INTERVAL_MS.stats,
+    refetchInterval: REFRESH_INTERVAL_MS.stats,
+    refetchOnWindowFocus: false,
+  });
+}
+
+export function useCommentTimeseries(days: number = TIMESERIES_DAYS) {
+  return useQuery({
+    queryKey: QUERY_KEYS.commentTimeseries(days),
+    queryFn: () => api.commentTimeseries(days),
+    staleTime: REFRESH_INTERVAL_MS.timeseries,
+    refetchInterval: REFRESH_INTERVAL_MS.timeseries,
+    refetchOnWindowFocus: false,
+  });
+}
+
+export function useKeywordVolume(platform?: string, enabled = true) {
+  const tiktokLive = platform === "tiktok";
+  const refetchInterval = usePollingInterval(tiktokLive ? 15_000 : REFRESH_INTERVAL_MS.stats, enabled && tiktokLive);
+  return useQuery({
+    queryKey: QUERY_KEYS.keywordVolume(platform),
+    queryFn: () => api.keywordVolume(platform),
+    staleTime: REFRESH_INTERVAL_MS.stats,
+    refetchInterval: tiktokLive ? refetchInterval : REFRESH_INTERVAL_MS.stats,
+    refetchOnWindowFocus: false,
+    enabled,
+  });
+}
+
 export function usePosts(platform: string | undefined, page: number) {
   const offset = page * POSTS_PAGE_SIZE;
   return useQuery({
@@ -34,15 +75,29 @@ export function usePosts(platform: string | undefined, page: number) {
   });
 }
 
-// The dedicated Comments review tab (see CommentsReview) - platform is
-// fixed to "facebook" for now since that's the only platform comments
-// exist for at all (see cinemark-api's get_comment_mapper), not exposed
-// as a filter the way usePosts' is.
-export function useAllComments(page: number) {
+// keywordId undefined (modal closed) disables the query entirely - see
+// TopPostsModal, which only ever mounts with a real keyword selected.
+export function useTopPostsByKeyword(keywordId: string | undefined) {
+  return useQuery({
+    queryKey: QUERY_KEYS.topPostsByKeyword(keywordId ?? ""),
+    queryFn: () => api.posts({ keywordId, sort: "engagement", limit: TOP_POSTS_LIMIT, offset: 0 }),
+    enabled: keywordId !== undefined,
+  });
+}
+
+export function useTopPostsByMovie(movieId: string | undefined) {
+  return useQuery({
+    queryKey: QUERY_KEYS.topPostsByMovie(movieId ?? ""),
+    queryFn: () => api.posts({ movieId, sort: "engagement", limit: TOP_POSTS_LIMIT, offset: 0 }),
+    enabled: movieId !== undefined,
+  });
+}
+
+export function useAllComments(page: number, platform?: string) {
   const offset = page * COMMENTS_PAGE_SIZE;
   return useQuery({
-    queryKey: QUERY_KEYS.allComments(offset),
-    queryFn: () => api.allComments({ platform: "facebook", limit: COMMENTS_PAGE_SIZE, offset }),
+    queryKey: QUERY_KEYS.allComments(platform, offset),
+    queryFn: () => api.allComments({ platform, limit: COMMENTS_PAGE_SIZE, offset }),
     placeholderData: (previous) => previous,
   });
 }

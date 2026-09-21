@@ -46,7 +46,8 @@ export default function ProxyFormModal({
       confirmLoading={loading}
       destroyOnHidden
       centered
-      styles={{ body: { maxHeight: "calc(100vh - 260px)", overflowY: "auto", paddingRight: 4 } }}
+      width={520}
+      styles={{ body: { maxHeight: "calc(100vh - 240px)", overflowY: "auto" } }}
     >
       <Form form={form} layout="vertical" requiredMark={false}>
         <Form.Item name="platform" label={t("platform")} rules={[{ required: true }]}>

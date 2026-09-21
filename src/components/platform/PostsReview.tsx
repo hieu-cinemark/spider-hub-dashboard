@@ -1,70 +1,60 @@
 "use client";
 
-import { HeartOutlined, LinkOutlined, MessageOutlined, RetweetOutlined } from "@ant-design/icons";
-import { Button, Empty, Select, Space, Table, Typography } from "antd";
+import { LinkOutlined, UnorderedListOutlined } from "@ant-design/icons";
+import { Button, Checkbox, Empty, Table, Typography } from "antd";
 import { type Key, useState } from "react";
-import DashboardCard from "@/components/DashboardCard";
+import DashboardCard, { CardHeading } from "@/components/DashboardCard";
+import EngagementMetrics from "@/components/EngagementMetrics";
+import { ItemCard, ItemCardList, ItemField } from "@/components/ItemCards";
 import PlatformBadge from "@/components/PlatformBadge";
-import { useQueryParam } from "@/hooks/useQueryParam";
+import PlatformFilter, { ALL_PLATFORM_QUERY } from "@/components/PlatformFilter";
+import { TableRowsSkeleton } from "@/components/PageSkeleton";
+import { useMdUp } from "@/hooks/useMdUp";
+import { useQueryRecord } from "@/hooks/useQueryParam";
 import { usePosts, useRunCommentsBulk } from "@/hooks/useStats";
 import { useTranslation } from "@/i18n/LocaleProvider";
-import { COMMENT_SUPPORTED_PLATFORMS, POSTS_PAGE_SIZE } from "@/lib/constants";
+import { COMMENT_SUPPORTED_PLATFORMS, POSTS_PAGE_SIZE, TRIGGERABLE_PLATFORMS } from "@/lib/constants";
 import { formatRelativeTime } from "@/lib/format";
 import type { Post } from "@/lib/types";
 import PostDetailModal from "./PostDetailModal";
 
+const POSTS_QUERY = { platform: ALL_PLATFORM_QUERY, page: "1" };
+
 export default function PostsReview() {
   const { t } = useTranslation();
-  const [platform, setPlatform] = useState<string | undefined>(undefined);
-  const [pageParam, setPageParam] = useQueryParam("page", "1");
-  const page = Math.max(0, (Number(pageParam) || 1) - 1);
-  const setPage = (nextPage: number) => setPageParam(String(nextPage + 1));
+  const mdUp = useMdUp();
+  const [query, setQuery] = useQueryRecord(POSTS_QUERY);
+  const platform = query.platform === ALL_PLATFORM_QUERY ? undefined : query.platform;
+  const page = Math.max(0, (Number(query.page) || 1) - 1);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
-  // Cleared on every page/filter change (new `data.items`) rather than kept
-  // across pages - Table's own rowSelection only knows about rows on the
-  // currently rendered page, so a key surviving a page turn would silently
-  // point at a post no longer visible/selectable, and a bulk-fetch button
-  // stuck showing a mismatched count.
   const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([]);
   const { data, isLoading, isPlaceholderData } = usePosts(platform, page);
   const runCommentsBulk = useRunCommentsBulk();
 
-  const platformFilterOptions = [
-    { value: undefined, label: t("allPlatformsFilter") },
-    { value: "facebook", label: "Facebook" },
-    { value: "threads", label: "Threads" },
-    { value: "tiktok", label: "TikTok" },
-  ];
-
   function goToPage(nextPage: number) {
     setSelectedRowKeys([]);
-    setPage(nextPage);
+    setQuery({ page: String(nextPage + 1) });
   }
 
   return (
-    <DashboardCard>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <Typography.Title level={5} className="!mb-0">
-          {t("recentlyScrapedPosts")}
-        </Typography.Title>
-        <Select
-          allowClear
-          placeholder={platformFilterOptions[0].label}
-          className="w-full sm:w-auto"
-          style={{ minWidth: 180 }}
-          value={platform}
-          onChange={(value) => {
-            setPlatform(value);
-            goToPage(0);
+    <DashboardCard
+      className="animate-fade-in-up"
+      title={<CardHeading icon={<UnorderedListOutlined />} title={t("recentlyScrapedPosts")} />}
+      extra={
+        <PlatformFilter
+          value={query.platform}
+          platforms={TRIGGERABLE_PLATFORMS}
+          onChange={(next) => {
+            setSelectedRowKeys([]);
+            setQuery({ platform: next, page: "1" });
           }}
-          options={platformFilterOptions}
         />
-      </div>
+      }
+    >
       {selectedRowKeys.length > 0 && (
-        <div className="mb-3 flex items-center justify-between rounded-md bg-[#f0f5ff] px-3 py-2">
-          <Typography.Text className="text-sm">{t("selectFacebookPostsHint")}</Typography.Text>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[color-mix(in_srgb,var(--accent)_28%,var(--line))] bg-[color-mix(in_srgb,var(--accent)_8%,var(--card))] px-4 py-3">
+          <Typography.Text className="text-sm text-[var(--ink-soft)]">{t("selectFacebookPostsHint")}</Typography.Text>
           <Button
-            size="small"
             type="primary"
             loading={runCommentsBulk.isPending}
             onClick={() => {
@@ -81,21 +71,20 @@ export default function PostsReview() {
           </Button>
         </div>
       )}
+      {mdUp ? (
+      isLoading && !data ? (
+        <TableRowsSkeleton rows={8} />
+      ) : (
       <Table<Post>
-        size="small"
+        size="middle"
         rowKey="id"
-        scroll={{ x: "max-content" }}
-        loading={isLoading || isPlaceholderData}
+        loading={isPlaceholderData}
         dataSource={data?.items ?? []}
         locale={{ emptyText: <Empty description={t("noPostsYet")} /> }}
         onRow={(record) => ({ onClick: () => setSelectedPost(record), className: "cursor-pointer" })}
         rowSelection={{
           selectedRowKeys,
           onChange: setSelectedRowKeys,
-          // Comments crawling is facebook-only (see cinemark-api's
-          // get_comment_mapper) - a non-facebook row simply can't be
-          // selected, rather than letting it through and failing silently
-          // once the bulk request reaches the backend.
           getCheckboxProps: (record: Post) => ({
             disabled: !(COMMENT_SUPPORTED_PLATFORMS as readonly string[]).includes(record.platform),
           }),
@@ -106,78 +95,125 @@ export default function PostsReview() {
           total: data?.total ?? 0,
           onChange: (nextPage) => goToPage(nextPage - 1),
           showTotal: (total) => t("postsTotal", { n: total.toLocaleString() }),
+          showSizeChanger: false,
+          hideOnSinglePage: false,
           responsive: true,
         }}
         columns={[
           {
             title: t("platform"),
             dataIndex: "platform",
-            width: 140,
-            render: (p: string) => <PlatformBadge platform={p} size={24} />,
+            width: 120,
+            render: (p: string) => <PlatformBadge platform={p} size={22} showLabel={false} />,
+          },
+          {
+            title: t("columnContent"),
+            dataIndex: "content",
+            render: (v: string | null, record: Post) => (
+              <div className="cell-stack max-w-[420px]">
+                <div className="flex items-start gap-2">
+                  <span className="cell-primary line-clamp-3">{v || "—"}</span>
+                  {record.url && (
+                    <a
+                      href={record.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="mt-0.5 flex shrink-0 items-center text-[var(--accent)]"
+                    >
+                      <LinkOutlined />
+                    </a>
+                  )}
+                </div>
+              </div>
+            ),
           },
           {
             title: t("columnMovieKeyword"),
             key: "movie",
             width: 180,
             render: (_: unknown, record: Post) => (
-              <div className="flex flex-col">
-                <span>{record.movie_title ?? <Typography.Text type="secondary">—</Typography.Text>}</span>
-                {record.keyword && (
-                  <Typography.Text type="secondary" className="text-xs">
-                    {record.keyword}
-                  </Typography.Text>
-                )}
+              <div className="cell-stack">
+                <span className="cell-primary truncate">{record.movie_title ?? "—"}</span>
+                {record.keyword ? <span className="cell-secondary truncate">{record.keyword}</span> : null}
               </div>
             ),
           },
-          { title: t("columnAuthor"), dataIndex: "author", width: 140, render: (v: string | null) => v || "—" },
           {
-            title: t("columnContent"),
-            dataIndex: "content",
-            width: 320,
-            render: (v: string | null, record: Post) => (
-              <div className="flex h-full items-center gap-2">
-                <span className="line-clamp-2 text-sm">{v || "—"}</span>
-                {record.url && (
-                  <a
-                    href={record.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    className="flex shrink-0 items-center"
-                  >
-                    <LinkOutlined />
-                  </a>
-                )}
-              </div>
-            ),
+            title: t("columnAuthor"),
+            dataIndex: "author",
+            width: 140,
+            render: (v: string | null) => <span className="cell-primary truncate">{v || "—"}</span>,
           },
           {
             title: t("columnEngagement"),
             key: "engagement",
-            width: 170,
+            width: 168,
             render: (_: unknown, record: Post) => (
-              <Space size="small" className="text-xs text-[#8c8c8c]">
-                <span>
-                  <HeartOutlined /> {record.like_count.toLocaleString()}
-                </span>
-                <span>
-                  <MessageOutlined /> {record.reply_count.toLocaleString()}
-                </span>
-                <span>
-                  <RetweetOutlined /> {record.repost_count.toLocaleString()}
-                </span>
-              </Space>
+              <EngagementMetrics likes={record.like_count} replies={record.reply_count} reposts={record.repost_count} />
             ),
           },
           {
             title: t("columnScraped"),
             dataIndex: "scraped_at",
-            width: 110,
-            render: (v: string) => formatRelativeTime(v, t),
+            width: 120,
+            render: (v: string) => <span className="cell-meta">{formatRelativeTime(v, t)}</span>,
           },
         ]}
       />
+      )
+      ) : (
+          <ItemCardList
+            items={data?.items ?? []}
+            loading={isLoading || isPlaceholderData}
+            empty={<Empty description={t("noPostsYet")} />}
+            rowKey={(p) => p.id}
+            pagination={{
+              current: page + 1,
+              pageSize: POSTS_PAGE_SIZE,
+              total: data?.total ?? 0,
+              onChange: (nextPage) => goToPage(nextPage - 1),
+              showTotal: (total) => t("postsTotal", { n: total.toLocaleString() }),
+            }}
+          >
+            {(record) => {
+              const canSelect = (COMMENT_SUPPORTED_PLATFORMS as readonly string[]).includes(record.platform);
+              const selected = selectedRowKeys.includes(record.id);
+              return (
+                <ItemCard onClick={() => setSelectedPost(record)}>
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      {canSelect && (
+                        <Checkbox
+                          checked={selected}
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={(e) => {
+                            setSelectedRowKeys((keys) =>
+                              e.target.checked ? [...keys, record.id] : keys.filter((k) => k !== record.id),
+                            );
+                          }}
+                        />
+                      )}
+                      <PlatformBadge platform={record.platform} size={22} showLabel={false} />
+                    </div>
+                    <span className="text-xs text-[var(--muted)]">{formatRelativeTime(record.scraped_at, t)}</span>
+                  </div>
+                  <p className="cell-primary mb-3 line-clamp-3">{record.content || "—"}</p>
+                  <ItemField label={t("columnAuthor")}>{record.author || "—"}</ItemField>
+                  <ItemField label={t("columnMovieKeyword")}>
+                    <div className="cell-stack">
+                      <span>{record.movie_title || "—"}</span>
+                      {record.keyword ? <span className="cell-secondary">{record.keyword}</span> : null}
+                    </div>
+                  </ItemField>
+                  <ItemField label={t("columnEngagement")}>
+                    <EngagementMetrics likes={record.like_count} replies={record.reply_count} reposts={record.repost_count} />
+                  </ItemField>
+                </ItemCard>
+              );
+            }}
+          </ItemCardList>
+      )}
       <PostDetailModal post={selectedPost} onClose={() => setSelectedPost(null)} />
     </DashboardCard>
   );

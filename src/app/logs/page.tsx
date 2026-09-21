@@ -2,14 +2,19 @@
 
 import { CloudServerOutlined, RadarChartOutlined } from "@ant-design/icons";
 import { Tabs } from "antd";
-import LogViewer from "@/components/LogViewer";
+import LogSummary from "@/components/LogSummary";
+import { useQueryParam } from "@/hooks/useQueryParam";
 import { useTranslation } from "@/i18n/LocaleProvider";
 
 export default function LogsPage() {
   const { t } = useTranslation();
+  const [tab, setTab] = useQueryParam("log", "spider-hub");
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       <Tabs
+        className="ui-tabs"
+        activeKey={tab}
+        onChange={setTab}
         items={[
           {
             key: "spider-hub",
@@ -18,7 +23,7 @@ export default function LogsPage() {
                 <RadarChartOutlined /> {t("tabCrawlConsumer")}
               </span>
             ),
-            children: <LogViewer kind="spider-hub" sourceLabel={t("tabCrawlConsumer")} />,
+            children: <LogSummary kind="spider-hub" sourceLabel={t("tabCrawlConsumer")} />,
           },
           {
             key: "ingest",
@@ -27,7 +32,7 @@ export default function LogsPage() {
                 <CloudServerOutlined /> {t("tabIngestConsumer")}
               </span>
             ),
-            children: <LogViewer kind="ingest" sourceLabel={t("tabIngestConsumer")} />,
+            children: <LogSummary kind="ingest" sourceLabel={t("tabIngestConsumer")} />,
           },
         ]}
       />

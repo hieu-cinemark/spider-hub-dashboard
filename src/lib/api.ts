@@ -1,26 +1,44 @@
 import type {
   Account,
   AccountInput,
+  AiSettings,
+  AiSettingsInput,
   ApiErrorBody,
   Comment,
   CommentPage,
   CommentsQuery,
-  CronJob,
+  CrawlSchedule,
+  CrawlScheduleInput,
+  ImportCommitParams,
+  ImportCommitResponse,
+  ImportParseParams,
+  ImportParseResponse,
+  FilterKeyword,
+  FilterKeywordInput,
   JobStatus,
+  JobsSnapshot,
+  OpsMetricsResponse,
   Keyword,
+  KeywordVolume,
   LogTailResponse,
   Movie,
+  MovieInput,
+  NurtureInput,
+  NurtureResponse,
   PlatformStat,
   PostPage,
   PostsQuery,
   Proxy,
   ProxyInput,
+  RunChannelVideosParams,
+  RunChannelVideosResponse,
   RunCommentsResponse,
   RunScraperParams,
   RunScraperResponse,
   StopScraperResponse,
   TimeseriesPoint,
   TokenStatus,
+  TotpCodeResponse,
   TriggerTokenRefreshResponse,
 } from "./types";
 
@@ -48,12 +66,29 @@ export class ApiError extends Error {
   }
 }
 
+// Remote D1 round-trips can stall (Cloudflare HTTP API / DNS). Without a
+// client timeout the dashboard stays on isLoading forever; 15s surfaces an
+// error instead of hanging the whole Overview page.
+const REQUEST_TIMEOUT_MS = 15_000;
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE_URL}${path}`, {
-    headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
-    cache: "no-store",
-    ...init,
-  });
+  // Prefer an explicit caller signal when present; otherwise bound every
+  // call so a stuck remote-D1/API round-trip cannot leave the UI spinning.
+  const signal = init?.signal ?? AbortSignal.timeout(REQUEST_TIMEOUT_MS);
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE_URL}${path}`, {
+      headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
+      cache: "no-store",
+      ...init,
+      signal,
+    });
+  } catch (err) {
+    if (err instanceof DOMException && (err.name === "TimeoutError" || err.name === "AbortError")) {
+      throw new ApiError(`Request timed out after ${REQUEST_TIMEOUT_MS / 1000}s`, 0, "upstream_error");
+    }
+    throw err;
+  }
   if (!res.ok) {
     const body: ApiErrorBody | null = await res.json().catch(() => null);
     throw new ApiError(body?.error?.message ?? `Request failed (${res.status})`, res.status, body?.error?.code);
@@ -64,10 +99,17 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export const api = {
   platformStats: () => request<PlatformStat[]>("/stats/platforms"),
   timeseries: (days = 14) => request<TimeseriesPoint[]>(`/stats/timeseries?days=${days}`),
-  posts: ({ platform, limit, offset }: PostsQuery) =>
+  commentCounts: () => request<PlatformStat[]>("/stats/comment-counts"),
+  commentTimeseries: (days = 14) => request<TimeseriesPoint[]>(`/stats/comment-timeseries?days=${days}`),
+  keywordVolume: (platform?: string) =>
+    request<KeywordVolume[]>(`/stats/keywords${platform ? `?platform=${platform}` : ""}`),
+  posts: ({ platform, keywordId, movieId, sort, limit, offset }: PostsQuery) =>
     request<PostPage>(
       `/stats/posts?${new URLSearchParams({
         ...(platform ? { platform } : {}),
+        ...(keywordId ? { keyword_id: keywordId } : {}),
+        ...(movieId ? { movie_id: movieId } : {}),
+        ...(sort ? { sort } : {}),
         limit: String(limit),
         offset: String(offset),
       })}`,
@@ -84,6 +126,11 @@ export const api = {
     ),
   runComments: (platform: string, postId: string) =>
     request<RunCommentsResponse>(`/${platform}/posts/${postId}/comments/run`, { method: "POST" }),
+  runChannelVideos: (params: RunChannelVideosParams) =>
+    request<RunChannelVideosResponse>("/tiktok/channels/run", {
+      method: "POST",
+      body: JSON.stringify(params),
+    }),
   spiderHubLogs: (lines = 300) => request<LogTailResponse>(`/logs/spider-hub?lines=${lines}`),
   ingestLogs: (lines = 300) => request<LogTailResponse>(`/logs/ingest?lines=${lines}`),
   tokenStatus: (platform: string) => request<TokenStatus>(`/${platform}/token-status`),
@@ -93,12 +140,31 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ movie_id: movieId, keyword }),
     }),
+  setKeywordEnabled: (platform: string, keywordId: string, enabled: boolean) =>
+    request<Keyword>(`/${platform}/keywords/${keywordId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ enabled }),
+    }),
   movies: () => request<Movie[]>("/movies"),
+  createMovie: (input: MovieInput) => request<Movie>("/movies", { method: "POST", body: JSON.stringify(input) }),
+  updateMovie: (id: string, input: MovieInput) =>
+    request<Movie>(`/movies/${id}`, { method: "PATCH", body: JSON.stringify(input) }),
+  deleteMovie: (id: string) => request<{ ok: boolean }>(`/movies/${id}`, { method: "DELETE" }),
   runCrawl: (platform: string, params: RunScraperParams = {}) =>
     request<RunScraperResponse>(`/${platform}/run`, { method: "POST", body: JSON.stringify(params) }),
-  refreshToken: (platform: string) =>
-    request<TriggerTokenRefreshResponse>(`/${platform}/refresh-token`, { method: "POST" }),
+  importCookies: (platform: string, accountId: number, cookies: string) =>
+    request<TriggerTokenRefreshResponse>(`/${platform}/import-cookies`, {
+      method: "POST",
+      body: JSON.stringify({ account_id: accountId, cookies }),
+    }),
+  restoreSession: (platform: string, accountId: number) =>
+    request<TriggerTokenRefreshResponse>(`/${platform}/restore-session`, {
+      method: "POST",
+      body: JSON.stringify({ account_id: accountId }),
+    }),
   jobStatus: (platform: string) => request<JobStatus>(`/${platform}/job-status`),
+  jobs: () => request<JobsSnapshot>("/jobs"),
+  opsMetrics: () => request<OpsMetricsResponse>("/health/metrics"),
   stopCrawl: (platform: string) => request<StopScraperResponse>(`/${platform}/stop`, { method: "POST" }),
 
   // Settings: platform_accounts / platform_proxies (Supabase, see
@@ -110,7 +176,13 @@ export const api = {
     request<Account>(`/settings/accounts/${id}`, { method: "PATCH", body: JSON.stringify(input) }),
   deleteAccount: (id: number) => request<{ ok: boolean }>(`/settings/accounts/${id}`, { method: "DELETE" }),
   checkAccount: (id: number) => request<Account>(`/settings/accounts/${id}/check`, { method: "POST" }),
+  nurtureAccounts: (input: NurtureInput) =>
+    request<NurtureResponse>("/settings/accounts/nurture", { method: "POST", body: JSON.stringify(input) }),
+  getTotpCode: (id: number) => request<TotpCodeResponse>(`/settings/accounts/${id}/totp-code`, { method: "POST" }),
   resetTiktokCookies: (id: number) => request<{ ok: boolean }>(`/settings/accounts/${id}/reset-cookies`, { method: "POST" }),
+  resetAccountProxy: (id: number) => request<Account>(`/settings/accounts/${id}/reset-proxy`, { method: "POST" }),
+  setAccountProxy: (id: number, proxyId: number) =>
+    request<Account>(`/settings/accounts/${id}/set-proxy`, { method: "POST", body: JSON.stringify({ proxy_id: proxyId }) }),
 
   proxies: (platform?: string) => request<Proxy[]>(`/settings/proxies${platform ? `?platform=${platform}` : ""}`),
   createProxy: (input: ProxyInput) =>
@@ -119,5 +191,27 @@ export const api = {
     request<Proxy>(`/settings/proxies/${id}`, { method: "PATCH", body: JSON.stringify(input) }),
   deleteProxy: (id: number) => request<{ ok: boolean }>(`/settings/proxies/${id}`, { method: "DELETE" }),
 
-  cronJobs: () => request<CronJob[]>("/cron/jobs"),
+  // Settings: filter_keywords (Supabase, see cinemark-api's
+  // app/services/platform_config_db.py) - movie-relevant vs spam/off-topic
+  // keywords spider-hub reads to decide what's worth keeping.
+  filterKeywords: (category?: string) =>
+    request<FilterKeyword[]>(`/settings/filter-keywords${category ? `?category=${category}` : ""}`),
+  createFilterKeyword: (input: FilterKeywordInput) =>
+    request<FilterKeyword>("/settings/filter-keywords", { method: "POST", body: JSON.stringify(input) }),
+  updateFilterKeyword: (id: number, input: FilterKeywordInput) =>
+    request<FilterKeyword>(`/settings/filter-keywords/${id}`, { method: "PATCH", body: JSON.stringify(input) }),
+  deleteFilterKeyword: (id: number) => request<{ ok: boolean }>(`/settings/filter-keywords/${id}`, { method: "DELETE" }),
+
+  crawlSchedule: () => request<CrawlSchedule[]>("/settings/crawl-schedule"),
+  setCrawlSchedule: (platform: string, input: CrawlScheduleInput) =>
+    request<CrawlSchedule>(`/settings/crawl-schedule/${platform}`, { method: "PUT", body: JSON.stringify(input) }),
+
+  aiSettings: () => request<AiSettings>("/settings/ai"),
+  setAiSettings: (input: AiSettingsInput) =>
+    request<AiSettings>("/settings/ai", { method: "PUT", body: JSON.stringify(input) }),
+
+  importParse: (params: ImportParseParams) =>
+    request<ImportParseResponse>("/settings/import/parse", { method: "POST", body: JSON.stringify(params) }),
+  importCommit: (params: ImportCommitParams) =>
+    request<ImportCommitResponse>("/settings/import/commit", { method: "POST", body: JSON.stringify(params) }),
 };

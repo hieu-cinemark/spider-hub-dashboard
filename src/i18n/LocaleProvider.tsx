@@ -45,7 +45,8 @@ interface LocaleContextValue {
 
 const LocaleContext = createContext<LocaleContextValue | null>(null);
 
-function interpolate(template: string, vars?: Record<string, string | number>): string {
+function interpolate(template: string | undefined, vars?: Record<string, string | number>): string {
+  if (!template) return "";
   if (!vars) return template;
   return template.replace(/\{(\w+)\}/g, (match, name) => (name in vars ? String(vars[name]) : match));
 }
@@ -54,7 +55,8 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   const locale = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   const t = useCallback(
-    (key: TranslationKey, vars?: Record<string, string | number>) => interpolate(translations[locale][key], vars),
+    (key: TranslationKey, vars?: Record<string, string | number>) =>
+      interpolate(translations[locale][key] ?? translations[DEFAULT_LOCALE][key], vars),
     [locale],
   );
 

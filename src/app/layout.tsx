@@ -1,35 +1,41 @@
 import { AntdRegistry } from "@ant-design/nextjs-registry";
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { DM_Sans, IBM_Plex_Mono } from "next/font/google";
 import AppShell from "@/components/AppShell";
 import AuthGate from "@/components/auth/AuthGate";
 import "./globals.css";
 import Providers from "./providers";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const dmSans = DM_Sans({
+  variable: "--font-dm-sans",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const plexMono = IBM_Plex_Mono({
+  variable: "--font-plex-mono",
+  weight: ["400", "500"],
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
   title: "Spider Hub",
-  description: "Post counts per platform and crawl logs for the spider-hub crawl pipeline.",
+  description: "Crawl ops analytics for the spider-hub collection pipeline.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+    <html lang="en" suppressHydrationWarning className={`${dmSans.variable} ${plexMono.variable} h-full antialiased`}>
       <body className="min-h-full">
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{if(localStorage.getItem("spider-hub-dashboard.theme")==="dark"){document.documentElement.classList.add("dark");document.documentElement.dataset.theme="dark";document.documentElement.style.colorScheme="dark"}}catch(e){}`,
+          }}
+        />
         <AntdRegistry>
           <Providers>
-            <AuthGate>
-              <AppShell>{children}</AppShell>
-            </AuthGate>
+            <AppShell>
+              <AuthGate>{children}</AuthGate>
+            </AppShell>
           </Providers>
         </AntdRegistry>
       </body>

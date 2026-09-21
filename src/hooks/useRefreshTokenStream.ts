@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { REFRESH_WATCH_TIMEOUT_MS } from "@/lib/constants";
 import type { RefreshSocketMessage, RefreshStatus } from "@/lib/types";
 import { wsUrl } from "@/lib/ws";
@@ -9,15 +9,22 @@ export interface RefreshTokenStreamState {
   status: RefreshStatus;
   startedAt: string | null;
   finishedAt: string | null;
-  lines: string[];
   connected: boolean;
+}
+
+function subscribeVisibility(onStoreChange: () => void): () => void {
+  document.addEventListener("visibilitychange", onStoreChange);
+  return () => document.removeEventListener("visibilitychange", onStoreChange);
+}
+
+function getPageVisible(): boolean {
+  return typeof document === "undefined" || document.visibilityState === "visible";
 }
 
 const INITIAL: RefreshTokenStreamState = {
   status: "idle",
   startedAt: null,
   finishedAt: null,
-  lines: [],
   connected: false,
 };
 
@@ -31,16 +38,16 @@ const INITIAL: RefreshTokenStreamState = {
 // mid-flight before the reload.
 // `enabled` (default true, so Facebook/Threads are unaffected) lets a
 // caller skip opening the socket entirely - for a platform with no
-// /<platform>/refresh-token/ws route at all (TikTok has no browser-bootstrap
-// token cache to refresh - see constants.ts's PLATFORMS_WITH_TOKEN_REFRESH),
-// this hook must still be called unconditionally (rules of hooks), but
-// connecting would just retry a 404 forever.
+// refresh-token WS at all this hook must still be called unconditionally
+// (rules of hooks), but connecting would just retry a 404 forever.
+// TikTok uses the same WS for identity/cookie refresh progress.
 export function useRefreshTokenStream(platform: string, enabled: boolean = true) {
   const [state, setState] = useState<RefreshTokenStreamState>(INITIAL);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const pageVisible = useSyncExternalStore(subscribeVisibility, getPageVisible, () => true);
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || !pageVisible) return;
     let cancelled = false;
     let retryTimer: ReturnType<typeof setTimeout> | undefined;
     let ws: WebSocket | undefined;
@@ -59,18 +66,32 @@ export function useRefreshTokenStream(platform: string, enabled: boolean = true)
       ws.onopen = () => setState((s) => ({ ...s, connected: true }));
 
       ws.onmessage = (event) => {
+        // "line" messages (the per-line live tail - see cinemark-api's
+        // refresh_tracker.py) are intentionally ignored here: this hook
+        // used to accumulate every one into state, which meant a full
+        // re-render (and, in RefreshLogPanel, a full re-parse of every line
+        // seen so far) on each one - dozens per second during a busy
+        // refresh, which is what was making the dashboard heavy. Only
+        // status is shown now, so only "snapshot"/"status" are handled.
         const msg = JSON.parse(event.data) as RefreshSocketMessage;
         if (msg.type === "snapshot") {
-          setState({
-            status: msg.status,
-            startedAt: msg.started_at,
-            finishedAt: msg.finished_at,
-            lines: msg.lines,
-            connected: true,
+          setState((prev) => {
+            // Reconnect must not clobber a live run with an idle snapshot
+            // from a different API worker, or reset success back to empty.
+            if (prev.status === "running" && msg.status === "idle") {
+              return { ...prev, connected: true };
+            }
+            if (prev.status === "success" && msg.status !== "success") {
+              return { ...prev, connected: true };
+            }
+            return {
+              status: msg.status,
+              startedAt: msg.started_at,
+              finishedAt: msg.finished_at,
+              connected: true,
+            };
           });
           if (msg.status === "running") armClientTimeout();
-        } else if (msg.type === "line") {
-          setState((s) => ({ ...s, lines: [...s.lines, msg.line] }));
         } else if (msg.type === "status") {
           clearTimeout(timeoutRef.current);
           setState((s) => ({ ...s, status: msg.status, finishedAt: msg.finished_at ?? s.finishedAt }));
@@ -79,7 +100,9 @@ export function useRefreshTokenStream(platform: string, enabled: boolean = true)
 
       ws.onclose = () => {
         setState((s) => ({ ...s, connected: false }));
-        if (!cancelled) retryTimer = setTimeout(connect, 3000);
+        if (!cancelled && document.visibilityState === "visible") {
+          retryTimer = setTimeout(connect, 5000);
+        }
       };
       ws.onerror = () => ws?.close();
     }
@@ -91,7 +114,7 @@ export function useRefreshTokenStream(platform: string, enabled: boolean = true)
       clearTimeout(timeoutRef.current);
       ws?.close();
     };
-  }, [platform, enabled]);
+  }, [platform, enabled, pageVisible]);
 
   return state;
 }
