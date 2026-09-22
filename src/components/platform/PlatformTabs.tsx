@@ -14,8 +14,6 @@ import { PLATFORM_META, PlatformIcon, platformLabel } from "@/lib/platform";
 import AllPlatformsOverview from "./AllPlatformsOverview";
 import PlatformDetail from "./PlatformDetail";
 
-const HIDDEN_PLATFORMS = new Set(["instagram"]);
-
 export default function PlatformTabs() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -25,7 +23,7 @@ export default function PlatformTabs() {
 
   const platforms = Array.from(
     new Set([...Object.keys(PLATFORM_META), ...(stats ?? []).map((s) => s.platform)]),
-  ).filter((p) => !HIDDEN_PLATFORMS.has(p));
+  );
 
   function refreshOverview() {
     void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.platformStats });
@@ -42,11 +40,10 @@ export default function PlatformTabs() {
         className="ui-tabs"
         activeKey={activeTab}
         onChange={setActiveTab}
-        destroyOnHidden
         tabBarExtraContent={
           <div className="flex items-center gap-2">
             {dataUpdatedAt > 0 && (
-              <Typography.Text type="secondary" className="text-xs">
+              <Typography.Text className="text-xs font-medium text-[var(--ink-soft)]">
                 {t("statsUpdatedAt", { time: formatRelativeTime(new Date(dataUpdatedAt).toISOString(), t) })}
               </Typography.Text>
             )}

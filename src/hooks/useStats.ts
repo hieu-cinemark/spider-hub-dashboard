@@ -66,11 +66,11 @@ export function useKeywordVolume(platform?: string, enabled = true) {
   });
 }
 
-export function usePosts(platform: string | undefined, page: number) {
+export function usePosts(platform: string | undefined, page: number, keywordId?: string) {
   const offset = page * POSTS_PAGE_SIZE;
   return useQuery({
-    queryKey: QUERY_KEYS.posts(platform, offset),
-    queryFn: () => api.posts({ platform, limit: POSTS_PAGE_SIZE, offset }),
+    queryKey: QUERY_KEYS.posts(platform, offset, keywordId),
+    queryFn: () => api.posts({ platform, keywordId, limit: POSTS_PAGE_SIZE, offset }),
     placeholderData: (previous) => previous,
   });
 }
@@ -93,11 +93,11 @@ export function useTopPostsByMovie(movieId: string | undefined) {
   });
 }
 
-export function useAllComments(page: number, platform?: string) {
+export function useAllComments(page: number, platform?: string, keywordId?: string) {
   const offset = page * COMMENTS_PAGE_SIZE;
   return useQuery({
-    queryKey: QUERY_KEYS.allComments(platform, offset),
-    queryFn: () => api.allComments({ platform, limit: COMMENTS_PAGE_SIZE, offset }),
+    queryKey: QUERY_KEYS.allComments(platform, offset, keywordId),
+    queryFn: () => api.allComments({ platform, keywordId, limit: COMMENTS_PAGE_SIZE, offset }),
     placeholderData: (previous) => previous,
   });
 }

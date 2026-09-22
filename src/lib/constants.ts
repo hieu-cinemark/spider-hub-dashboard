@@ -81,11 +81,13 @@ export const QUERY_KEYS = {
   tokenStatus: (platform: string) => ["token-status", platform] as const,
   jobStatus: (platform: string) => ["job-status", platform] as const,
   logs: (kind: "spider-hub" | "ingest", lines: number) => ["logs", kind, lines] as const,
-  posts: (platform: string | undefined, offset: number) => ["posts", platform, offset] as const,
+  posts: (platform: string | undefined, offset: number, keywordId?: string) =>
+    ["posts", platform, offset, keywordId ?? ""] as const,
   topPostsByKeyword: (keywordId: string) => ["posts", "top", "keyword", keywordId] as const,
   topPostsByMovie: (movieId: string) => ["posts", "top", "movie", movieId] as const,
   comments: (postId: string) => ["comments", postId] as const,
-  allComments: (platform: string | undefined, offset: number) => ["all-comments", platform, offset] as const,
+  allComments: (platform: string | undefined, offset: number, keywordId?: string) =>
+    ["all-comments", platform, offset, keywordId ?? ""] as const,
   jobs: ["jobs"] as const,
   opsMetrics: ["ops-metrics"] as const,
   movies: ["movies"] as const,

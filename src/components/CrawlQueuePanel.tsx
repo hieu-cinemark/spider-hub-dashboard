@@ -5,7 +5,7 @@ import { Button, Tag, Typography } from "antd";
 import Link from "next/link";
 import DashboardCard from "@/components/DashboardCard";
 import PlatformBadge from "@/components/PlatformBadge";
-import { useJobsSnapshot, useStopLiveQueue, useStopPlatformJob } from "@/hooks/useJobs";
+import { useJobsSnapshot, useStopJob, useStopLiveQueue, useStoppingJobIds } from "@/hooks/useJobs";
 import { useTranslation } from "@/i18n/LocaleProvider";
 import type { TranslationKey } from "@/i18n/translations";
 import type { JobTask } from "@/lib/types";
@@ -21,7 +21,7 @@ const STATUS_KEY: Record<string, TranslationKey> = {
 
 const STATUS_COLOR: Record<string, string> = {
   running: "processing",
-  queued: "default",
+  queued: "blue",
   failed: "error",
   done: "success",
   skipped: "warning",
@@ -36,11 +36,12 @@ export default function CrawlQueuePanel({
 }) {
   const { t } = useTranslation();
   const { data } = useJobsSnapshot();
-  const stop = useStopPlatformJob();
+  const stop = useStopJob();
   const stopAll = useStopLiveQueue();
   const running = (data?.running ?? []).filter((row) => (platform ? row.platform === platform : true));
   const queued = (data?.queued ?? []).filter((row) => (platform ? row.platform === platform : true));
   const rows = [...running, ...queued];
+  const { isStopping, markStopping } = useStoppingJobIds(rows.map((row) => row.id).filter(Boolean));
   if (rows.length === 0) return null;
 
   const queuedByPlatform = queued.reduce<Record<string, number>>((acc, row) => {
@@ -48,7 +49,11 @@ export default function CrawlQueuePanel({
     return acc;
   }, {});
 
-  const stoppingPlatform = stop.isPending ? stop.variables : undefined;
+  const handleStop = (row: JobTask) => {
+    if (!row.id) return;
+    markStopping(row.id);
+    stop.mutate({ platform: row.platform, id: row.id });
+  };
   const livePlatforms = [...new Set(rows.map((row) => row.platform))];
   const stopAllButton = (
     <Button
@@ -76,10 +81,14 @@ export default function CrawlQueuePanel({
               {t("crawlQueueCount", { n: rows.length })}
             </Tag>
             {running.length > 0 ? (
-              <Tag className="!mr-0">{t("crawlQueueRunningCount", { n: running.length })}</Tag>
+              <Tag color="processing" className="!mr-0">
+                {t("crawlQueueRunningCount", { n: running.length })}
+              </Tag>
             ) : null}
             {queued.length > 0 ? (
-              <Tag className="!mr-0">{t("crawlQueueWaitingCount", { n: queued.length })}</Tag>
+              <Tag color="blue" className="!mr-0">
+                {t("crawlQueueWaitingCount", { n: queued.length })}
+              </Tag>
             ) : null}
           </span>
         }
@@ -90,13 +99,13 @@ export default function CrawlQueuePanel({
               key={`${row.platform}:${row.id || row.label}:running`}
               row={row}
               dense
-              stopping={stoppingPlatform === row.platform}
-              onStop={() => stop.mutate(row.platform)}
+              stopping={!!row.id && isStopping(row.id)}
+              onStop={() => handleStop(row)}
             />
           ))}
           {queued.length > 0 ? (
             <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--line)] bg-[var(--paper-deep)] px-3 py-2">
-              <Typography.Text type="secondary" className="text-sm">
+              <Typography.Text className="text-sm text-[var(--ink-soft)]">
                 {t("crawlQueueWaitingSummary", {
                   n: queued.length,
                   detail: Object.entries(queuedByPlatform)
@@ -134,8 +143,8 @@ export default function CrawlQueuePanel({
           <QueueItem
             key={`${row.platform}:${row.id || row.label}:${row.status}`}
             row={row}
-            stopping={stoppingPlatform === row.platform}
-            onStop={() => stop.mutate(row.platform)}
+            stopping={!!row.id && isStopping(row.id)}
+            onStop={() => handleStop(row)}
           />
         ))}
       </div>
@@ -183,7 +192,14 @@ function QueueItem({
         >
           {stopping ? t("crawlQueueStopping") : t(STATUS_KEY[row.status] ?? "crawlQueueWaiting")}
         </Tag>
-        <Button size="small" danger icon={<StopOutlined />} loading={stopping} disabled={stopping} onClick={onStop}>
+        <Button
+          size="small"
+          danger
+          icon={<StopOutlined />}
+          loading={stopping}
+          disabled={stopping || !row.id}
+          onClick={onStop}
+        >
           {t("stopCrawl")}
         </Button>
       </div>

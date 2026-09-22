@@ -94,22 +94,15 @@ export default function ContentSkeleton() {
         <SkelBlock className="h-8 w-24 rounded-lg" />
         <SkelBlock className="h-8 w-20 rounded-lg" />
       </div>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-12">
-        <div className="xl:col-span-3">
-          <StatCardSkeleton />
-        </div>
-        <div className="xl:col-span-3">
-          <StatCardSkeleton />
-        </div>
-        <div className="xl:col-span-2">
-          <StatCardSkeleton />
-        </div>
-        <div className="xl:col-span-2">
-          <StatCardSkeleton />
-        </div>
-        <div className="xl:col-span-2">
-          <StatCardSkeleton />
-        </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <StatCardSkeleton />
+        <StatCardSkeleton />
+      </div>
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StatCardSkeleton />
+        <StatCardSkeleton />
+        <StatCardSkeleton />
+        <StatCardSkeleton />
       </div>
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
         <div className="lg:col-span-2">

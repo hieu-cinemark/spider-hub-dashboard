@@ -17,22 +17,22 @@ export default function LoginScreen({ onSubmit }: { onSubmit: (key: string) => b
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-[var(--paper)] px-4">
-      <div className="absolute top-4 right-4 flex items-center gap-1">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[var(--paper)] px-4">
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(720px 420px at 12% 18%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 58%), radial-gradient(560px 380px at 92% 88%, color-mix(in srgb, #c2410c 16%, transparent), transparent 52%)",
+        }}
+        aria-hidden
+      />
+      <div className="absolute top-4 right-4 z-10 flex items-center gap-1">
         <ThemeToggle />
         <LocaleSwitcher variant="light" />
       </div>
-      <div
-        className="animate-glow-pulse pointer-events-none absolute h-[480px] w-[480px] rounded-full bg-indigo-500 opacity-30 blur-3xl"
-        aria-hidden
-      />
-      <div
-        className="pointer-events-none absolute right-[-80px] bottom-[-80px] h-[320px] w-[320px] rounded-full bg-amber-300/40 blur-3xl dark:bg-indigo-400/20"
-        aria-hidden
-      />
-      <div className="animate-fade-in-up relative w-full max-w-sm rounded-3xl border border-[var(--line)] bg-[var(--card)] p-8 shadow-[0_24px_60px_-32px_rgba(18,20,26,0.35)]">
-        <div className="mb-6 flex flex-col items-center gap-3 text-center">
-          <Logo size={56} animate />
+      <div className="animate-fade-in-up relative w-full max-w-[400px] rounded-[28px] border border-[var(--line)] bg-[var(--card)] p-9 shadow-[0_28px_70px_-36px_rgba(22,19,16,0.45)]">
+        <div className="mb-7 flex flex-col items-center gap-3 text-center">
+          <Logo size={60} animate />
           <Typography.Title level={3} className="!mb-0 !tracking-tight">
             Spider Hub
           </Typography.Title>

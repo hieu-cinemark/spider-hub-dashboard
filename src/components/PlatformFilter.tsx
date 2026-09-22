@@ -29,6 +29,7 @@ export default function PlatformFilter({
         type={value === ALL_PLATFORM_QUERY ? "primary" : "default"}
         icon={<AppstoreOutlined />}
         onClick={() => onChange(ALL_PLATFORM_QUERY)}
+        className={value === ALL_PLATFORM_QUERY ? undefined : "!font-semibold"}
       >
         {t("allPlatformsFilter")}
         {total !== undefined ? ` (${total})` : ""}
@@ -39,8 +40,9 @@ export default function PlatformFilter({
           size="small"
           shape="round"
           type={value === platform ? "primary" : "default"}
-          icon={<PlatformIcon platform={platform} />}
+          icon={<PlatformIcon platform={platform} style={{ color: "inherit" }} />}
           onClick={() => onChange(platform)}
+          className={value === platform ? undefined : "!font-semibold"}
         >
           {platformLabel(platform)}
           {counts ? ` (${counts[platform] ?? 0})` : ""}

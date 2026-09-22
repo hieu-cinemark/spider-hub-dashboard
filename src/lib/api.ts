@@ -115,11 +115,12 @@ export const api = {
       })}`,
     ),
   comments: (postId: string) => request<Comment[]>(`/stats/posts/${postId}/comments`),
-  allComments: ({ platform, movieId, limit, offset }: CommentsQuery) =>
+  allComments: ({ platform, movieId, keywordId, limit, offset }: CommentsQuery) =>
     request<CommentPage>(
       `/stats/comments?${new URLSearchParams({
         ...(platform ? { platform } : {}),
         ...(movieId ? { movie_id: movieId } : {}),
+        ...(keywordId ? { keyword_id: keywordId } : {}),
         limit: String(limit),
         offset: String(offset),
       })}`,
@@ -166,6 +167,10 @@ export const api = {
   jobs: () => request<JobsSnapshot>("/jobs"),
   opsMetrics: () => request<OpsMetricsResponse>("/health/metrics"),
   stopCrawl: (platform: string) => request<StopScraperResponse>(`/${platform}/stop`, { method: "POST" }),
+  // Stops exactly one job (see cinemark-api's crawl_jobs.cancel_job) -
+  // unlike stopCrawl above, which is "Stop All" for the whole platform.
+  stopJob: (platform: string, id: string) =>
+    request<StopScraperResponse>(`/${platform}/jobs/${id}/stop`, { method: "POST" }),
 
   // Settings: platform_accounts / platform_proxies (Supabase, see
   // cinemark-api/app/services/platform_config_db.py)

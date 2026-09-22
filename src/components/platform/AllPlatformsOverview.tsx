@@ -3,7 +3,7 @@
 import { CommentOutlined, DashboardOutlined, DatabaseOutlined } from "@ant-design/icons";
 import { Col, Empty, Row, Tag } from "antd";
 import { ChartCardSkeleton, SkelBlock } from "@/components/PageSkeleton";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import dynamic from "next/dynamic";
 import { CountDelta } from "@/components/CountDelta";
 import CrawlHealthBanner from "@/components/CrawlHealthBanner";
@@ -15,7 +15,7 @@ import { useOpsMetrics } from "@/hooks/useJobs";
 import { useCommentCounts, useCommentTimeseries, useTimeseries, usePlatformStats } from "@/hooks/useStats";
 import { useTranslation } from "@/i18n/LocaleProvider";
 import { CHART_HEIGHT, STALE_CRAWL_MS } from "@/lib/constants";
-import { PlatformIcon, platformColor, platformLabel } from "@/lib/platform";
+import { PlatformIcon, platformCssColor, platformLabel } from "@/lib/platform";
 
 const PlatformTotalsChart = dynamic(() => import("@/components/PlatformTotalsChart"), {
   ssr: false,
@@ -77,67 +77,70 @@ export default function AllPlatformsOverview() {
       <CrawlHealthBanner />
       <CrawlQueuePanel compact />
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-12">
-        <div className="xl:col-span-3">
-          <StatCard
-            title={t("totalPostsCollected")}
-            value={totalPosts}
-            loading={statsLoading}
-            icon={<DatabaseOutlined />}
-            delta={
-              stats ? (
-                <CountDelta
-                  current={stats.reduce((sum, row) => sum + (row.count_today ?? 0), 0)}
-                  previous={stats.reduce((sum, row) => sum + (row.count_prev ?? 0), 0)}
-                />
-              ) : undefined
-            }
-          />
-        </div>
-        <div className="xl:col-span-3">
-          <StatCard
-            title={t("totalCommentsCollected")}
-            value={totalComments}
-            loading={commentsLoading}
-            icon={<CommentOutlined />}
-            color="#d97706"
-            delta={
-              commentCounts ? (
-                <CountDelta
-                  current={commentCounts.reduce((sum, row) => sum + (row.count_today ?? 0), 0)}
-                  previous={commentCounts.reduce((sum, row) => sum + (row.count_prev ?? 0), 0)}
-                />
-              ) : undefined
-            }
-          />
-        </div>
-        {(stats ?? []).map((row) => {
-          const issues = health.byPlatform[row.platform];
-          const stale = isStale(row.last_scraped_at);
-          const tone = issues?.errors ? "danger" : issues?.warnings || stale ? "warning" : undefined;
-          const hint = issues?.errors
-            ? t("crawlIssueErrors", { n: issues.errors })
-            : issues?.warnings
-              ? t("crawlIssueWarnings", { n: issues.warnings })
-              : stale
-                ? t("crawlIssueStale")
-                : undefined;
-          return (
-            <div key={row.platform} className="xl:col-span-2">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <StatCard
+          title={t("totalPostsCollected")}
+          value={totalPosts}
+          loading={statsLoading}
+          icon={<DatabaseOutlined />}
+          delta={
+            stats ? (
+              <CountDelta
+                current={stats.reduce((sum, row) => sum + (row.count_today ?? 0), 0)}
+                previous={stats.reduce((sum, row) => sum + (row.count_prev ?? 0), 0)}
+              />
+            ) : undefined
+          }
+        />
+        <StatCard
+          title={t("totalCommentsCollected")}
+          value={totalComments}
+          loading={commentsLoading}
+          icon={<CommentOutlined />}
+          color="#c2410c"
+          delta={
+            commentCounts ? (
+              <CountDelta
+                current={commentCounts.reduce((sum, row) => sum + (row.count_today ?? 0), 0)}
+                previous={commentCounts.reduce((sum, row) => sum + (row.count_prev ?? 0), 0)}
+              />
+            ) : undefined
+          }
+        />
+      </div>
+
+      {(stats ?? []).length > 0 ? (
+        <div
+          className="platform-kpi-grid"
+          style={{ "--platform-count": (stats ?? []).length } as CSSProperties}
+        >
+          {(stats ?? []).map((row) => {
+            const issues = health.byPlatform[row.platform];
+            const stale = isStale(row.last_scraped_at);
+            const tone = issues?.errors ? "danger" : issues?.warnings || stale ? "warning" : undefined;
+            const hint = issues?.errors
+              ? t("crawlIssueErrors", { n: issues.errors })
+              : issues?.warnings
+                ? t("crawlIssueWarnings", { n: issues.warnings })
+                : stale
+                  ? t("crawlIssueStale")
+                  : undefined;
+            return (
               <StatCard
+                key={row.platform}
                 title={platformLabel(row.platform)}
                 value={row.count}
-                color={tone === "danger" ? "#ff4d4f" : platformColor(row.platform)}
+                color={tone === "danger" ? "#e11d48" : platformCssColor(row.platform)}
                 icon={<PlatformIcon platform={row.platform} />}
                 tone={tone}
                 href={issues?.errors ? `/logs?log=spider-hub&level=error&q=${row.platform}` : `/?tab=${row.platform}`}
                 hint={hint}
                 delta={<CountDelta current={row.count_today ?? 0} previous={row.count_prev ?? 0} />}
               />
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      ) : null}
 
       <DashboardCard
         title={

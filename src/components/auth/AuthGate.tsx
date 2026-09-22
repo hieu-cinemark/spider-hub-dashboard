@@ -21,7 +21,13 @@ export default function AuthGate({ children }: { children: ReactNode }) {
   }, []);
 
   if (!REQUIRED_AUTH_KEY) return <>{children}</>;
-  if (storedKey === AUTH_PENDING) return <ContentSkeleton />;
+  if (storedKey === AUTH_PENDING) {
+    return (
+      <div className="min-h-screen bg-[var(--paper)] p-6 sm:p-8">
+        <ContentSkeleton />
+      </div>
+    );
+  }
   if (storedKey === REQUIRED_AUTH_KEY) return <>{children}</>;
 
   return <LoginScreen onSubmit={login} />;

@@ -16,7 +16,7 @@ export default function ThemeToggle() {
       aria-label={isDark ? t("themeSwitchToLight") : t("themeSwitchToDark")}
       icon={isDark ? <SunOutlined /> : <MoonOutlined />}
       onClick={toggleTheme}
-      className="!text-[var(--ink-soft)]"
+      className="!text-[var(--ink)]"
     />
   );
 }

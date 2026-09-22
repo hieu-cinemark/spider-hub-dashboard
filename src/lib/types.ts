@@ -56,6 +56,14 @@ export interface Post {
   keyword_match: boolean;
   keyword: string | null;
   movie_title: string | null;
+  quoted?: QuotedPost | null;
+}
+
+export interface QuotedPost {
+  author?: string | null;
+  content?: string | null;
+  url?: string | null;
+  media_url?: string | null;
 }
 
 export interface PostPage {
@@ -113,6 +121,7 @@ export interface CommentWithPost extends Comment {
   post_url: string | null;
   post_author: string | null;
   movie_title: string | null;
+  keyword?: string | null;
 }
 
 export interface CommentPage {
@@ -125,6 +134,7 @@ export interface CommentPage {
 export interface CommentsQuery {
   platform?: string;
   movieId?: string;
+  keywordId?: string;
   limit: number;
   offset: number;
 }

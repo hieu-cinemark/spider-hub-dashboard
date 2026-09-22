@@ -12,17 +12,17 @@ export default function EngagementMetrics({
   reposts: number;
 }) {
   return (
-    <div className="metric-grid metric-grid-3">
-      <span className="metric-item" title="Likes">
-        <HeartOutlined />
+    <div className="flex flex-nowrap items-center gap-3 text-[13px] font-medium tabular-nums text-[var(--ink)]">
+      <span className="inline-flex items-center gap-1.5 whitespace-nowrap" title="Likes">
+        <HeartOutlined className="text-[var(--ink-soft)]" />
         {likes.toLocaleString()}
       </span>
-      <span className="metric-item" title="Replies">
-        <MessageOutlined />
+      <span className="inline-flex items-center gap-1.5 whitespace-nowrap" title="Replies">
+        <MessageOutlined className="text-[var(--ink-soft)]" />
         {replies.toLocaleString()}
       </span>
-      <span className="metric-item" title="Reposts">
-        <RetweetOutlined />
+      <span className="inline-flex items-center gap-1.5 whitespace-nowrap" title="Reposts">
+        <RetweetOutlined className="text-[var(--ink-soft)]" />
         {reposts.toLocaleString()}
       </span>
     </div>

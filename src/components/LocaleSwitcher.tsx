@@ -26,7 +26,7 @@ export default function LocaleSwitcher({ variant = "dark" }: { variant?: "dark" 
                 ? "bg-[var(--card)] text-[var(--ink)] shadow-sm"
                 : "bg-white text-[#12141a]"
               : isLight
-                ? "text-[var(--muted)] hover:text-[var(--ink)]"
+                ? "text-[var(--ink-soft)] hover:text-[var(--ink)]"
                 : "text-white/70 hover:text-white"
           }`}
         >

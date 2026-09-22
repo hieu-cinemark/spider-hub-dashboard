@@ -1,9 +1,8 @@
 "use client";
 
-import PageHeader from "@/components/PageHeader";
 import DashboardCard, { CardHeading } from "@/components/DashboardCard";
 import PlatformBadge from "@/components/PlatformBadge";
-import { useJobsSnapshot, useStopLiveQueue, useStopPlatformJob } from "@/hooks/useJobs";
+import { useJobsSnapshot, useStopJob, useStopLiveQueue, useStoppingJobIds } from "@/hooks/useJobs";
 import { useTranslation } from "@/i18n/LocaleProvider";
 import type { TranslationKey } from "@/i18n/translations";
 import type { JobTask } from "@/lib/types";
@@ -29,7 +28,7 @@ const STATUS_KEY: Record<string, TranslationKey> = {
 
 const STATUS_COLOR: Record<string, string> = {
   running: "processing",
-  queued: "default",
+  queued: "blue",
   done: "success",
   failed: "error",
   skipped: "warning",
@@ -48,19 +47,20 @@ function TaskTable({
   rows,
   empty,
   showStop,
-  stoppingPlatform,
+  isStopping,
   onStop,
 }: {
   rows: JobTask[];
   empty: string;
   showStop?: boolean;
-  stoppingPlatform?: string;
-  onStop?: (platform: string) => void;
+  isStopping?: (id: string) => boolean;
+  onStop?: (platform: string, id: string) => void;
 }) {
   const { t } = useTranslation();
 
   return (
     <Table<JobTask>
+      className="data-table"
       size="middle"
       rowKey={(row) =>
         `${row.id || row.label}-${row.platform}-${row.status}-${row.started_at ?? row.queued_at ?? row.finished_at ?? ""}`
@@ -72,8 +72,8 @@ function TaskTable({
         {
           title: t("platform"),
           dataIndex: "platform",
-          width: 96,
-          render: (platform: string) => <PlatformBadge platform={platform} size={22} showLabel={false} />,
+          width: 140,
+          render: (platform: string) => <PlatformBadge platform={platform} size={22} />,
         },
         {
           title: t("jobColumnType"),
@@ -91,7 +91,7 @@ function TaskTable({
           dataIndex: "status",
           width: 148,
           render: (status: string, row: JobTask) => {
-            const stopping = stoppingPlatform === row.platform;
+            const stopping = !!row.id && (isStopping?.(row.id) ?? false);
             return (
               <Tag
                 icon={status === "running" || stopping ? <LoadingOutlined spin /> : undefined}
@@ -119,14 +119,14 @@ function TaskTable({
                 width: 110,
                 align: "right" as const,
                 render: (_: unknown, row: JobTask) => {
-                  const stopping = stoppingPlatform === row.platform;
+                  const stopping = !!row.id && (isStopping?.(row.id) ?? false);
                   return (
                     <Button
                       danger
                       icon={<StopOutlined />}
                       loading={stopping}
-                      disabled={stopping}
-                      onClick={() => onStop?.(row.platform)}
+                      disabled={stopping || !row.id}
+                      onClick={() => onStop?.(row.platform, row.id)}
                     >
                       {t("stopCrawl")}
                     </Button>
@@ -143,19 +143,22 @@ function TaskTable({
 export default function JobsPageView() {
   const { t } = useTranslation();
   const { data, isLoading } = useJobsSnapshot();
-  const stop = useStopPlatformJob();
+  const stop = useStopJob();
   const stopAll = useStopLiveQueue();
   const running = data?.running ?? [];
   const queued = data?.queued ?? [];
   const history = data?.history ?? [];
   const liveCount = running.length + queued.length;
-  const stoppingPlatform = stop.isPending ? stop.variables : undefined;
+  const liveIds = [...running, ...queued].map((row) => row.id).filter(Boolean);
+  const { isStopping, markStopping } = useStoppingJobIds(liveIds);
+  const handleStop = (platform: string, id: string) => {
+    markStopping(id);
+    stop.mutate({ platform, id });
+  };
   const livePlatforms = [...new Set([...running, ...queued].map((row) => row.platform))];
 
   return (
     <div className="flex flex-col gap-4">
-      <PageHeader title={t("navJobs")} description={t("jobsPageDesc")} />
-
       <DashboardCard
         loading={isLoading}
         extra={
@@ -180,27 +183,27 @@ export default function JobsPageView() {
       >
         <div className="flex flex-col gap-4">
           <div>
-            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--ink-soft)]">
               {t("jobsSectionRunning")}
             </div>
             <TaskTable
               rows={running}
               empty={t("jobsEmptyRunning")}
               showStop
-              stoppingPlatform={stoppingPlatform}
-              onStop={(platform) => stop.mutate(platform)}
+              isStopping={isStopping}
+              onStop={handleStop}
             />
           </div>
           <div>
-            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--ink-soft)]">
               {t("jobsSectionQueued")}
             </div>
             <TaskTable
               rows={queued}
               empty={t("jobsEmptyQueued")}
               showStop
-              stoppingPlatform={stoppingPlatform}
-              onStop={(platform) => stop.mutate(platform)}
+              isStopping={isStopping}
+              onStop={handleStop}
             />
           </div>
         </div>

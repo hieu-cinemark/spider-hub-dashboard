@@ -206,7 +206,13 @@ export default function KeywordVolumeTable({ platform }: { platform?: string }) 
 
   return (
     <DashboardCard
-      title={<CardHeading icon={<SearchOutlined />} title={t("keywordVolumeTitle")} desc={t("keywordVolumeDesc")} />}
+      title={<div style={{ padding: '10px 0' }}>
+      <CardHeading
+        icon={<SearchOutlined />}
+        title={t('keywordVolumeTitle')}
+        desc={t('keywordVolumeDesc')}
+      />
+    </div>}
     >
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <Input
@@ -242,6 +248,7 @@ export default function KeywordVolumeTable({ platform }: { platform?: string }) 
           <Table<TreeRow>
             key={filterKey}
             size="middle"
+            className="data-table"
             loading={isLoading}
             rowKey="key"
             dataSource={pagedTree}

@@ -22,7 +22,6 @@ export const PLATFORM_META: Record<string, { label: string; color: string; sourc
   // chart, the Posts platform tag) - standing in with TikTok's cyan accent
   // instead keeps every platform visually distinct.
   tiktok: { label: "TikTok", color: "#00F2EA", source: "spider-hub" },
-  instagram: { label: "Instagram", color: "#E1306C", source: "cinemark-scraper" },
 };
 
 export function platformLabel(platform: string): string {
@@ -33,6 +32,17 @@ export function platformColor(platform: string): string {
   return PLATFORM_META[platform]?.color ?? "#8c8c8c";
 }
 
+// Threads' mark is black. On dark cards/buttons that reads as "missing
+// icon", so UI chrome uses --threads-ink (cream in dark mode). Charts
+// still use the hex from platformColor so G2 gets a real paint color.
+export function platformCssColor(platform: string): string {
+  return platform === "threads" ? "var(--threads-ink)" : platformColor(platform);
+}
+
+export function platformCssSoftBg(platform: string): string {
+  return `color-mix(in srgb, ${platformCssColor(platform)} 20%, transparent)`;
+}
+
 // A soft ~10%-opacity tint of a platform's color, for an icon badge's
 // background (icon itself stays the solid color) - works for every
 // platform color regardless of how light or dark it is, unlike a solid
@@ -40,7 +50,7 @@ export function platformColor(platform: string): string {
 // read against it). Every PLATFORM_META color (and the gray fallback) is a
 // 6-digit hex, so appending a 2-digit alpha suffix is always valid.
 export function platformSoftBg(platform: string): string {
-  return `${platformColor(platform)}1A`;
+  return platformCssSoftBg(platform);
 }
 
 // Builds a G2 (@ant-design/plots) `scale.color` domain/range pair so a
@@ -83,7 +93,7 @@ export function PlatformIcon({
     case "facebook":
       return <FacebookFilled className={className} style={style} />;
     case "threads":
-      return <ThreadsFilled className={className} style={style} />;
+      return <ThreadsFilled className={["threads-mark", className].filter(Boolean).join(" ")} style={style} />;
     case "tiktok":
       return <TikTokFilled className={className} style={style} />;
     case "instagram":

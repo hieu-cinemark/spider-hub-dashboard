@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { App } from "antd";
 import { useTranslation } from "@/i18n/LocaleProvider";
@@ -92,6 +93,63 @@ export function useStopPlatformJob() {
       message.error(translateApiError(err, t));
     },
     onSettled: (_res, _err, platform) => {
+      void invalidateAfterStop(queryClient, [platform]);
+    },
+  });
+}
+
+// Tracks which job ids are "stopping" from the moment their Stop button is
+// clicked until a poll of `liveIds` (the current running+queued ids) shows
+// they're actually gone - not just for the mutation's own brief pending
+// window (see useStopJob's own comment on why that isn't enough on its
+// own). markStopping is called from the click handler; the effect below
+// clears an id out again once useJobsSnapshot's next poll no longer lists
+// it.
+export function useStoppingJobIds(liveIds: string[]) {
+  const [ids, setIds] = useState<Set<string>>(new Set());
+  const liveKey = liveIds.join(",");
+
+  useEffect(() => {
+    setIds((prev) => {
+      if (prev.size === 0) return prev;
+      const live = new Set(liveKey ? liveKey.split(",") : []);
+      const next = new Set([...prev].filter((id) => live.has(id)));
+      return next.size === prev.size ? prev : next;
+    });
+  }, [liveKey]);
+
+  return {
+    isStopping: (id: string) => ids.has(id),
+    markStopping: (id: string) => setIds((prev) => (id && !prev.has(id) ? new Set(prev).add(id) : prev)),
+  };
+}
+
+// {platform, id} - id is the job's own run_id (JobTask.id), not shared
+// with any other row, unlike useStopPlatformJob's Stop-All-for-platform.
+// Deliberately no optimistic cache removal here: the row must keep showing
+// (as "stopping", via useStoppingJobIds below) until a poll confirms the
+// server actually dropped it - stopJob only arms a cancel flag, the
+// running subprocess can take several seconds to actually die (up to
+// JOB_CANCEL_KILL_GRACE_SECONDS on the spider-hub side), so hiding it
+// immediately just meant the very next poll made it reappear, looking
+// like Stop silently did nothing until an unrelated full page reload
+// happened to land after the job had actually finished dying.
+export function useStopJob() {
+  const { message } = App.useApp();
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ platform, id }: { platform: string; id: string }) => {
+      await api.stopJob(platform, id);
+    },
+    onSuccess: () => {
+      message.success(t("toastStopJobDone"));
+    },
+    onError: (err) => {
+      message.error(translateApiError(err, t));
+    },
+    onSettled: (_res, _err, { platform }) => {
       void invalidateAfterStop(queryClient, [platform]);
     },
   });

@@ -26,18 +26,24 @@ import { logout } from "@/lib/auth";
 
 const { Header, Sider, Content } = Layout;
 
-const SIDER_WIDTH = 236;
+const SIDER_WIDTH = 244;
 
-type NavItem = { key: string; labelKey: TranslationKey; icon: ReactNode; section: "ops" | "data" | "system" };
+type NavItem = {
+  key: string;
+  labelKey: TranslationKey;
+  descKey: TranslationKey;
+  icon: ReactNode;
+  section: "ops" | "data" | "system";
+};
 
 const NAV_ITEMS: NavItem[] = [
-  { key: "/", labelKey: "navOverview", icon: <DashboardOutlined />, section: "ops" },
-  { key: "/jobs", labelKey: "navJobs", icon: <ThunderboltOutlined />, section: "ops" },
-  { key: "/posts", labelKey: "navPosts", icon: <UnorderedListOutlined />, section: "data" },
-  { key: "/comments", labelKey: "navComments", icon: <CommentOutlined />, section: "data" },
-  { key: "/movies", labelKey: "navMovies", icon: <PlaySquareOutlined />, section: "data" },
-  { key: "/logs", labelKey: "navLogs", icon: <FileTextOutlined />, section: "system" },
-  { key: "/settings", labelKey: "navSettings", icon: <SettingOutlined />, section: "system" },
+  { key: "/", labelKey: "navOverview", descKey: "overviewPageDesc", icon: <DashboardOutlined />, section: "ops" },
+  { key: "/jobs", labelKey: "navJobs", descKey: "jobsPageLead", icon: <ThunderboltOutlined />, section: "ops" },
+  { key: "/posts", labelKey: "navPosts", descKey: "postsPageDesc", icon: <UnorderedListOutlined />, section: "data" },
+  { key: "/comments", labelKey: "navComments", descKey: "commentsPageDesc", icon: <CommentOutlined />, section: "data" },
+  { key: "/movies", labelKey: "navMovies", descKey: "moviesDesc", icon: <PlaySquareOutlined />, section: "data" },
+  { key: "/logs", labelKey: "navLogs", descKey: "logsPageDesc", icon: <FileTextOutlined />, section: "system" },
+  { key: "/settings", labelKey: "navSettings", descKey: "settingsPageDesc", icon: <SettingOutlined />, section: "system" },
 ];
 
 function pathToKey(pathname: string): string {
@@ -50,11 +56,10 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { t } = useTranslation();
   const selected = pathToKey(pathname);
-  const opsSurface = selected === "/" || selected === "/jobs" || selected === "/logs";
 
   const jobsMode: JobsPollMode = selected === "/" || selected === "/jobs" ? "live" : "slow";
   const { data: jobs } = useJobsSnapshot(jobsMode);
-  const { health } = useCrawlHealth(opsSurface);
+  const { health } = useCrawlHealth(true);
 
   const liveCount = (jobs?.running.length ?? 0) + (jobs?.queued.length ?? 0);
   const runningLabel = jobs?.running[0]?.label || jobs?.queued[0]?.label || "";
@@ -118,7 +123,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
     <Layout hasSider className="min-h-screen">
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-20 bg-[#0b1220]/55 lg:hidden"
+          className="fixed inset-0 z-20 bg-[#161310]/60 lg:hidden"
           onClick={() => setMobileOpen(false)}
           aria-hidden
         />
@@ -141,16 +146,16 @@ export default function AppShell({ children }: { children: ReactNode }) {
         }}
       >
         <div className="flex h-full flex-col">
-          <div className="relative overflow-hidden px-5 pb-5 pt-5">
+          <div className="relative overflow-hidden px-5 pb-6 pt-6">
             <div
-              className="pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full bg-teal-400/20 blur-2xl animate-glow-pulse"
+              className="pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full bg-teal-400/25 blur-2xl animate-glow-pulse"
               aria-hidden
             />
             <div className="relative flex items-center gap-3">
-              <Logo size={34} animate />
+              <Logo size={38} animate />
               <div className="min-w-0 leading-tight">
                 <div className="truncate text-[15px] font-semibold tracking-tight text-white">Spider Hub</div>
-                <div className="truncate text-[11px] tracking-wide text-white/40 uppercase">{t("appTagline")}</div>
+                <div className="truncate text-[11px] tracking-wide text-white/70 uppercase">{t("appTagline")}</div>
               </div>
             </div>
           </div>
@@ -161,7 +166,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
             className="!flex-1 !border-none !bg-transparent"
             items={menuItems}
           />
-          <div className="px-5 py-4 text-[11px] text-white/30">Cinemark · crawl ops</div>
+          <div className="px-5 py-4 text-[11px] tracking-wide text-white/50">Cinemark · crawl ops</div>
         </div>
       </Sider>
       <Layout
@@ -170,7 +175,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
           transition: "margin-inline-start 0.2s",
         }}
       >
-        <Header className="app-header sticky top-0 z-20 flex items-center justify-between !px-4 sm:!px-6">
+        <Header className="app-header sticky top-0 z-20 flex items-center justify-between !px-4 sm:!px-7">
           <div className="flex min-w-0 items-center gap-3">
             {collapsed && (
               <Button
@@ -181,34 +186,61 @@ export default function AppShell({ children }: { children: ReactNode }) {
                 aria-label={t("openNavigation")}
               />
             )}
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--accent)]/12 text-base text-[var(--accent)]">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--accent)]/22 text-lg text-[var(--accent-deep)]">
               {activeNavItem.icon}
             </span>
-            <Typography.Title level={4} className="!mb-0 truncate !font-semibold !tracking-tight">
-              {t(activeNavItem.labelKey)}
-            </Typography.Title>
-            {liveCount > 0 && (
+            <div className="min-w-0">
+              <Typography.Title level={4} className="!mb-0 truncate !font-semibold !tracking-tight">
+                {t(activeNavItem.labelKey)}
+              </Typography.Title>
+              <p className="m-0 hidden max-w-xl truncate text-[13px] text-[var(--ink-soft)] sm:block">
+                {t(activeNavItem.descKey)}
+              </p>
+            </div>
+            {health.errorCount > 0 && (
               <Tag
-                color="processing"
-                className="!mr-0 inline-flex max-w-[280px] cursor-pointer items-center gap-1.5 truncate"
-                onClick={() => router.push("/jobs")}
+                color="error"
+                className="status-chip !mr-0 cursor-pointer"
+                onClick={() => router.push("/logs?log=spider-hub&level=error")}
               >
-                <span className="queue-live-dot" />
-                {t("crawlQueueCount", { n: liveCount })}
-                {runningLabel ? ` · ${runningLabel}` : ""}
+                {t("crawlIssueErrors", { n: health.errorCount })}
               </Tag>
+            )}
+            {health.errorCount === 0 && health.warningCount > 0 && (
+              <Tag
+                color="warning"
+                className="status-chip !mr-0 cursor-pointer"
+                onClick={() => router.push("/logs?log=spider-hub")}
+              >
+                {t("crawlIssueWarnings", { n: health.warningCount })}
+              </Tag>
+            )}
+            {liveCount > 0 && (
+              <button type="button" className="queue-live-chip" onClick={() => router.push("/jobs")}>
+                <span className="queue-live-dot" aria-hidden />
+                <span className="queue-live-count">{liveCount}</span>
+                <span className="queue-live-status">{t("crawlQueueLive")}</span>
+                {runningLabel ? (
+                  <>
+                    <span className="queue-live-sep" aria-hidden />
+                    <span className="queue-live-job" title={runningLabel}>
+                      {runningLabel}
+                    </span>
+                  </>
+                ) : null}
+              </button>
             )}
           </div>
           <div className="flex items-center gap-1 sm:gap-2">
             <ThemeToggle />
             <LocaleSwitcher variant="light" />
-            <Button type="text" icon={<LogoutOutlined />} onClick={logout} className="!text-[var(--ink-soft)]">
+            <Button icon={<LogoutOutlined />} onClick={logout}>
               {t("navLogout")}
             </Button>
           </div>
         </Header>
-        <Content className="page-canvas p-4 sm:p-7">
-          <div key={pathname} className="mx-auto max-w-[1280px] animate-fade-in-up">
+        <Content className="page-canvas p-4 sm:p-8">
+          <div key={pathname} className="mx-auto max-w-[1520px] animate-fade-in-up">
             {children}
           </div>
         </Content>

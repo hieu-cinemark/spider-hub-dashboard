@@ -3,6 +3,8 @@
 import { HeartOutlined, LinkOutlined, MessageOutlined } from "@ant-design/icons";
 import { Button, Empty, List, Modal, Tag, Typography } from "antd";
 import EngagementMetrics from "@/components/EngagementMetrics";
+import { PostMediaHero, UserAvatar } from "@/components/UserAvatar";
+import SharedPostCard from "@/components/SharedPostCard";
 import { useComments, useRunComments } from "@/hooks/useStats";
 import { useTranslation } from "@/i18n/LocaleProvider";
 import { COMMENT_SUPPORTED_PLATFORMS } from "@/lib/constants";
@@ -45,8 +47,11 @@ function CommentsSection({ post }: { post: Post }) {
                   : t("inReplyToUnknown")}
               </span>
             )}
-            <div className="flex items-baseline justify-between gap-3">
+            <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <UserAvatar src={comment.author_profile_picture} name={comment.author_name} size={28} />
               <span className="cell-primary">{comment.author_name || "—"}</span>
+            </div>
               <span className="cell-meta shrink-0">{formatRelativeTime(comment.scraped_at, t)}</span>
             </div>
             <p className="modal-post-body !text-[14px]">{comment.message || "—"}</p>
@@ -79,9 +84,10 @@ export default function PostDetailModal({ post, onClose }: { post: Post | null; 
       onCancel={onClose}
       footer={null}
       title={t("postDetail")}
-      width={640}
+      width={680}
       destroyOnHidden
-      styles={{ body: { maxHeight: "72vh", overflowY: "auto" } }}
+      centered
+      styles={{ body: { maxHeight: "82vh", overflowY: "auto" } }}
     >
       {post && (
         <div className="modal-section">
@@ -93,15 +99,23 @@ export default function PostDetailModal({ post, onClose }: { post: Post | null; 
             {post.keyword && <Tag>{post.keyword}</Tag>}
           </div>
 
-          {post.author ? <div className="cell-primary text-[15px]">{post.author}</div> : null}
+          {post.author ? (
+            <div className="mt-10 mb-5 flex items-center gap-2.5">
+              <UserAvatar name={post.author} size={32} />
+              <div className="cell-primary text-[15px]">{post.author}</div>
+            </div>
+          ) : null}
+
+          <PostMediaHero mediaUrl={post.media_url} mediaType={post.media_type} alt={post.content} />
 
           <p className="modal-post-body">{post.content || "—"}</p>
+          <SharedPostCard quoted={post.quoted} />
 
-          <div className="modal-stats">
+          <div className="modal-stats mt-5">
             <EngagementMetrics likes={post.like_count} replies={post.reply_count} reposts={post.repost_count} />
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-2 text-[13px] text-[var(--muted)]">
+          <div className="mt-5 pb-5 flex flex-wrap items-center justify-between gap-2 text-[13px] text-[var(--muted)]">
             <span>
               {t("columnScraped")} · {formatRelativeTime(post.scraped_at, t)}
             </span>

@@ -33,9 +33,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         />
         <AntdRegistry>
           <Providers>
-            <AppShell>
-              <AuthGate>{children}</AuthGate>
-            </AppShell>
+            <AuthGate>
+              <AppShell>{children}</AppShell>
+            </AuthGate>
           </Providers>
         </AntdRegistry>
       </body>
