@@ -1,6 +1,6 @@
 import { App } from "antd";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { ApiError, api } from "@/lib/api";
 import { translateApiError } from "@/lib/apiError";
 import { QUERY_KEYS } from "@/lib/constants";
 import { useTranslation } from "@/i18n/LocaleProvider";
@@ -49,4 +49,21 @@ export function useMovieMutations() {
   });
 
   return { create, update, remove };
+}
+
+// Separate from useMovieMutations: this doesn't touch the movies list
+// itself (no invalidate), and shows the backend's own message on failure
+// (e.g. "Chưa đủ bình luận...") instead of the generic status-code
+// fallback translateApiError gives for a plain validation_error code.
+export function useGenerateReportMutation() {
+  const { message } = App.useApp();
+  const { t } = useTranslation();
+
+  return useMutation({
+    mutationFn: (movieId: string) => api.generateMovieReport(movieId),
+    onSuccess: () => message.success(t("toastReportGenerated")),
+    onError: (err: unknown) => {
+      message.error(err instanceof ApiError && err.message ? err.message : translateApiError(err, t));
+    },
+  });
 }

@@ -54,6 +54,8 @@ const en = {
   toastMovieAdded: "Movie added",
   toastMovieUpdated: "Movie updated",
   toastMovieRemoved: "Movie removed",
+  toastReportGenerated: "Social topic report generated",
+  generateReportAction: "Generate report (takes 1-3 min)",
 
   // Shared across tables/forms
   platform: "Platform",
@@ -624,6 +626,8 @@ const vi: Record<keyof typeof en, string> = {
   toastMovieAdded: "Đã thêm phim",
   toastMovieUpdated: "Đã cập nhật phim",
   toastMovieRemoved: "Đã gỡ phim",
+  toastReportGenerated: "Đã tạo report social topic",
+  generateReportAction: "Tạo report (mất 1-3 phút)",
 
   platform: "Nền tảng",
   enabled: "Kích hoạt",

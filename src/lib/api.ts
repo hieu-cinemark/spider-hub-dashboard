@@ -161,6 +161,13 @@ export const api = {
   updateMovie: (id: string, input: MovieInput) =>
     request<Movie>(`/movies/${id}`, { method: "PATCH", body: JSON.stringify(input) }),
   deleteMovie: (id: string) => request<{ ok: boolean }>(`/movies/${id}`, { method: "DELETE" }),
+  // Two sequential Bee (Claude Sonnet 5) calls server-side - confirmed
+  // live the topics-clustering call alone can take 2+ minutes on a
+  // movie with a large comment sample (up to 400 comments, see
+  // REPORT_COMMENT_SAMPLE_SIZE server-side), well past the default 15s
+  // request timeout.
+  generateMovieReport: (id: string) =>
+    request<{ status: string }>(`/movies/${id}/generate-report`, { method: "POST", timeoutMs: 180_000 }),
   runCrawl: (platform: string, params: RunScraperParams = {}) =>
     request<RunScraperResponse>(`/${platform}/run`, { method: "POST", body: JSON.stringify(params) }),
   importCookies: (platform: string, accountId: number, cookies: string) =>

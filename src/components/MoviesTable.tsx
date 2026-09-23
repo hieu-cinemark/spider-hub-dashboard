@@ -1,6 +1,6 @@
 "use client";
 
-import { DeleteOutlined, EditOutlined, FireOutlined, PlaySquareOutlined, PlusOutlined } from "@ant-design/icons";
+import { BarChartOutlined, DeleteOutlined, EditOutlined, FireOutlined, PlaySquareOutlined, PlusOutlined } from "@ant-design/icons";
 import { Button, Input, Popconfirm, Table, Typography } from "antd";
 import { useMemo, useState } from "react";
 import DashboardCard, { CardHeading } from "@/components/DashboardCard";
@@ -8,7 +8,7 @@ import { ItemCard, ItemCardList, ItemField } from "@/components/ItemCards";
 import MovieFormModal from "@/components/MovieFormModal";
 import TopPostsModal from "@/components/platform/TopPostsModal";
 import { useMdUp } from "@/hooks/useMdUp";
-import { useMovieMutations, useMovies } from "@/hooks/useMovies";
+import { useGenerateReportMutation, useMovieMutations, useMovies } from "@/hooks/useMovies";
 import { usePagedList } from "@/hooks/usePagedList";
 import { useTranslation } from "@/i18n/LocaleProvider";
 import type { Movie, MovieInput } from "@/lib/types";
@@ -41,6 +41,7 @@ export default function MoviesTable() {
   const mdUp = useMdUp();
   const { data: movies, isLoading } = useMovies();
   const { create, update, remove } = useMovieMutations();
+  const generateReport = useGenerateReportMutation();
   const [search, setSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Movie | null>(null);
@@ -82,6 +83,14 @@ export default function MoviesTable() {
         icon={<FireOutlined />}
         title={t("topPostsAction")}
         onClick={() => setTopMovie(movie)}
+      />
+      <Button
+        size="small"
+        icon={<BarChartOutlined />}
+        title={t("generateReportAction")}
+        loading={generateReport.isPending && generateReport.variables === movie.id}
+        disabled={generateReport.isPending && generateReport.variables !== movie.id}
+        onClick={() => generateReport.mutate(movie.id)}
       />
       <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(movie)} />
       <Popconfirm
