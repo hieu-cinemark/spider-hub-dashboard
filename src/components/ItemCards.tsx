@@ -1,6 +1,6 @@
 "use client";
 
-import { Empty, Pagination } from "antd";
+import { Button, Empty, Pagination } from "antd";
 import type { ReactNode } from "react";
 import { MobileCardSkeletonList } from "@/components/PageSkeleton";
 
@@ -10,18 +10,32 @@ export function ItemCardList<T>({
   empty,
   rowKey,
   pagination,
+  loadMore,
   children,
 }: {
   items: T[];
   loading?: boolean;
   empty?: ReactNode;
   rowKey: (item: T) => string;
+  // Numbered pages over an already-fully-fetched, client-side array (small
+  // admin lists: movies/keywords/proxies/accounts - see usePagedList
+  // callers). Not for posts/comments - see `loadMore` below.
   pagination?: {
     current: number;
     pageSize: number;
     total: number;
     onChange: (page: number) => void;
     showTotal?: (total: number) => string;
+  };
+  // "Load more", for keyset-paginated server data (posts/comments) - see
+  // usePosts/useAllComments's own comment (keyset can't cheaply jump to
+  // "page N", only ever append the next chunk). Mutually exclusive with
+  // `pagination` above; a caller uses one or the other, never both.
+  loadMore?: {
+    hasMore: boolean;
+    loading: boolean;
+    onLoadMore: () => void;
+    label: string;
   };
   children: (item: T) => ReactNode;
 }) {
@@ -55,6 +69,13 @@ export function ItemCardList<T>({
             hideOnSinglePage={false}
             size="small"
           />
+        </div>
+      )}
+      {loadMore?.hasMore && (
+        <div className="flex justify-center pt-1">
+          <Button loading={loadMore.loading} onClick={loadMore.onLoadMore} size="small">
+            {loadMore.label}
+          </Button>
         </div>
       )}
     </div>

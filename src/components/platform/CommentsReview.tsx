@@ -1,7 +1,7 @@
 "use client";
 
 import { CommentOutlined, HeartOutlined, LinkOutlined, MessageOutlined } from "@ant-design/icons";
-import { Empty, Table } from "antd";
+import { Button, Empty, Table, Tabs } from "antd";
 import DashboardCard, { CardHeading } from "@/components/DashboardCard";
 import { ItemCard, ItemCardList, ItemField } from "@/components/ItemCards";
 import KeywordFilter from "@/components/KeywordFilter";
@@ -13,11 +13,12 @@ import { useMdUp } from "@/hooks/useMdUp";
 import { useQueryRecord } from "@/hooks/useQueryParam";
 import { useAllComments } from "@/hooks/useStats";
 import { useTranslation } from "@/i18n/LocaleProvider";
-import { COMMENT_SUPPORTED_PLATFORMS, COMMENTS_PAGE_SIZE } from "@/lib/constants";
+import { COMMENT_SUPPORTED_PLATFORMS } from "@/lib/constants";
 import { formatRelativeTime } from "@/lib/format";
 import type { CommentWithPost } from "@/lib/types";
 
-const COMMENTS_QUERY = { platform: ALL_PLATFORM_QUERY, page: "1", keyword: "" };
+const COMMENTS_QUERY = { platform: ALL_PLATFORM_QUERY, keyword: "", sentiment: "positive" };
+const SENTIMENT_TABS = ["positive", "negative", "neutral"] as const;
 
 function OnPostQuote({ record }: { record: CommentWithPost }) {
   const { t } = useTranslation();
@@ -53,8 +54,11 @@ export default function CommentsReview() {
   const [query, setQuery] = useQueryRecord(COMMENTS_QUERY);
   const platform = query.platform === ALL_PLATFORM_QUERY ? undefined : query.platform;
   const keywordId = query.keyword || undefined;
-  const page = Math.max(0, (Number(query.page) || 1) - 1);
-  const { data, isLoading, isPlaceholderData } = useAllComments(page, platform, keywordId);
+  const sentiment = SENTIMENT_TABS.includes(query.sentiment as (typeof SENTIMENT_TABS)[number])
+    ? query.sentiment
+    : "positive";
+  const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } = useAllComments(platform, keywordId, sentiment);
+  const items = data?.pages.flatMap((p) => p.items) ?? [];
 
   return (
     <DashboardCard
@@ -65,16 +69,26 @@ export default function CommentsReview() {
           <KeywordFilter
             platform={platform}
             value={keywordId}
-            onChange={(next) => setQuery({ keyword: next ?? "", page: "1" })}
+            onChange={(next) => setQuery({ keyword: next ?? "" })}
           />
           <PlatformFilter
             value={query.platform}
             platforms={COMMENT_SUPPORTED_PLATFORMS}
-            onChange={(next) => setQuery({ platform: next, page: "1", keyword: "" })}
+            onChange={(next) => setQuery({ platform: next, keyword: "" })}
           />
         </div>
       }
     >
+      <Tabs
+        className="ui-tabs"
+        activeKey={sentiment}
+        onChange={(next) => setQuery({ sentiment: next })}
+        items={[
+          { key: "positive", label: t("commentsPositive") },
+          { key: "negative", label: t("commentsNegative") },
+          { key: "neutral", label: t("commentsNeutral") },
+        ]}
+      />
       {mdUp ? (
       isLoading && !data ? (
         <TableRowsSkeleton rows={8} />
@@ -83,19 +97,20 @@ export default function CommentsReview() {
         className="data-table"
         size="middle"
         rowKey="id"
-        loading={isPlaceholderData}
-        dataSource={data?.items ?? []}
+        dataSource={items}
         locale={{ emptyText: <Empty description={t("noCommentsYet")} /> }}
-        pagination={{
-          current: page + 1,
-          pageSize: COMMENTS_PAGE_SIZE,
-          total: data?.total ?? 0,
-          onChange: (nextPage) => setQuery({ page: String(nextPage) }),
-          showTotal: (total) => t("commentsTotal", { n: total.toLocaleString() }),
-          showSizeChanger: false,
-          hideOnSinglePage: false,
-          responsive: true,
-        }}
+        pagination={false}
+        footer={
+          hasNextPage
+            ? () => (
+                <div className="flex justify-center">
+                  <Button loading={isFetchingNextPage} onClick={() => fetchNextPage()} size="small">
+                    {t("loadMore")}
+                  </Button>
+                </div>
+              )
+            : undefined
+        }
         columns={[
           {
             title: t("columnContent"),
@@ -157,16 +172,15 @@ export default function CommentsReview() {
       )
       ) : (
           <ItemCardList
-            items={data?.items ?? []}
-            loading={isLoading || isPlaceholderData}
+            items={items}
+            loading={isLoading && !data}
             empty={<Empty description={t("noCommentsYet")} />}
             rowKey={(c) => c.id}
-            pagination={{
-              current: page + 1,
-              pageSize: COMMENTS_PAGE_SIZE,
-              total: data?.total ?? 0,
-              onChange: (nextPage) => setQuery({ page: String(nextPage) }),
-              showTotal: (total) => t("commentsTotal", { n: total.toLocaleString() }),
+            loadMore={{
+              hasMore: !!hasNextPage,
+              loading: isFetchingNextPage,
+              onLoadMore: () => fetchNextPage(),
+              label: t("loadMore"),
             }}
           >
             {(record) => (

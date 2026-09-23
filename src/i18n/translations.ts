@@ -454,6 +454,9 @@ const en = {
   columnEngagement: "Engagement",
   columnScraped: "Collected",
   postsTotal: "{n} posts",
+  postsRelated: "Related",
+  postsUnrelated: "Unrelated",
+  loadMore: "Load more",
 
   // TopPostsModal
   topPostsAction: "Top posts",
@@ -485,6 +488,9 @@ const en = {
   commentedOnPost: "Comment on this post",
   inReplyTo: "Replying to {author}: {text}",
   inReplyToUnknown: "Replying to a comment",
+  commentsPositive: "Positive",
+  commentsNegative: "Negative",
+  commentsNeutral: "Neutral",
 
   // LoginScreen
   enterAccessKey: "Enter the access key to continue",
@@ -992,6 +998,9 @@ const vi: Record<keyof typeof en, string> = {
   columnEngagement: "Tương tác",
   columnScraped: "Đã thu thập",
   postsTotal: "{n} bài viết",
+  postsRelated: "Liên quan",
+  postsUnrelated: "Không liên quan",
+  loadMore: "Xem thêm",
 
   topPostsAction: "Top bài viết",
   topPostsTitle: 'Top {n} bài viết tương tác cao nhất - "{keyword}"',
@@ -1019,6 +1028,9 @@ const vi: Record<keyof typeof en, string> = {
   commentedOnPost: "Bình luận trên bài này",
   inReplyTo: "Trả lời {author}: {text}",
   inReplyToUnknown: "Trả lời một bình luận",
+  commentsPositive: "Tích cực",
+  commentsNegative: "Tiêu cực",
+  commentsNeutral: "Trung lập",
 
   enterAccessKey: "Nhập mã truy cập để tiếp tục",
   invalidAccessKey: "Mã truy cập không đúng",

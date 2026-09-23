@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App } from "antd";
 import { useTranslation } from "@/i18n/LocaleProvider";
 import { api } from "@/lib/api";
@@ -66,12 +66,19 @@ export function useKeywordVolume(platform?: string, enabled = true) {
   });
 }
 
-export function usePosts(platform: string | undefined, page: number, keywordId?: string) {
-  const offset = page * POSTS_PAGE_SIZE;
-  return useQuery({
-    queryKey: QUERY_KEYS.posts(platform, offset, keywordId),
-    queryFn: () => api.posts({ platform, keywordId, limit: POSTS_PAGE_SIZE, offset }),
-    placeholderData: (previous) => previous,
+// Keyset/"load more" pagination, not page numbers - see PostRepository.
+// list_posts_cursor's own docstring for why (OFFSET+JOIN degrades with
+// depth on D1 once a table gets large). Resets to page 1 automatically
+// whenever platform/keywordId/keywordMatch change, since they're part of
+// the query key - a filter change is a brand new list, not "page 1 of
+// the old one".
+export function usePosts(platform: string | undefined, keywordId?: string, keywordMatch?: boolean) {
+  return useInfiniteQuery({
+    queryKey: QUERY_KEYS.posts(platform, keywordId, keywordMatch),
+    queryFn: ({ pageParam, signal }) =>
+      api.posts({ platform, keywordId, keywordMatch, cursor: pageParam, limit: POSTS_PAGE_SIZE }, { signal }),
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
   });
 }
 
@@ -93,12 +100,14 @@ export function useTopPostsByMovie(movieId: string | undefined) {
   });
 }
 
-export function useAllComments(page: number, platform?: string, keywordId?: string) {
-  const offset = page * COMMENTS_PAGE_SIZE;
-  return useQuery({
-    queryKey: QUERY_KEYS.allComments(platform, offset, keywordId),
-    queryFn: () => api.allComments({ platform, keywordId, limit: COMMENTS_PAGE_SIZE, offset }),
-    placeholderData: (previous) => previous,
+// Keyset/"load more" pagination - see usePosts's own comment above.
+export function useAllComments(platform?: string, keywordId?: string, sentiment?: string) {
+  return useInfiniteQuery({
+    queryKey: QUERY_KEYS.allComments(platform, keywordId, sentiment),
+    queryFn: ({ pageParam, signal }) =>
+      api.allComments({ platform, keywordId, sentiment, cursor: pageParam, limit: COMMENTS_PAGE_SIZE }, { signal }),
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
   });
 }
 

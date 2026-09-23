@@ -66,20 +66,24 @@ export interface QuotedPost {
   media_url?: string | null;
 }
 
+// Keyset-paginated (sort="recent") - nextCursor is the opaque token for
+// the next page, null on the last page. sort="engagement" callers
+// (useTopPostsByKeyword/useTopPostsByMovie) fetch one fixed-size batch
+// and never paginate, so nextCursor is simply unused there.
 export interface PostPage {
   items: Post[];
-  total: number;
-  limit: number;
-  offset: number;
+  nextCursor: string | null;
 }
 
 export interface PostsQuery {
   platform?: string;
   keywordId?: string;
   movieId?: string;
+  keywordMatch?: boolean;
   sort?: "recent" | "engagement";
+  cursor?: string | null;
   limit: number;
-  offset: number;
+  offset?: number;
 }
 
 // Facebook-only for now - see cinemark-api's get_comment_mapper.
@@ -100,6 +104,7 @@ export interface Comment {
   parent_author_name: string | null;
   posted_at: string | null;
   scraped_at: string;
+  sentiment?: string | null;
 }
 
 export interface RunCommentsResponse {
@@ -126,17 +131,16 @@ export interface CommentWithPost extends Comment {
 
 export interface CommentPage {
   items: CommentWithPost[];
-  total: number;
-  limit: number;
-  offset: number;
+  nextCursor: string | null;
 }
 
 export interface CommentsQuery {
   platform?: string;
   movieId?: string;
   keywordId?: string;
+  sentiment?: string;
+  cursor?: string | null;
   limit: number;
-  offset: number;
 }
 
 export interface LogTailResponse {

@@ -71,21 +71,24 @@ export class ApiError extends Error {
 // error instead of hanging the whole Overview page.
 const REQUEST_TIMEOUT_MS = 15_000;
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  // Prefer an explicit caller signal when present; otherwise bound every
-  // call so a stuck remote-D1/API round-trip cannot leave the UI spinning.
-  const signal = init?.signal ?? AbortSignal.timeout(REQUEST_TIMEOUT_MS);
+type RequestOptions = RequestInit & { timeoutMs?: number };
+
+async function request<T>(path: string, init?: RequestOptions): Promise<T> {
+  const timeoutMs = init?.timeoutMs ?? REQUEST_TIMEOUT_MS;
+  const { timeoutMs: _timeoutMs, signal: callerSignal, ...rest } = init ?? {};
+  const timeoutSignal = AbortSignal.timeout(timeoutMs);
+  const signal = callerSignal ? AbortSignal.any([callerSignal, timeoutSignal]) : timeoutSignal;
   let res: Response;
   try {
     res = await fetch(`${API_BASE_URL}${path}`, {
-      headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
+      headers: { "Content-Type": "application/json", ...(rest.headers ?? {}) },
       cache: "no-store",
-      ...init,
+      ...rest,
       signal,
     });
   } catch (err) {
     if (err instanceof DOMException && (err.name === "TimeoutError" || err.name === "AbortError")) {
-      throw new ApiError(`Request timed out after ${REQUEST_TIMEOUT_MS / 1000}s`, 0, "upstream_error");
+      throw new ApiError(`Request timed out after ${timeoutMs / 1000}s`, 0, "upstream_error");
     }
     throw err;
   }
@@ -103,27 +106,34 @@ export const api = {
   commentTimeseries: (days = 14) => request<TimeseriesPoint[]>(`/stats/comment-timeseries?days=${days}`),
   keywordVolume: (platform?: string) =>
     request<KeywordVolume[]>(`/stats/keywords${platform ? `?platform=${platform}` : ""}`),
-  posts: ({ platform, keywordId, movieId, sort, limit, offset }: PostsQuery) =>
+  posts: ({ platform, keywordId, movieId, keywordMatch, sort, cursor, limit, offset }: PostsQuery, init?: RequestInit) =>
     request<PostPage>(
       `/stats/posts?${new URLSearchParams({
         ...(platform ? { platform } : {}),
         ...(keywordId ? { keyword_id: keywordId } : {}),
         ...(movieId ? { movie_id: movieId } : {}),
+        ...(keywordMatch === undefined ? {} : { keyword_match: String(keywordMatch) }),
         ...(sort ? { sort } : {}),
+        ...(cursor ? { cursor } : {}),
         limit: String(limit),
-        offset: String(offset),
+        // Only sort="engagement" (useTopPostsByKeyword/useTopPostsByMovie)
+        // still uses offset - always 0, a single fixed-size batch.
+        ...(offset === undefined ? {} : { offset: String(offset) }),
       })}`,
+      { timeoutMs: 25_000, ...init },
     ),
   comments: (postId: string) => request<Comment[]>(`/stats/posts/${postId}/comments`),
-  allComments: ({ platform, movieId, keywordId, limit, offset }: CommentsQuery) =>
+  allComments: ({ platform, movieId, keywordId, sentiment, cursor, limit }: CommentsQuery, init?: RequestInit) =>
     request<CommentPage>(
       `/stats/comments?${new URLSearchParams({
         ...(platform ? { platform } : {}),
         ...(movieId ? { movie_id: movieId } : {}),
         ...(keywordId ? { keyword_id: keywordId } : {}),
+        ...(sentiment ? { sentiment } : {}),
+        ...(cursor ? { cursor } : {}),
         limit: String(limit),
-        offset: String(offset),
       })}`,
+      { timeoutMs: 25_000, ...init },
     ),
   runComments: (platform: string, postId: string) =>
     request<RunCommentsResponse>(`/${platform}/posts/${postId}/comments/run`, { method: "POST" }),

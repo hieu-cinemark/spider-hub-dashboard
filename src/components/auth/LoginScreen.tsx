@@ -17,12 +17,12 @@ export default function LoginScreen({ onSubmit }: { onSubmit: (key: string) => b
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[var(--paper)] px-4">
+    <div className="relative z-[1] flex min-h-screen items-center justify-center overflow-hidden px-4">
       <div
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "radial-gradient(720px 420px at 12% 18%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 58%), radial-gradient(560px 380px at 92% 88%, color-mix(in srgb, #c2410c 16%, transparent), transparent 52%)",
+            "radial-gradient(720px 420px at 12% 18%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 58%), radial-gradient(560px 380px at 92% 88%, color-mix(in srgb, #c2410c 10%, transparent), transparent 52%)",
         }}
         aria-hidden
       />

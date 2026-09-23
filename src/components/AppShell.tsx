@@ -120,7 +120,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
   }, [t, health.errorCount, liveCount]);
 
   return (
-    <Layout hasSider className="min-h-screen">
+    <Layout hasSider className="app-shell min-h-screen">
       {mobileOpen && (
         <div
           className="fixed inset-0 z-20 bg-[#161310]/60 lg:hidden"
@@ -240,7 +240,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
           </div>
         </Header>
         <Content className="page-canvas p-4 sm:p-8">
-          <div key={pathname} className="mx-auto max-w-[1520px] animate-fade-in-up">
+          <div key={pathname} className="relative z-[1] mx-auto max-w-[1520px] animate-fade-in-up">
             {children}
           </div>
         </Content>

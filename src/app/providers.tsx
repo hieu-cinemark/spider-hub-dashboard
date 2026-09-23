@@ -3,6 +3,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { App as AntApp, ConfigProvider, theme as antdTheme } from "antd";
 import { useState, type ReactNode } from "react";
+import SpiderWebBackdrop from "@/components/SpiderWebBackdrop";
 import { LocaleProvider } from "@/i18n/LocaleProvider";
 import { ThemeProvider, useColorTheme } from "@/theme/ThemeProvider";
 
@@ -133,6 +134,7 @@ export default function Providers({ children }: { children: ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
+        <SpiderWebBackdrop />
         <ThemedApp>{children}</ThemedApp>
       </ThemeProvider>
     </QueryClientProvider>

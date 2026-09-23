@@ -122,6 +122,46 @@ export function PostMediaThumb({
   );
 }
 
+export function PostMediaCover({
+  mediaUrl,
+  mediaType,
+  alt,
+}: {
+  mediaUrl?: string | null;
+  mediaType?: string | number | null;
+  alt?: string | null;
+}) {
+  const [failed, setFailed] = useState(false);
+  const src = postPreviewUrl({ media_url: mediaUrl, media_type: mediaType });
+  const video = isVideoMediaType(mediaType);
+
+  return (
+    <div className="relative aspect-video w-full overflow-hidden bg-[var(--paper-deep)]">
+      {src && !failed ? (
+        <>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={src}
+            alt={alt || ""}
+            referrerPolicy="no-referrer"
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+            onError={() => setFailed(true)}
+          />
+          {video ? (
+            <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/20 text-3xl text-white">
+              <PlayCircleOutlined />
+            </span>
+          ) : null}
+        </>
+      ) : (
+        <span className="flex h-full w-full items-center justify-center text-3xl text-[var(--ink-soft)]">
+          <PlayCircleOutlined />
+        </span>
+      )}
+    </div>
+  );
+}
+
 export function PostMediaHero({
   mediaUrl,
   mediaType,
