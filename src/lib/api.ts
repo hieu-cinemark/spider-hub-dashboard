@@ -1,11 +1,15 @@
 import type {
   Account,
   AccountInput,
+  AiProvider,
+  AiProviderInput,
   AiSettings,
   AiSettingsInput,
   ApiErrorBody,
   Comment,
   CommentPage,
+  CommentSchedule,
+  CommentScheduleInput,
   CommentsQuery,
   CrawlSchedule,
   CrawlScheduleInput,
@@ -228,9 +232,17 @@ export const api = {
   setCrawlSchedule: (platform: string, input: CrawlScheduleInput) =>
     request<CrawlSchedule>(`/settings/crawl-schedule/${platform}`, { method: "PUT", body: JSON.stringify(input) }),
 
+  commentSchedule: () => request<CommentSchedule[]>("/settings/comment-schedule"),
+  setCommentSchedule: (platform: string, input: CommentScheduleInput) =>
+    request<CommentSchedule>(`/settings/comment-schedule/${platform}`, { method: "PUT", body: JSON.stringify(input) }),
+
   aiSettings: () => request<AiSettings>("/settings/ai"),
   setAiSettings: (input: AiSettingsInput) =>
     request<AiSettings>("/settings/ai", { method: "PUT", body: JSON.stringify(input) }),
+
+  aiProviders: () => request<AiProvider[]>("/settings/ai/providers"),
+  setAiProvider: (key: string, input: AiProviderInput) =>
+    request<AiProvider>(`/settings/ai/providers/${key}`, { method: "PUT", body: JSON.stringify(input) }),
 
   importParse: (params: ImportParseParams) =>
     request<ImportParseResponse>("/settings/import/parse", { method: "POST", body: JSON.stringify(params) }),

@@ -3,7 +3,9 @@
 import { ClockCircleOutlined, FilterOutlined, KeyOutlined, RobotOutlined } from "@ant-design/icons";
 import { Tabs } from "antd";
 import AccountsTable from "@/components/settings/AccountsTable";
+import AiProvidersCard from "@/components/settings/AiProvidersCard";
 import AiSettingsCard from "@/components/settings/AiSettingsCard";
+import CommentScheduleCard from "@/components/settings/CommentScheduleCard";
 import CrawlScheduleCard from "@/components/settings/CrawlScheduleCard";
 import FilterKeywordsTable from "@/components/settings/FilterKeywordsTable";
 import ProxiesTable from "@/components/settings/ProxiesTable";
@@ -44,8 +46,9 @@ export default function SettingsPage() {
               </span>
             ),
             children: (
-              <div className="animate-fade-in-up">
+              <div className="flex flex-col gap-4 animate-fade-in-up">
                 <CrawlScheduleCard />
+                <CommentScheduleCard />
               </div>
             ),
           },
@@ -70,8 +73,9 @@ export default function SettingsPage() {
               </span>
             ),
             children: (
-              <div className="animate-fade-in-up">
+              <div className="flex flex-col gap-4 animate-fade-in-up">
                 <AiSettingsCard />
+                <AiProvidersCard />
               </div>
             ),
           },

@@ -328,6 +328,26 @@ export interface CrawlScheduleInput {
   nurture_after: boolean;
 }
 
+// Separate daily schedule for the comments sweep - independent of
+// CrawlSchedule (posts) above, see cinemark-api's
+// app/services/scheduler.py::_comments_tick. For every enabled keyword on
+// that platform, queues a comments crawl for its top `top_n`-by-engagement
+// posts that still have zero comments stored.
+export interface CommentSchedule {
+  platform: string;
+  run_time: string;
+  enabled: boolean;
+  top_n: number;
+  last_triggered_date: string | null;
+  updated_at: string;
+}
+
+export interface CommentScheduleInput {
+  run_time: string;
+  enabled: boolean;
+  top_n: number;
+}
+
 export interface AiPrompt {
   task: string;
   system_prompt: string;
@@ -346,6 +366,25 @@ export interface AiSettingsInput {
   enabled: boolean;
   model: string;
   prompts: Record<string, string>;
+}
+
+// One LLM provider's credentials (base_url/api_key/model) - see
+// cinemark-api's app/ai_client.py + app/services/platform_config_db.py's
+// ai_providers table. api_key is never sent back by the API, only whether
+// one is stored.
+export interface AiProvider {
+  key: string;
+  base_url: string;
+  api_key_set: boolean;
+  model: string;
+  updated_at: string | null;
+}
+
+export interface AiProviderInput {
+  base_url: string;
+  // Omit or blank to keep whatever secret is already stored.
+  api_key?: string;
+  model: string;
 }
 
 export type NurturePlatform = "facebook" | "threads" | "all";

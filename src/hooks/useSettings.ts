@@ -7,7 +7,9 @@ import { translateApiError } from "@/lib/apiError";
 import { REFRESH_INTERVAL_MS, QUERY_KEYS } from "@/lib/constants";
 import type {
   AccountInput,
+  AiProviderInput,
   AiSettingsInput,
+  CommentScheduleInput,
   CrawlScheduleInput,
   FilterKeywordInput,
   NurtureInput,
@@ -18,9 +20,11 @@ import type {
 
 const ACCOUNTS_KEY = QUERY_KEYS.settingsAccounts;
 const CRAWL_SCHEDULE_KEY = ["settings", "crawl-schedule"];
+const COMMENT_SCHEDULE_KEY = ["settings", "comment-schedule"];
 const PROXIES_KEY = ["settings", "proxies"];
 const FILTER_KEYWORDS_KEY = ["settings", "filter-keywords"];
 const AI_SETTINGS_KEY = ["settings", "ai"];
+const AI_PROVIDERS_KEY = ["settings", "ai-providers"];
 
 export function useAccounts() {
   // `enabled` and last_check_status/last_checked_at can change from
@@ -288,6 +292,47 @@ export function useSetAiSettings() {
     onSuccess: () => {
       message.success(t("toastAiSettingsUpdated"));
       queryClient.invalidateQueries({ queryKey: AI_SETTINGS_KEY });
+    },
+    onError: (err: unknown) => message.error(translateApiError(err, t)),
+  });
+}
+
+export function useAiProviders() {
+  return useQuery({ queryKey: AI_PROVIDERS_KEY, queryFn: api.aiProviders });
+}
+
+export function useSetAiProvider() {
+  const { message } = App.useApp();
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ key, input }: { key: string; input: AiProviderInput }) => api.setAiProvider(key, input),
+    onSuccess: () => {
+      message.success(t("toastAiProviderUpdated"));
+      // AI settings' own "configured" flag reads the kira provider row too.
+      queryClient.invalidateQueries({ queryKey: AI_PROVIDERS_KEY });
+      queryClient.invalidateQueries({ queryKey: AI_SETTINGS_KEY });
+    },
+    onError: (err: unknown) => message.error(translateApiError(err, t)),
+  });
+}
+
+export function useCommentSchedule() {
+  return useQuery({ queryKey: COMMENT_SCHEDULE_KEY, queryFn: api.commentSchedule });
+}
+
+export function useSetCommentSchedule() {
+  const { message } = App.useApp();
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ platform, input }: { platform: string; input: CommentScheduleInput }) =>
+      api.setCommentSchedule(platform, input),
+    onSuccess: () => {
+      message.success(t("toastCommentScheduleUpdated"));
+      queryClient.invalidateQueries({ queryKey: COMMENT_SCHEDULE_KEY });
     },
     onError: (err: unknown) => message.error(translateApiError(err, t)),
   });
