@@ -21,6 +21,7 @@ import type {
   FilterKeywordInput,
   JobStatus,
   JobsSnapshot,
+  KafkaLagEntry,
   OpsMetricsResponse,
   Keyword,
   KeywordVolume,
@@ -169,9 +170,13 @@ export const api = {
   // live the topics-clustering call alone can take 2+ minutes on a
   // movie with a large comment sample (up to 400 comments, see
   // REPORT_COMMENT_SAMPLE_SIZE server-side), well past the default 15s
-  // request timeout.
+  // request timeout. 180s wasn't enough margin either - that's barely
+  // above just the first of the two calls, with the narrative call still
+  // to go - bumped to 10min to match app.bee.client's own OpenAI-client
+  // timeout ceiling (app/ai_client.py has no explicit per-call timeout,
+  // so it falls back to the SDK default of 600s/10min per call).
   generateMovieReport: (id: string) =>
-    request<{ status: string }>(`/movies/${id}/generate-report`, { method: "POST", timeoutMs: 180_000 }),
+    request<{ status: string }>(`/movies/${id}/generate-report`, { method: "POST", timeoutMs: 600_000 }),
   runCrawl: (platform: string, params: RunScraperParams = {}) =>
     request<RunScraperResponse>(`/${platform}/run`, { method: "POST", body: JSON.stringify(params) }),
   importCookies: (platform: string, accountId: number, cookies: string) =>
@@ -186,6 +191,7 @@ export const api = {
     }),
   jobStatus: (platform: string) => request<JobStatus>(`/${platform}/job-status`),
   jobs: () => request<JobsSnapshot>("/jobs"),
+  kafkaLag: () => request<KafkaLagEntry[]>("/jobs/kafka-lag"),
   opsMetrics: () => request<OpsMetricsResponse>("/health/metrics"),
   stopCrawl: (platform: string) => request<StopScraperResponse>(`/${platform}/stop`, { method: "POST" }),
   // Stops exactly one job (see cinemark-api's crawl_jobs.cancel_job) -

@@ -16,6 +16,10 @@ export const REFRESH_INTERVAL_MS = {
   jobStatusActive: 5_000,
   // Ops performance chart — samples host load + queue depth into Redis.
   opsMetrics: 15_000,
+  // Real Kafka consumer-group lag - each call is a few broker round trips
+  // (admin RPCs), slower than the Redis-backed queue count, so this polls
+  // less aggressively.
+  kafkaLag: 20_000,
   accounts: 60_000,
   // While the comments panel is open (see useComments) - a triggered crawl
   // runs async (Kafka -> spider-hub -> ingest), so this is what actually
@@ -89,6 +93,7 @@ export const QUERY_KEYS = {
   allComments: (platform: string | undefined, keywordId?: string, sentiment?: string) =>
     ["all-comments", platform, keywordId ?? "", sentiment ?? ""] as const,
   jobs: ["jobs"] as const,
+  kafkaLag: ["kafka-lag"] as const,
   opsMetrics: ["ops-metrics"] as const,
   movies: ["movies"] as const,
   settingsAccounts: ["settings", "accounts"] as const,

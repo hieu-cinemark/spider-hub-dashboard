@@ -473,6 +473,19 @@ export interface JobsSnapshot {
   history: JobTask[];
 }
 
+// Real, broker-computed backlog per Kafka consumer group (cinemark-api's
+// GET /jobs/kafka-lag) - a different, ground-truth number from
+// JobsSnapshot.queued above, which is app-tracked bookkeeping that can get
+// stuck if a consumer never gets to clear an entry. lag is null when the
+// broker couldn't be reached or the topic wasn't found (see `error`).
+export interface KafkaLagEntry {
+  label: string;
+  topic: string;
+  group_id: string;
+  lag: number | null;
+  error: string | null;
+}
+
 export interface OpsMetricPoint {
   ts: number;
   load_1: number;

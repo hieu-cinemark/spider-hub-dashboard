@@ -2,12 +2,52 @@
 
 import DashboardCard, { CardHeading } from "@/components/DashboardCard";
 import PlatformBadge from "@/components/PlatformBadge";
-import { useJobsSnapshot, useStopJob, useStopLiveQueue, useStoppingJobIds } from "@/hooks/useJobs";
+import { useJobsSnapshot, useKafkaLag, useStopJob, useStopLiveQueue, useStoppingJobIds } from "@/hooks/useJobs";
 import { useTranslation } from "@/i18n/LocaleProvider";
 import type { TranslationKey } from "@/i18n/translations";
-import type { JobTask } from "@/lib/types";
-import { HistoryOutlined, LoadingOutlined, StopOutlined, ThunderboltOutlined } from "@ant-design/icons";
-import { Button, Empty, Table, Tag } from "antd";
+import type { JobTask, KafkaLagEntry } from "@/lib/types";
+import { ClusterOutlined, HistoryOutlined, LoadingOutlined, StopOutlined, ThunderboltOutlined } from "@ant-design/icons";
+import { Button, Empty, Table, Tag, Tooltip } from "antd";
+
+const KAFKA_LAG_PLATFORMS = new Set(["facebook", "threads", "tiktok"]);
+
+function kafkaLagLabel(t: (key: TranslationKey) => string, label: string): string {
+  if (label === "ingest_posts") return t("kafkaLagIngestPosts");
+  if (label === "ingest_comments") return t("kafkaLagIngestComments");
+  return label;
+}
+
+function KafkaLagCard() {
+  const { t } = useTranslation();
+  const { data, isLoading } = useKafkaLag();
+  const rows = data ?? [];
+
+  return (
+    <DashboardCard
+      loading={isLoading}
+      title={<CardHeading icon={<ClusterOutlined />} title={t("kafkaLagTitle")} desc={t("kafkaLagDesc")} />}
+    >
+      <div className="flex flex-wrap gap-2">
+        {rows.map((row: KafkaLagEntry) => (
+          <Tooltip key={row.label} title={`${row.topic} · ${row.group_id}`}>
+            <span className="flex items-center gap-1.5 rounded-xl border border-[var(--line)] bg-[var(--paper-deep)] px-3 py-1.5">
+              {KAFKA_LAG_PLATFORMS.has(row.label) ? (
+                <PlatformBadge platform={row.label} size={18} showLabel={false} />
+              ) : null}
+              <span className="text-sm text-[var(--ink-soft)]">{kafkaLagLabel(t, row.label)}</span>
+              <Tag
+                className="!mr-0"
+                color={row.error ? "default" : (row.lag ?? 0) > 0 ? "gold" : "success"}
+              >
+                {row.error ? t("kafkaLagUnavailable") : row.lag}
+              </Tag>
+            </span>
+          </Tooltip>
+        ))}
+      </div>
+    </DashboardCard>
+  );
+}
 
 const TYPE_KEY: Record<string, TranslationKey> = {
   search: "jobTypeSearch",
@@ -159,6 +199,8 @@ export default function JobsPageView() {
 
   return (
     <div className="flex flex-col gap-4">
+      <KafkaLagCard />
+
       <DashboardCard
         loading={isLoading}
         extra={

@@ -56,6 +56,17 @@ export function useJobsSnapshot(mode: JobsPollMode = "live") {
   });
 }
 
+export function useKafkaLag() {
+  const refetchInterval = usePollingInterval(REFRESH_INTERVAL_MS.kafkaLag, true);
+  return useQuery({
+    queryKey: QUERY_KEYS.kafkaLag,
+    queryFn: api.kafkaLag,
+    refetchInterval,
+    refetchOnWindowFocus: false,
+    staleTime: 10_000,
+  });
+}
+
 export function useOpsMetrics() {
   const refetchInterval = usePollingInterval(REFRESH_INTERVAL_MS.opsMetrics, true);
   return useQuery({
