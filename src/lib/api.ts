@@ -140,8 +140,11 @@ export const api = {
       })}`,
       { timeoutMs: 25_000, ...init },
     ),
-  runComments: (platform: string, postId: string) =>
-    request<RunCommentsResponse>(`/${platform}/posts/${postId}/comments/run`, { method: "POST" }),
+  runComments: (platform: string, postId: string, bypassDrain?: boolean) =>
+    request<RunCommentsResponse>(
+      `/${platform}/posts/${postId}/comments/run${bypassDrain === false ? "?bypass_drain=false" : ""}`,
+      { method: "POST" },
+    ),
   runChannelVideos: (params: RunChannelVideosParams) =>
     request<RunChannelVideosResponse>("/tiktok/channels/run", {
       method: "POST",

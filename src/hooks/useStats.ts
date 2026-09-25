@@ -150,13 +150,23 @@ export function useRunComments() {
 // request here without client-side throttling of its own doesn't add any
 // extra load against the Facebook account itself - it only affects how
 // long the backlog takes to drain.
+//
+// bypassDrain=false (unlike useRunComments' single-post trigger, which
+// leaves it default-true) - selecting many rows and firing this queues
+// exactly the kind of backlog a platform's Stop button must be able to
+// cancel, not a one-off "I need this one post now" click. Confirmed live
+// 2026-09-24: with every comments request hardcoded to ignore Stop, a
+// deep backlog had no way to be cancelled through the app at all - see
+// cinemark-api's publish_comments_crawl_request docstring.
 export function useRunCommentsBulk() {
   const { message } = App.useApp();
   const { t } = useTranslation();
 
   return useMutation({
     mutationFn: async (posts: { platform: string; postId: string }[]) => {
-      const results = await Promise.allSettled(posts.map(({ platform, postId }) => api.runComments(platform, postId)));
+      const results = await Promise.allSettled(
+        posts.map(({ platform, postId }) => api.runComments(platform, postId, false)),
+      );
       const published = results.filter((r) => r.status === "fulfilled" && r.value.published).length;
       return { requested: posts.length, published };
     },
