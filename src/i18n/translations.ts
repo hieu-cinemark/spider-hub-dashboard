@@ -55,7 +55,8 @@ const en = {
   toastMovieUpdated: "Movie updated",
   toastMovieRemoved: "Movie removed",
   toastReportGenerated: "Social topic report generated",
-  generateReportAction: "Generate report (takes 1-3 min)",
+  toastReportFailed: "Could not generate report - try again later.",
+  generateReportAction: "Generate report (takes 1-3 min, runs in the background)",
 
   // Shared across tables/forms
   platform: "Platform",
@@ -397,6 +398,9 @@ const en = {
   aiSettingsDisabled: "AI calls disabled",
   aiSettingsModel: "Model",
   aiSettingsModelHint: "Must match a model id on the Kira / OpenAI-compatible endpoint.",
+  aiSettingsReportProvider: "Report generation provider",
+  aiSettingsReportProviderHint:
+    "Which provider generates social-topic reports (topic clustering + narrative). Independent of the enabled toggle above, which only gates ingest-time classifiers.",
   aiSettingsPromptTask: "Prompt",
   aiSettingsSystemPrompt: "System prompt",
   aiSettingsResetPrompt: "Reset this prompt",
@@ -652,7 +656,8 @@ const vi: Record<keyof typeof en, string> = {
   toastMovieUpdated: "Đã cập nhật phim",
   toastMovieRemoved: "Đã gỡ phim",
   toastReportGenerated: "Đã tạo report social topic",
-  generateReportAction: "Tạo report (mất 1-3 phút)",
+  toastReportFailed: "Không tạo được report - thử lại sau.",
+  generateReportAction: "Tạo report (mất 1-3 phút, chạy nền)",
 
   platform: "Nền tảng",
   enabled: "Kích hoạt",
@@ -971,6 +976,9 @@ const vi: Record<keyof typeof en, string> = {
   aiSettingsDisabled: "Đang tắt gọi AI",
   aiSettingsModel: "Model",
   aiSettingsModelHint: "Phải trùng model id trên endpoint Kira / OpenAI-compatible.",
+  aiSettingsReportProvider: "Provider tạo báo cáo",
+  aiSettingsReportProviderHint:
+    "Provider nào sẽ tạo báo cáo chủ đề mạng xã hội (phân cụm chủ đề + nhận xét). Độc lập với công tắc bật/tắt ở trên - công tắc đó chỉ ảnh hưởng các classifier lúc ingest.",
   aiSettingsPromptTask: "Prompt",
   aiSettingsSystemPrompt: "System prompt",
   aiSettingsResetPrompt: "Khôi phục prompt này",

@@ -84,6 +84,7 @@ export const QUERY_KEYS = {
   keywordVolume: (platform?: string) => ["keyword-volume", platform ?? "all"] as const,
   tokenStatus: (platform: string) => ["token-status", platform] as const,
   jobStatus: (platform: string) => ["job-status", platform] as const,
+  reportJobStatus: (movieId: string) => ["report-job-status", movieId] as const,
   logs: (kind: "spider-hub" | "ingest", lines: number) => ["logs", kind, lines] as const,
   posts: (platform: string | undefined, keywordId?: string, keywordMatch?: boolean) =>
     ["posts", platform, keywordId ?? "", keywordMatch ?? ""] as const,

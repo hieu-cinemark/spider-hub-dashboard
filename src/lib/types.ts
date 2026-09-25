@@ -354,11 +354,17 @@ export interface AiPrompt {
   default_system_prompt: string;
 }
 
+export type ReportAiProvider = "kira" | "bee";
+
 export interface AiSettings {
   enabled: boolean;
   model: string;
   configured: boolean;
   prompts: AiPrompt[];
+  // Which provider generates social_topic_reports (cinemark-api's
+  // app/bee/report.py) - independent of `enabled` above, which only gates
+  // ingest-time classifiers.
+  active_report_provider: ReportAiProvider;
   updated_at: string | null;
 }
 
@@ -366,6 +372,7 @@ export interface AiSettingsInput {
   enabled: boolean;
   model: string;
   prompts: Record<string, string>;
+  active_report_provider: ReportAiProvider;
 }
 
 // One LLM provider's credentials (base_url/api_key/model) - see

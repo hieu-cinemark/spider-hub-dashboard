@@ -8,7 +8,7 @@ import { ItemCard, ItemCardList, ItemField } from "@/components/ItemCards";
 import MovieFormModal from "@/components/MovieFormModal";
 import TopPostsModal from "@/components/platform/TopPostsModal";
 import { useMdUp } from "@/hooks/useMdUp";
-import { useGenerateReportMutation, useMovieMutations, useMovies } from "@/hooks/useMovies";
+import { useGenerateReportMutation, useMovieMutations, useMovies, useReportJobStatus } from "@/hooks/useMovies";
 import { usePagedList } from "@/hooks/usePagedList";
 import { useTranslation } from "@/i18n/LocaleProvider";
 import type { Movie, MovieInput } from "@/lib/types";
@@ -36,12 +36,32 @@ function PosterThumb({ url, title }: { url?: string | null; title: string }) {
   );
 }
 
+// Its own component (not inlined in `actions` below) so each row's
+// useReportJobStatus poll is an independent hook instance - `actions` is a
+// plain function called once per row during render, not a component, so a
+// hook can't live there directly. This is also what lets several movies'
+// reports run and show progress at once instead of one shared mutation
+// state disabling every other row's button.
+function ReportButton({ movieId, label }: { movieId: string; label: string }) {
+  const generateReport = useGenerateReportMutation();
+  const { data: job } = useReportJobStatus(movieId);
+  const busy = job?.status === "queued" || job?.status === "running";
+  return (
+    <Button
+      size="small"
+      icon={<BarChartOutlined />}
+      title={label}
+      loading={busy}
+      onClick={() => generateReport.mutate(movieId)}
+    />
+  );
+}
+
 export default function MoviesTable() {
   const { t } = useTranslation();
   const mdUp = useMdUp();
   const { data: movies, isLoading } = useMovies();
   const { create, update, remove } = useMovieMutations();
-  const generateReport = useGenerateReportMutation();
   const [search, setSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Movie | null>(null);
@@ -84,14 +104,7 @@ export default function MoviesTable() {
         title={t("topPostsAction")}
         onClick={() => setTopMovie(movie)}
       />
-      <Button
-        size="small"
-        icon={<BarChartOutlined />}
-        title={t("generateReportAction")}
-        loading={generateReport.isPending && generateReport.variables === movie.id}
-        disabled={generateReport.isPending && generateReport.variables !== movie.id}
-        onClick={() => generateReport.mutate(movie.id)}
-      />
+      <ReportButton movieId={movie.id} label={t("generateReportAction")} />
       <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(movie)} />
       <Popconfirm
         title={t("removeMovieConfirm")}

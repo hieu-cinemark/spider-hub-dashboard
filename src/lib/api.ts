@@ -169,17 +169,15 @@ export const api = {
   updateMovie: (id: string, input: MovieInput) =>
     request<Movie>(`/movies/${id}`, { method: "PATCH", body: JSON.stringify(input) }),
   deleteMovie: (id: string) => request<{ ok: boolean }>(`/movies/${id}`, { method: "DELETE" }),
-  // Two sequential Bee (Claude Sonnet 5) calls server-side - confirmed
-  // live the topics-clustering call alone can take 2+ minutes on a
-  // movie with a large comment sample (up to 400 comments, see
-  // REPORT_COMMENT_SAMPLE_SIZE server-side), well past the default 15s
-  // request timeout. 180s wasn't enough margin either - that's barely
-  // above just the first of the two calls, with the narrative call still
-  // to go - bumped to 10min to match app.bee.client's own OpenAI-client
-  // timeout ceiling (app/ai_client.py has no explicit per-call timeout,
-  // so it falls back to the SDK default of 600s/10min per call).
-  generateMovieReport: (id: string) =>
-    request<{ status: string }>(`/movies/${id}/generate-report`, { method: "POST", timeoutMs: 600_000 }),
+  // Enqueues server-side (app/services/report_queue.py) and returns
+  // immediately - no long client timeout needed here anymore. The actual
+  // generation (two sequential Bee/Kira calls; confirmed live the
+  // topics-clustering call alone can take 2+ minutes on a movie with a
+  // large comment sample) runs in the background; poll
+  // generateMovieReportStatus for the result.
+  generateMovieReport: (id: string) => request<{ status: string }>(`/movies/${id}/generate-report`, { method: "POST" }),
+  generateMovieReportStatus: (id: string) =>
+    request<{ status: string; error: string | null }>(`/movies/${id}/generate-report`),
   runCrawl: (platform: string, params: RunScraperParams = {}) =>
     request<RunScraperResponse>(`/${platform}/run`, { method: "POST", body: JSON.stringify(params) }),
   importCookies: (platform: string, accountId: number, cookies: string) =>
