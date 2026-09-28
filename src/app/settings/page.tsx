@@ -9,6 +9,8 @@ import CommentScheduleCard from "@/components/settings/CommentScheduleCard";
 import CrawlScheduleCard from "@/components/settings/CrawlScheduleCard";
 import FilterKeywordsTable from "@/components/settings/FilterKeywordsTable";
 import ProxiesTable from "@/components/settings/ProxiesTable";
+import ProxyProvidersCard from "@/components/settings/ProxyProvidersCard";
+import ProxySettingsCard from "@/components/settings/ProxySettingsCard";
 import SettingsSummary from "@/components/settings/SettingsSummary";
 import { useQueryParam } from "@/hooks/useQueryParam";
 import { useTranslation } from "@/i18n/LocaleProvider";
@@ -35,6 +37,8 @@ export default function SettingsPage() {
                 <SettingsSummary />
                 <AccountsTable />
                 <ProxiesTable />
+                <ProxySettingsCard />
+                <ProxyProvidersCard />
               </div>
             ),
           },

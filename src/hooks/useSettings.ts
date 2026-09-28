@@ -16,6 +16,8 @@ import type {
   ImportCommitParams,
   ImportParseParams,
   ProxyInput,
+  ProxyProviderInput,
+  ProxySettings,
 } from "@/lib/types";
 
 const ACCOUNTS_KEY = QUERY_KEYS.settingsAccounts;
@@ -25,6 +27,8 @@ const PROXIES_KEY = ["settings", "proxies"];
 const FILTER_KEYWORDS_KEY = ["settings", "filter-keywords"];
 const AI_SETTINGS_KEY = ["settings", "ai"];
 const AI_PROVIDERS_KEY = ["settings", "ai-providers"];
+const PROXY_SETTINGS_KEY = ["settings", "proxy-settings"];
+const PROXY_PROVIDERS_KEY = ["settings", "proxy-providers"];
 
 export function useAccounts() {
   // `enabled` and last_check_status/last_checked_at can change from
@@ -313,6 +317,44 @@ export function useSetAiProvider() {
       // AI settings' own "configured" flag reads the kira provider row too.
       queryClient.invalidateQueries({ queryKey: AI_PROVIDERS_KEY });
       queryClient.invalidateQueries({ queryKey: AI_SETTINGS_KEY });
+    },
+    onError: (err: unknown) => message.error(translateApiError(err, t)),
+  });
+}
+
+export function useProxySettings() {
+  return useQuery({ queryKey: PROXY_SETTINGS_KEY, queryFn: api.proxySettings });
+}
+
+export function useSetProxySettings() {
+  const { message } = App.useApp();
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: ProxySettings) => api.setProxySettings(input),
+    onSuccess: (data) => {
+      message.success(t("toastProxySettingsUpdated"));
+      queryClient.setQueryData(PROXY_SETTINGS_KEY, data);
+    },
+    onError: (err: unknown) => message.error(translateApiError(err, t)),
+  });
+}
+
+export function useProxyProviders() {
+  return useQuery({ queryKey: PROXY_PROVIDERS_KEY, queryFn: api.proxyProviders });
+}
+
+export function useSetProxyProvider() {
+  const { message } = App.useApp();
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ key, input }: { key: string; input: ProxyProviderInput }) => api.setProxyProvider(key, input),
+    onSuccess: () => {
+      message.success(t("toastProxyProviderUpdated"));
+      queryClient.invalidateQueries({ queryKey: PROXY_PROVIDERS_KEY });
     },
     onError: (err: unknown) => message.error(translateApiError(err, t)),
   });

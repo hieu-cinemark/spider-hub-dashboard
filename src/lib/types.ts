@@ -394,6 +394,52 @@ export interface AiProviderInput {
   model: string;
 }
 
+// Proxy behavior tunables spider-hub reads (cinemark-api /settings/proxy).
+// Field names/defaults mirror spider-hub's services/proxy_settings.py.
+export interface ProxySettings {
+  repin_after_consecutive_failures: number;
+  cooldown_base_minutes: number;
+  cooldown_max_minutes: number;
+  health_check_ping_url: string;
+  health_check_timeout_seconds: number;
+  health_check_alert_after_failures: number;
+  health_check_streak_ttl_hours: number;
+  provider_request_timeout_seconds: number;
+  provider_min_get_new_interval_seconds: number;
+  provider_max_cooldown_wait_seconds: number;
+  exhausted_backoff_base_seconds: number;
+  exhausted_backoff_growth_factor: number;
+  exhausted_backoff_max_seconds: number;
+  exhausted_max_requeues: number;
+  tiktok_synthetic_provider: string;
+  tiktok_hashtag_max_attempts: number;
+  tiktok_comments_max_attempts: number;
+}
+
+export interface ProxySettingsResponse {
+  values: ProxySettings;
+  defaults: ProxySettings;
+  updated_at: string | null;
+}
+
+export interface ProxyProvider {
+  key: string;
+  api_url: string;
+  token_set: boolean;
+  ip_allowlist: boolean;
+  // false = no DB row yet - spider-hub still uses legacy_env_var from its .env.
+  in_db: boolean;
+  legacy_env_var: string | null;
+  updated_at: string | null;
+}
+
+export interface ProxyProviderInput {
+  api_url: string;
+  // Omit or blank to keep whatever token is already stored.
+  token?: string;
+  ip_allowlist: boolean;
+}
+
 export type NurturePlatform = "facebook" | "threads" | "all";
 
 export interface NurtureInput {

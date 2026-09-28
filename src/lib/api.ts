@@ -5,6 +5,10 @@ import type {
   AiProviderInput,
   AiSettings,
   AiSettingsInput,
+  ProxyProvider,
+  ProxyProviderInput,
+  ProxySettings,
+  ProxySettingsResponse,
   ApiErrorBody,
   Comment,
   CommentPage,
@@ -250,6 +254,14 @@ export const api = {
   aiProviders: () => request<AiProvider[]>("/settings/ai/providers"),
   setAiProvider: (key: string, input: AiProviderInput) =>
     request<AiProvider>(`/settings/ai/providers/${key}`, { method: "PUT", body: JSON.stringify(input) }),
+
+  proxySettings: () => request<ProxySettingsResponse>("/settings/proxy"),
+  setProxySettings: (input: ProxySettings) =>
+    request<ProxySettingsResponse>("/settings/proxy", { method: "PUT", body: JSON.stringify(input) }),
+
+  proxyProviders: () => request<ProxyProvider[]>("/settings/proxy/providers"),
+  setProxyProvider: (key: string, input: ProxyProviderInput) =>
+    request<ProxyProvider>(`/settings/proxy/providers/${key}`, { method: "PUT", body: JSON.stringify(input) }),
 
   importParse: (params: ImportParseParams) =>
     request<ImportParseResponse>("/settings/import/parse", { method: "POST", body: JSON.stringify(params) }),
