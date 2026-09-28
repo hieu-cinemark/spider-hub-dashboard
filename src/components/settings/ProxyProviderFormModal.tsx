@@ -25,7 +25,6 @@ export default function ProxyProviderFormModal({
   const { t } = useTranslation();
   const [form] = Form.useForm<ProxyProviderInput & { key: string }>();
   const isNew = !provider;
-  // A known plan with no DB row yet still runs off spider-hub's .env token.
   const tokenRequired = isNew;
 
   useEffect(() => {
@@ -74,13 +73,7 @@ export default function ProxyProviderFormModal({
         <Form.Item
           name="token"
           label={t("proxyProviderToken")}
-          extra={
-            provider?.in_db === false && provider.legacy_env_var
-              ? t("proxyProviderTokenHintEnv", { env: provider.legacy_env_var })
-              : provider
-                ? t("proxyProviderTokenHintKeep")
-                : undefined
-          }
+          extra={provider ? t("proxyProviderTokenHintKeep") : undefined}
           rules={tokenRequired ? [{ required: true }] : []}
         >
           <Input.Password placeholder={provider?.token_set ? "••••••••" : ""} />

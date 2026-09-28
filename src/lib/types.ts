@@ -427,9 +427,6 @@ export interface ProxyProvider {
   api_url: string;
   token_set: boolean;
   ip_allowlist: boolean;
-  // false = no DB row yet - spider-hub still uses legacy_env_var from its .env.
-  in_db: boolean;
-  legacy_env_var: string | null;
   updated_at: string | null;
 }
 

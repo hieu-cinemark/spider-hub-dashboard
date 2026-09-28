@@ -39,8 +39,6 @@ export default function ProxyProvidersCard() {
   const tokenTag = (r: ProxyProvider) =>
     r.token_set ? (
       <Tag color="green">{t("proxyProviderTokenInDb")}</Tag>
-    ) : r.legacy_env_var ? (
-      <Tag color="gold">{t("proxyProviderTokenFromEnv", { env: r.legacy_env_var })}</Tag>
     ) : (
       <Tag color="orange">{t("proxyProviderTokenMissing")}</Tag>
     );
