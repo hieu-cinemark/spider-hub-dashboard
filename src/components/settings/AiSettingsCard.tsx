@@ -11,6 +11,7 @@ import type { ReportAiProvider } from "@/lib/types";
 
 const TASK_LABEL_KEYS: Record<string, TranslationKey> = {
   relevance: "aiPromptTaskRelevance",
+  post_relevance: "aiPromptTaskPostRelevance",
   sentiment: "aiPromptTaskSentiment",
   topics: "aiPromptTaskTopics",
   narrative: "aiPromptTaskNarrative",
