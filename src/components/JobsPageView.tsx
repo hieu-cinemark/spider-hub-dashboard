@@ -14,6 +14,8 @@ const KAFKA_LAG_PLATFORMS = new Set(["facebook", "threads", "tiktok"]);
 function kafkaLagLabel(t: (key: TranslationKey) => string, label: string): string {
   if (label === "ingest_posts") return t("kafkaLagIngestPosts");
   if (label === "ingest_comments") return t("kafkaLagIngestComments");
+  if (label === "lake_posts") return t("kafkaLagLakePosts");
+  if (label === "lake_comments") return t("kafkaLagLakeComments");
   return label;
 }
 
