@@ -8,12 +8,18 @@ import ThemeToggle from "@/components/ThemeToggle";
 import LocaleSwitcher from "@/components/LocaleSwitcher";
 import { useTranslation } from "@/i18n/LocaleProvider";
 
-export default function LoginScreen({ onSubmit }: { onSubmit: (key: string) => boolean }) {
+export default function LoginScreen({ onSubmit }: { onSubmit: (key: string) => Promise<boolean> }) {
   const { t } = useTranslation();
   const [invalid, setInvalid] = useState(false);
+  const [checking, setChecking] = useState(false);
 
-  function handleFinish(values: { key: string }) {
-    setInvalid(!onSubmit(values.key.trim()));
+  async function handleFinish(values: { key: string }) {
+    setChecking(true);
+    try {
+      setInvalid(!(await onSubmit(values.key.trim())));
+    } finally {
+      setChecking(false);
+    }
   }
 
   return (
@@ -46,7 +52,7 @@ export default function LoginScreen({ onSubmit }: { onSubmit: (key: string) => b
             <Input.Password prefix={<KeyOutlined />} placeholder={t("accessKeyPlaceholder")} autoFocus size="large" />
           </Form.Item>
           <Form.Item className="!mb-0">
-            <Button type="primary" htmlType="submit" icon={<LoginOutlined />} block size="large">
+            <Button type="primary" htmlType="submit" icon={<LoginOutlined />} block size="large" loading={checking}>
               {t("continueBtn")}
             </Button>
           </Form.Item>

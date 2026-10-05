@@ -5,11 +5,16 @@ import type { TranslationKey } from "@/i18n/translations";
 // real value the backend can return (no health-check strategy for this
 // platform yet, e.g. instagram), distinct from `null` (never checked at
 // all, see checkStatusLabelKey below).
-const KNOWN_STATUSES = ["ok", "warning", "disabled", "unknown"] as const;
+// "alive"/"dead" are what spider-hub's cookie checks actually write
+// (nurture_accounts.record_cookie_check, auto_login) - the older
+// ok/warning set is kept for account_health.py's own checks.
+const KNOWN_STATUSES = ["ok", "alive", "warning", "dead", "disabled", "unknown"] as const;
 type CheckStatus = (typeof KNOWN_STATUSES)[number];
 
 const LABEL_KEYS: Record<CheckStatus, TranslationKey> = {
   ok: "checkStatusOk",
+  alive: "checkStatusAlive",
+  dead: "checkStatusDead",
   warning: "checkStatusWarning",
   disabled: "checkStatusDisabled",
   unknown: "checkStatusUnknown",
@@ -17,6 +22,8 @@ const LABEL_KEYS: Record<CheckStatus, TranslationKey> = {
 
 const TAG_COLORS: Record<CheckStatus, string> = {
   ok: "success",
+  alive: "success",
+  dead: "error",
   warning: "warning",
   disabled: "default",
   unknown: "default",

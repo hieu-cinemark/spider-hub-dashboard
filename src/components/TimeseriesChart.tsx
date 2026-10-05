@@ -4,21 +4,9 @@ import { Line } from "@ant-design/plots";
 import { memo, useMemo } from "react";
 import type { TimeseriesPoint } from "@/lib/types";
 import { formatShortDay } from "@/lib/platform";
-import { CHART_HEIGHT } from "@/lib/constants";
+import { CHART_HEIGHT, TIMESERIES_DAYS } from "@/lib/constants";
+import { METRIC_CHART_COLOR as METRIC_COLOR, dayWindow, sumByDay } from "@/lib/chartSeries";
 import { useColorTheme } from "@/theme/ThemeProvider";
-
-const METRIC_COLOR = {
-  posts: "#4f46e5",
-  comments: "#d97706",
-} as const;
-
-function sumByDay(points: TimeseriesPoint[]): Map<string, number> {
-  const totals = new Map<string, number>();
-  for (const row of points) {
-    totals.set(row.day, (totals.get(row.day) ?? 0) + row.count);
-  }
-  return totals;
-}
 
 function TimeseriesChart({
   posts,
@@ -37,7 +25,7 @@ function TimeseriesChart({
   const chartData = useMemo(() => {
     const postByDay = sumByDay(posts);
     const commentByDay = sumByDay(comments);
-    const days = Array.from(new Set([...postByDay.keys(), ...commentByDay.keys()])).sort();
+    const days = dayWindow(TIMESERIES_DAYS, [...posts, ...comments]);
     return days.flatMap((day) => [
       { day, metric: postsLabel, count: postByDay.get(day) ?? 0 },
       { day, metric: commentsLabel, count: commentByDay.get(day) ?? 0 },
@@ -58,17 +46,19 @@ function TimeseriesChart({
         y: { nice: true, domainMin: 0 },
       }}
       insetTop={16}
-      point={{ shape: "circle", size: 3 }}
-      smooth
+      point={{ shape: "circle", size: 2 }}
+      shapeField="smooth"
+      style={{ lineWidth: 2 }}
       theme={{ type: isDark ? "classicDark" : "classic" }}
       axis={{
         y: { title: false, grid: true, labelFormatter: (v: number) => Number(v).toLocaleString() },
-        x: { title: false, labelFormatter: formatShortDay },
+        x: { title: false, labelFormatter: formatShortDay, labelAutoHide: true, labelAutoRotate: false },
       }}
       tooltip={{
         title: (d: { day: string }) => formatShortDay(d.day),
         items: [{ channel: "y", valueFormatter: (v: number) => Number(v).toLocaleString() }],
       }}
+      interaction={{ tooltip: { shared: true } }}
       legend={{ color: { position: "top" } }}
       animation={false}
       height={CHART_HEIGHT}

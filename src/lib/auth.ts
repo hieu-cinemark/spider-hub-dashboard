@@ -1,9 +1,10 @@
-import { AUTH_STORAGE_KEY } from "./constants";
+import { API_BASE_URL, AUTH_STORAGE_KEY } from "./constants";
 
-// Lightweight key-entry gate, not real auth: NEXT_PUBLIC_AUTH_KEY ships in
-// the client bundle like any NEXT_PUBLIC_* var, and cinemark-api itself has
-// no auth of its own (see its CORS_ORIGINS setup) - this only keeps the UI
-// out of casual reach.
+// The typed key is checked against cinemark-api's own GET /auth/check and
+// then sent on every request (X-API-Key). When the API has no key
+// configured (API_AUTH_KEY unset, auth_required=false) this falls back to
+// the old client-side gate against NEXT_PUBLIC_AUTH_KEY - which ships in the
+// bundle, so it only keeps the UI out of casual reach.
 export const REQUIRED_AUTH_KEY = process.env.NEXT_PUBLIC_AUTH_KEY;
 
 // Sentinel the server (and the very first client render, before hydration
@@ -47,14 +48,38 @@ export function resyncAuth(): void {
   notify();
 }
 
-export function login(key: string): boolean {
-  if (!REQUIRED_AUTH_KEY || key !== REQUIRED_AUTH_KEY) return false;
+export function currentAuthKey(): string {
+  if (typeof window === "undefined") return "";
+  try {
+    return window.localStorage.getItem(AUTH_STORAGE_KEY) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+async function keyAccepted(key: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/auth/check`, { headers: { "X-API-Key": key }, cache: "no-store" });
+    const body: { auth_required: boolean; valid: boolean } = await res.json();
+    if (body.auth_required) return body.valid;
+  } catch {
+    // API unreachable - fall through to the client-side check so the
+    // dashboard still opens (and shows its own "could not reach API").
+  }
+  // Neither side configures a key: nothing to check against.
+  if (!REQUIRED_AUTH_KEY) return true;
+  return key === REQUIRED_AUTH_KEY;
+}
+
+export async function login(key: string): Promise<boolean> {
+  if (!(await keyAccepted(key))) return false;
   window.localStorage.setItem(AUTH_STORAGE_KEY, key);
   notify();
   return true;
 }
 
 export function logout(): void {
+  if (!window.localStorage.getItem(AUTH_STORAGE_KEY)) return;
   window.localStorage.removeItem(AUTH_STORAGE_KEY);
   notify();
 }

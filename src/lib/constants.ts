@@ -4,9 +4,20 @@
 
 export const AUTH_STORAGE_KEY = "spider-hub-dashboard.auth-key";
 
+// cinemark-api (FastAPI) - see cinemark-api/app/main.py.
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+
 export const REFRESH_INTERVAL_MS = {
-  stats: 1_800_000,
-  timeseries: 1_800_000,
+  // Per-platform totals read the small stats_platform_daily rollup (a few
+  // hundred D1 rows per call) - 30 min made the Overview look frozen while a
+  // crawl was saving posts. Finished jobs also invalidate these right away
+  // (see useRefreshStatsOnJobFinish), so this is only the fallback.
+  stats: 120_000,
+  timeseries: 300_000,
+  // /stats/keywords is the heavy one (~70KB) - keeps the old slow cadence.
+  keywordVolume: 1_800_000,
+  // Redis-backed hourly counters (no D1 cost) - cheap enough to poll often.
+  hourly: 120_000,
   tokenStatus: 60_000,
   // Health banner / nav badge — summary counts only, slow cadence.
   healthLogs: 60_000,
@@ -15,7 +26,8 @@ export const REFRESH_INTERVAL_MS = {
   jobStatus: 12_000,
   jobStatusActive: 5_000,
   // Ops performance chart — samples host load + queue depth into Redis.
-  opsMetrics: 15_000,
+  // Sampled server-side every 60s now, so polling faster gains nothing.
+  opsMetrics: 60_000,
   // Real Kafka consumer-group lag - each call is a few broker round trips
   // (admin RPCs), slower than the Redis-backed queue count, so this polls
   // less aggressively.
@@ -81,6 +93,8 @@ export const QUERY_KEYS = {
   timeseries: (days: number) => ["timeseries", days] as const,
   commentCounts: ["comment-counts"] as const,
   commentTimeseries: (days: number) => ["comment-timeseries", days] as const,
+  hourly: (hours: number) => ["hourly", hours] as const,
+  ingestFunnel: (hours: number) => ["hourly", "funnel", hours] as const,
   keywordVolume: (platform?: string) => ["keyword-volume", platform ?? "all"] as const,
   tokenStatus: (platform: string) => ["token-status", platform] as const,
   jobStatus: (platform: string) => ["job-status", platform] as const,

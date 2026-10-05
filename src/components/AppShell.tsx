@@ -14,12 +14,16 @@ import {
 import { Badge, Button, Layout, Menu, Tag, Typography } from "antd";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import Logo from "@/components/Logo";
 import LocaleSwitcher from "@/components/LocaleSwitcher";
+import AlertsBell from "@/components/AlertsBell";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useCrawlHealth } from "@/hooks/useCrawlHealth";
 import { useJobsSnapshot, type JobsPollMode } from "@/hooks/useJobs";
+import { prefetchSettings } from "@/hooks/useSettings";
+import { useRefreshStatsOnJobFinish } from "@/hooks/useStats";
 import { useTranslation } from "@/i18n/LocaleProvider";
 import type { TranslationKey } from "@/i18n/translations";
 import { logout } from "@/lib/auth";
@@ -62,6 +66,22 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const { health } = useCrawlHealth(true);
 
   const liveCount = (jobs?.running.length ?? 0) + (jobs?.queued.length ?? 0);
+  const queryClient = useQueryClient();
+  const latestFinished = jobs?.history[0];
+  useRefreshStatsOnJobFinish(
+    latestFinished ? `${latestFinished.id}:${latestFinished.finished_at ?? ""}` : undefined,
+  );
+
+  // Once the current page has settled, quietly load Settings' data too.
+  useEffect(() => {
+    const run = () => prefetchSettings(queryClient);
+    if (typeof window.requestIdleCallback === "function") {
+      const id = window.requestIdleCallback(run, { timeout: 4000 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const id = window.setTimeout(run, 2000);
+    return () => window.clearTimeout(id);
+  }, [queryClient]);
   const runningLabel = jobs?.running[0]?.label || jobs?.queued[0]?.label || "";
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -90,18 +110,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
           label: <span className="nav-section-label !px-0 !pt-2 !pb-0">{t(section.labelKey)}</span>,
           children: rows.map((item) => ({
             key: item.key,
-            icon:
-              item.key === "/logs" && health.errorCount > 0 ? (
-                <Badge size="small" count={health.errorCount} overflowCount={99} offset={[6, 0]}>
-                  {item.icon}
-                </Badge>
-              ) : item.key === "/jobs" && liveCount > 0 ? (
-                <Badge size="small" count={liveCount} overflowCount={99} offset={[6, 0]}>
-                  {item.icon}
-                </Badge>
-              ) : (
-                item.icon
-              ),
+            icon: item.icon,
             label: (
               <Link
                 href={
@@ -109,8 +118,14 @@ export default function AppShell({ children }: { children: ReactNode }) {
                     ? "/logs?log=spider-hub&level=error"
                     : item.key
                 }
+                className="flex items-center justify-between gap-2"
               >
-                {t(item.labelKey)}
+                <span>{t(item.labelKey)}</span>
+                {item.key === "/logs" && health.errorCount > 0 ? (
+                  <Badge size="small" count={health.errorCount} overflowCount={99} />
+                ) : item.key === "/jobs" && liveCount > 0 ? (
+                  <Badge size="small" count={liveCount} overflowCount={99} />
+                ) : null}
               </Link>
             ),
           })),
@@ -232,6 +247,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
             )}
           </div>
           <div className="flex items-center gap-1 sm:gap-2">
+            <AlertsBell />
             <ThemeToggle />
             <LocaleSwitcher variant="light" />
             <Button icon={<LogoutOutlined />} onClick={logout}>

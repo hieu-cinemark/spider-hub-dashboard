@@ -1,15 +1,14 @@
 "use client";
 
 import { AppstoreOutlined, ReloadOutlined } from "@ant-design/icons";
-import { Alert, Badge, Button, Tabs, Typography } from "antd";
+import { Alert, App, Badge, Button, Tabs, Tooltip, Typography } from "antd";
+import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import CrawlHealthBanner from "@/components/CrawlHealthBanner";
 import { useCrawlHealth } from "@/hooks/useCrawlHealth";
 import { useQueryParam } from "@/hooks/useQueryParam";
 import { usePlatformStats } from "@/hooks/useStats";
 import { useTranslation } from "@/i18n/LocaleProvider";
-import { QUERY_KEYS, TIMESERIES_DAYS } from "@/lib/constants";
-import { formatRelativeTime } from "@/lib/format";
 import { PLATFORM_META, PlatformIcon, platformLabel } from "@/lib/platform";
 import AllPlatformsOverview from "./AllPlatformsOverview";
 import PlatformDetail from "./PlatformDetail";
@@ -18,19 +17,36 @@ export default function PlatformTabs() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useQueryParam("tab", "all");
-  const { data: stats, isLoading, error, dataUpdatedAt } = usePlatformStats();
+  const { message } = App.useApp();
+  const { data: stats, error, dataUpdatedAt } = usePlatformStats();
+  const [refreshing, setRefreshing] = useState(false);
   const { health } = useCrawlHealth();
 
   const platforms = Array.from(
     new Set([...Object.keys(PLATFORM_META), ...(stats ?? []).map((s) => s.platform)]),
   );
 
-  function refreshOverview() {
-    void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.platformStats });
-    void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.timeseries(TIMESERIES_DAYS) });
-    void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.commentCounts });
-    void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.commentTimeseries(TIMESERIES_DAYS) });
-    void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.keywordVolume(undefined) });
+  // Refetches *everything currently on screen* right now, ignoring
+  // staleTime: counts, every chart, the funnel, queue/Kafka/ops panels,
+  // accounts, the alert bell, and the active platform tab's keyword table.
+  // It used to invalidate a hand-picked list of five keys (half the page
+  // never refreshed) with no spinner, so a click looked like a no-op.
+  async function refreshAll() {
+    setRefreshing(true);
+    const startedAt = Date.now();
+    try {
+      // refetchQueries never rejects (throwOnError defaults to false) - a
+      // failed panel shows up as a query whose error landed after startedAt.
+      await queryClient.refetchQueries({ type: "active" }, { cancelRefetch: true });
+      const failed = queryClient
+        .getQueryCache()
+        .findAll({ type: "active" })
+        .some((query) => query.state.status === "error" && query.state.errorUpdatedAt >= startedAt);
+      if (failed) message.warning({ content: t("refreshAllFailed"), key: "refresh-all" });
+      else message.success({ content: t("refreshDone"), key: "refresh-all", duration: 1.5 });
+    } finally {
+      setRefreshing(false);
+    }
   }
 
   return (
@@ -43,11 +59,15 @@ export default function PlatformTabs() {
         tabBarExtraContent={
           <div className="flex items-center gap-2">
             {dataUpdatedAt > 0 && (
-              <Typography.Text className="text-xs font-medium text-[var(--ink-soft)]">
-                {t("statsUpdatedAt", { time: formatRelativeTime(new Date(dataUpdatedAt).toISOString(), t) })}
-              </Typography.Text>
+              <Tooltip title={new Date(dataUpdatedAt).toLocaleString()}>
+                <Typography.Text className="text-xs font-medium tabular-nums text-[var(--ink-soft)]">
+                  {t("statsUpdatedAt", {
+                    time: new Date(dataUpdatedAt).toLocaleTimeString(undefined, { hour12: false }),
+                  })}
+                </Typography.Text>
+              </Tooltip>
             )}
-            <Button size="small" icon={<ReloadOutlined />} loading={isLoading} onClick={refreshOverview}>
+            <Button size="small" icon={<ReloadOutlined spin={refreshing} />} disabled={refreshing} onClick={refreshAll}>
               {t("refresh")}
             </Button>
           </div>

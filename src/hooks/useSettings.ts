@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { type QueryClient, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App } from "antd";
 import { useTranslation } from "@/i18n/LocaleProvider";
 import { checkStatusLabelKey } from "@/lib/accountHealth";
@@ -9,6 +9,8 @@ import type {
   AccountInput,
   AiProviderInput,
   AiSettingsInput,
+  AutoLoginSettingsInput,
+  CleanupSettingsInput,
   CommentScheduleInput,
   CrawlScheduleInput,
   FilterKeywordInput,
@@ -23,12 +25,37 @@ import type {
 const ACCOUNTS_KEY = QUERY_KEYS.settingsAccounts;
 const CRAWL_SCHEDULE_KEY = ["settings", "crawl-schedule"];
 const COMMENT_SCHEDULE_KEY = ["settings", "comment-schedule"];
+const CLEANUP_SETTINGS_KEY = ["settings", "cleanup"];
+const CLEANUP_HISTORY_KEY = ["settings", "cleanup-history"];
+
+// Auto-login settings + history - same key shape as the cleanup pair
+// (["settings", "<feature>"]) so query invalidation patterns from
+// other features work without new wiring.
+const AUTO_LOGIN_SETTINGS_KEY = ["settings", "auto-login"];
+const AUTO_LOGIN_HISTORY_KEY = ["settings", "auto-login-history"];
 const PROXIES_KEY = ["settings", "proxies"];
 const FILTER_KEYWORDS_KEY = ["settings", "filter-keywords"];
 const AI_SETTINGS_KEY = ["settings", "ai"];
 const AI_PROVIDERS_KEY = ["settings", "ai-providers"];
 const PROXY_SETTINGS_KEY = ["settings", "proxy-settings"];
 const PROXY_PROVIDERS_KEY = ["settings", "proxy-providers"];
+
+// Warms the Settings page's caches while the browser is idle (see AppShell),
+// so opening Settings shows data immediately instead of a row of skeletons
+// waiting on Supabase. Same keys/fns as the hooks below, so those pick the
+// data straight up; prefetchQuery is a no-op for anything still fresh.
+export function prefetchSettings(queryClient: QueryClient): void {
+  const pairs: [readonly unknown[], () => Promise<unknown>][] = [
+    [PROXIES_KEY, () => api.proxies()],
+    [PROXY_SETTINGS_KEY, api.proxySettings],
+    [PROXY_PROVIDERS_KEY, api.proxyProviders],
+    [CRAWL_SCHEDULE_KEY, api.crawlSchedule],
+    [COMMENT_SCHEDULE_KEY, api.commentSchedule],
+  ];
+  for (const [queryKey, queryFn] of pairs) {
+    void queryClient.prefetchQuery({ queryKey, queryFn });
+  }
+}
 
 export function useAccounts() {
   // `enabled` and last_check_status/last_checked_at can change from
@@ -377,5 +404,125 @@ export function useSetCommentSchedule() {
       queryClient.invalidateQueries({ queryKey: COMMENT_SCHEDULE_KEY });
     },
     onError: (err: unknown) => message.error(translateApiError(err, t)),
+  });
+}
+
+// Irrelevant-post cleanup (cinemark-api's app/services/cleanup.py +
+// scheduler.py). The history poll is short (15s) because the operator
+// expects the "Running…" state to clear promptly after a manual run
+// finishes - the in-process purge takes seconds to a couple of minutes
+// depending on backlog.
+const CLEANUP_HISTORY_REFRESH_MS = 15_000;
+
+export function useCleanupSettings() {
+  return useQuery({
+    queryKey: CLEANUP_SETTINGS_KEY,
+    queryFn: api.cleanupSettings,
+    refetchInterval: CLEANUP_HISTORY_REFRESH_MS,
+  });
+}
+
+export function useSetCleanupSettings() {
+  const { message } = App.useApp();
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: CleanupSettingsInput) => api.setCleanupSettings(input),
+    onSuccess: (data) => {
+      message.success(t("toastCleanupSettingsUpdated"));
+      queryClient.setQueryData(CLEANUP_SETTINGS_KEY, data);
+    },
+    onError: (err: unknown) => message.error(translateApiError(err, t)),
+  });
+}
+
+export function useRunCleanup() {
+  const { message } = App.useApp();
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => api.runCleanup(),
+    onSuccess: (res) => {
+      if (res.started) message.success(t("toastCleanupStarted"));
+      else message.warning(t("toastCleanupAlreadyRunning"));
+      // Re-pull immediately so the "running" flag flips + a new history row
+      // shows up without waiting out the refetchInterval.
+      queryClient.invalidateQueries({ queryKey: CLEANUP_SETTINGS_KEY });
+      queryClient.invalidateQueries({ queryKey: CLEANUP_HISTORY_KEY });
+    },
+    onError: (err: unknown) => message.error(translateApiError(err, t)),
+  });
+}
+
+export function useCleanupHistory(limit = 20) {
+  return useQuery({
+    queryKey: [...CLEANUP_HISTORY_KEY, limit],
+    queryFn: () => api.cleanupHistory(limit),
+    refetchInterval: CLEANUP_HISTORY_REFRESH_MS,
+  });
+}
+
+// Auto-login hooks - same shape as the cleanup pair:
+//  * useAutoLoginSettings() refetches every 10s so the "running" flag
+//    and "last_run_at" surface the scheduler state without a manual
+//    refresh (10s is shorter than the cleanup 15s because the
+//    auto-login tick can be a few seconds and the operator wants to
+//    see "running" flip back to false fast).
+//  * useSetAutoLoginSettings() invalidates the settings + history
+//    keys on success so the next pull shows the post-write values.
+//  * useRunAutoLogin() invalidates both keys so the new history row
+//    and the "running" flag land without a manual refresh.
+//  * useAutoLoginHistory() reuses the same 10s polling cadence so the
+//    table updates shortly after the scheduler or manual button
+//    kicks a tick.
+const AUTO_LOGIN_REFRESH_MS = 10_000;
+
+export function useAutoLoginSettings() {
+  return useQuery({
+    queryKey: AUTO_LOGIN_SETTINGS_KEY,
+    queryFn: api.autoLoginSettings,
+    refetchInterval: AUTO_LOGIN_REFRESH_MS,
+  });
+}
+
+export function useSetAutoLoginSettings() {
+  const { message } = App.useApp();
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: AutoLoginSettingsInput) => api.setAutoLoginSettings(input),
+    onSuccess: (data) => {
+      message.success(t("toastAutoLoginSettingsUpdated"));
+      queryClient.setQueryData(AUTO_LOGIN_SETTINGS_KEY, data);
+    },
+    onError: (err: unknown) => message.error(translateApiError(err, t)),
+  });
+}
+
+export function useRunAutoLogin() {
+  const { message } = App.useApp();
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => api.runAutoLogin(),
+    onSuccess: (res) => {
+      if (res.started) message.success(t("toastAutoLoginStarted"));
+      else message.warning(t("toastAutoLoginAlreadyRunning"));
+      queryClient.invalidateQueries({ queryKey: AUTO_LOGIN_SETTINGS_KEY });
+      queryClient.invalidateQueries({ queryKey: AUTO_LOGIN_HISTORY_KEY });
+    },
+    onError: (err: unknown) => message.error(translateApiError(err, t)),
+  });
+}
+
+export function useAutoLoginHistory(limit = 20) {
+  return useQuery({
+    queryKey: [...AUTO_LOGIN_HISTORY_KEY, limit],
+    queryFn: () => api.autoLoginHistory(limit),
+    refetchInterval: AUTO_LOGIN_REFRESH_MS,
   });
 }

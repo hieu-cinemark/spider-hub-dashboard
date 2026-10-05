@@ -30,7 +30,7 @@ function ThemedApp({ children }: { children: ReactNode }) {
           colorBgLayout: isDark ? "#0c0b0a" : "#ebe6dc",
           colorBgElevated: isDark ? "#1f1b16" : "#fffcf7",
           borderRadius: 12,
-          fontFamily: "var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif",
+          fontFamily: "var(--font-inter), ui-sans-serif, system-ui, sans-serif",
           controlHeight: 36,
         },
         components: {
@@ -41,7 +41,7 @@ function ThemedApp({ children }: { children: ReactNode }) {
           },
           Button: {
             borderRadius: 10,
-            fontWeight: 650,
+            fontWeight: 500,
             defaultColor: isDark ? "#f7f3ea" : "#10141c",
             defaultBorderColor: isDark ? "#5a5248" : "#9e9486",
           },

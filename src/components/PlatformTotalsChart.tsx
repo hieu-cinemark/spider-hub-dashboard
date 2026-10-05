@@ -6,22 +6,21 @@ import { useColorTheme } from "@/theme/ThemeProvider";
 import { platformLabel } from "@/lib/platform";
 import { CHART_HEIGHT } from "@/lib/constants";
 import type { PlatformStat } from "@/lib/types";
+import { METRIC_CHART_COLOR as METRIC_COLOR } from "@/lib/chartSeries";
 
-const METRIC_COLOR = {
-  posts: "#4f46e5",
-  comments: "#d97706",
-} as const;
 
 function PlatformTotalsChart({
   posts,
   comments,
   postsLabel,
   commentsLabel,
+  height = CHART_HEIGHT,
 }: {
   posts: PlatformStat[];
   comments: PlatformStat[];
   postsLabel: string;
   commentsLabel: string;
+  height?: number;
 }) {
   const { theme } = useColorTheme();
   const isDark = theme === "dark";
@@ -70,7 +69,8 @@ function PlatformTotalsChart({
       legend={{ color: { position: "top" } }}
       animation={false}
       theme={{ type: isDark ? "classicDark" : "classic" }}
-      height={CHART_HEIGHT}
+      style={{ maxWidth: 56 }}
+      height={height}
     />
   );
 }

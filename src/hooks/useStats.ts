@@ -1,4 +1,5 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
 import { App } from "antd";
 import { useTranslation } from "@/i18n/LocaleProvider";
 import { api } from "@/lib/api";
@@ -33,6 +34,26 @@ export function useTimeseries(days: number = TIMESERIES_DAYS) {
   });
 }
 
+export function useHourlyStats(hours: number) {
+  return useQuery({
+    queryKey: QUERY_KEYS.hourly(hours),
+    queryFn: () => api.hourly(hours),
+    staleTime: REFRESH_INTERVAL_MS.hourly,
+    refetchInterval: REFRESH_INTERVAL_MS.hourly,
+    refetchOnWindowFocus: false,
+  });
+}
+
+export function useIngestFunnel(hours: number) {
+  return useQuery({
+    queryKey: QUERY_KEYS.ingestFunnel(hours),
+    queryFn: () => api.ingestFunnel(hours),
+    staleTime: REFRESH_INTERVAL_MS.hourly,
+    refetchInterval: REFRESH_INTERVAL_MS.hourly,
+    refetchOnWindowFocus: false,
+  });
+}
+
 export function useCommentCounts() {
   return useQuery({
     queryKey: QUERY_KEYS.commentCounts,
@@ -55,12 +76,12 @@ export function useCommentTimeseries(days: number = TIMESERIES_DAYS) {
 
 export function useKeywordVolume(platform?: string, enabled = true) {
   const tiktokLive = platform === "tiktok";
-  const refetchInterval = usePollingInterval(tiktokLive ? 15_000 : REFRESH_INTERVAL_MS.stats, enabled && tiktokLive);
+  const refetchInterval = usePollingInterval(tiktokLive ? 15_000 : REFRESH_INTERVAL_MS.keywordVolume, enabled && tiktokLive);
   return useQuery({
     queryKey: QUERY_KEYS.keywordVolume(platform),
     queryFn: () => api.keywordVolume(platform),
-    staleTime: REFRESH_INTERVAL_MS.stats,
-    refetchInterval: tiktokLive ? refetchInterval : REFRESH_INTERVAL_MS.stats,
+    staleTime: REFRESH_INTERVAL_MS.keywordVolume,
+    refetchInterval: tiktokLive ? refetchInterval : REFRESH_INTERVAL_MS.keywordVolume,
     refetchOnWindowFocus: false,
     enabled,
   });
@@ -179,4 +200,34 @@ export function useRunCommentsBulk() {
     },
     onError: (err) => message.error(translateApiError(err, t)),
   });
+}
+
+// Refreshes every count/chart the moment a crawl job finishes (a new entry
+// at the top of the jobs history), instead of waiting out the polling
+// interval - ingest lands a crawl's posts within seconds of the job ending.
+// Mounted once in AppShell, fed by the jobs snapshot it already polls.
+export function useRefreshStatsOnJobFinish(latestFinishedId: string | undefined) {
+  const queryClient = useQueryClient();
+  const previous = useRef<string | undefined>(undefined);
+
+  useEffect(() => {
+    if (!latestFinishedId) return;
+    if (previous.current && previous.current !== latestFinishedId) {
+      // Small delay: the last Kafka batch is still being ingested when the job flips to done.
+      const id = window.setTimeout(() => {
+        for (const queryKey of [
+          QUERY_KEYS.platformStats,
+          QUERY_KEYS.commentCounts,
+          QUERY_KEYS.timeseries(TIMESERIES_DAYS),
+          QUERY_KEYS.commentTimeseries(TIMESERIES_DAYS),
+          ["hourly"],
+        ]) {
+          void queryClient.invalidateQueries({ queryKey });
+        }
+      }, 5_000);
+      previous.current = latestFinishedId;
+      return () => window.clearTimeout(id);
+    }
+    previous.current = latestFinishedId;
+  }, [latestFinishedId, queryClient]);
 }

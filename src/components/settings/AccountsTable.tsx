@@ -14,7 +14,8 @@ import {
   SafetyCertificateOutlined,
   SearchOutlined,
 } from "@ant-design/icons";
-import { App, Button, Checkbox, Dropdown, Input, Modal, Select, Space, Table, Tag, Tooltip, Typography } from "antd";
+import { Alert, App, Button, Checkbox, Dropdown, Input, Modal, Select, Space, Spin, Table, Tag, Tooltip, Typography } from "antd";
+import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import DashboardCard, { CardHeading } from "@/components/DashboardCard";
 import { ItemCard, ItemCardList, ItemField } from "@/components/ItemCards";
@@ -31,7 +32,10 @@ import { useQueryRecord } from "@/hooks/useQueryParam";
 import { useAccountMutations, useAccounts, useProxies } from "@/hooks/useSettings";
 import { useTranslation } from "@/i18n/LocaleProvider";
 import { TRIGGERABLE_PLATFORMS } from "@/lib/constants";
+import { api } from "@/lib/api";
 import { poolStatusInfo } from "@/lib/poolStatus";
+import { checkStatusLabelKey, checkStatusTagColor } from "@/lib/accountHealth";
+import { formatRelativeTime } from "@/lib/format";
 import type { Account, AccountInput } from "@/lib/types";
 
 // Label stacked above value (not side-by-side) so a long value - a raw
@@ -74,9 +78,19 @@ function MaskedRow({ label, value }: { label: string; value: string }) {
 // popup), which looked exactly like visual corruption. A Modal is a
 // singleton by construction (one open at a time, centered, its own
 // backdrop) so that class of bug can't happen.
+// Secrets are no longer part of the accounts list (cinemark-api masks them)
+// - fetched one account at a time, only while this modal is open, and
+// dropped from the cache as soon as it closes (gcTime: 0).
 function CredentialsModal({ account, isTikTok }: { account: Account; isTikTok: boolean }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
+  const { data: creds, isLoading, error } = useQuery({
+    queryKey: ["settings", "account-credentials", account.id],
+    queryFn: () => api.accountCredentials(account.id),
+    enabled: open,
+    gcTime: 0,
+    staleTime: 0,
+  });
   return (
     <>
       <Tooltip title={t("viewCredentialsAction")}>
@@ -91,17 +105,25 @@ function CredentialsModal({ account, isTikTok }: { account: Account; isTikTok: b
         centered
         destroyOnHidden
       >
-        <div className="flex flex-col gap-1">
-          {!isTikTok && (
-            <>
-              <MaskedRow label={t("columnPassword")} value={account.password} />
-              <MaskedRow label={t("column2fa")} value={account.totp_secret} />
-              <MaskedRow label={t("columnEmailPassword")} value={account.email_password} />
-            </>
-          )}
-          <MaskedRow label={t("columnCookie")} value={account.cookie} />
-          <MaskedRow label={isTikTok ? t("odinId") : t("tokenReserved")} value={account.token} />
-        </div>
+        {error ? (
+          <Alert type="error" showIcon title={t("credentialsLoadFailed")} />
+        ) : isLoading || !creds ? (
+          <div className="flex justify-center py-8">
+            <Spin />
+          </div>
+        ) : (
+          <div className="flex flex-col gap-1">
+            {!isTikTok && (
+              <>
+                <MaskedRow label={t("columnPassword")} value={creds.password} />
+                <MaskedRow label={t("column2fa")} value={creds.totp_secret} />
+                <MaskedRow label={t("columnEmailPassword")} value={creds.email_password} />
+              </>
+            )}
+            <MaskedRow label={t("columnCookie")} value={creds.cookie} />
+            <MaskedRow label={isTikTok ? t("odinId") : t("tokenReserved")} value={creds.token} />
+          </div>
+        )}
       </Modal>
     </>
   );
@@ -141,7 +163,7 @@ function AccountPoolTag({ account }: { account: Account }) {
 
 const ACCOUNTS_QUERY = { platform: ALL_PLATFORM_QUERY, q: "", status: "all" };
 
-type AccountStatusFilter = "all" | "active" | "disabled" | "checkpoint" | "cooldown";
+type AccountStatusFilter = "all" | "active" | "disabled" | "checkpoint" | "cooldown" | "dead";
 
 function matchesAccountStatus(account: Account, status: AccountStatusFilter): boolean {
   if (status === "all") return true;
@@ -150,6 +172,7 @@ function matchesAccountStatus(account: Account, status: AccountStatusFilter): bo
   if (status === "disabled") return !account.enabled;
   if (status === "checkpoint") return account.pool_status === "checkpoint";
   if (status === "cooldown") return account.enabled && cooling;
+  if (status === "dead") return account.last_check_status === "dead";
   if (status === "active") {
     return account.enabled && account.pool_status !== "checkpoint" && !cooling;
   }
@@ -168,7 +191,7 @@ export default function AccountsTable() {
   const [query, setQuery] = useQueryRecord(ACCOUNTS_QUERY);
   const search = query.q;
   const platformFilter = query.platform === ALL_PLATFORM_QUERY ? null : query.platform;
-  const statusFilter = (["all", "active", "disabled", "checkpoint", "cooldown"] as const).includes(
+  const statusFilter = (["all", "active", "disabled", "checkpoint", "cooldown", "dead"] as const).includes(
     query.status as AccountStatusFilter,
   )
     ? (query.status as AccountStatusFilter)
@@ -271,6 +294,7 @@ export default function AccountsTable() {
             { value: "disabled", label: t("accountFilterDisabled") },
             { value: "checkpoint", label: t("accountFilterCheckpoint") },
             { value: "cooldown", label: t("accountFilterCooldown") },
+            { value: "dead", label: t("checkStatusDead") },
           ]}
           aria-label={t("accountFilterStatus")}
         />
@@ -325,8 +349,31 @@ export default function AccountsTable() {
           {
             title: t("columnPoolStatus"),
             key: "health",
-            width: 132,
+            width: 156,
             render: (_: unknown, record: Account) => <AccountPoolTag account={record} />,
+          },
+          {
+            title: t("columnSession"),
+            key: "session",
+            width: 156,
+            render: (_: unknown, record: Account) => (
+              <Tooltip
+                title={
+                  record.last_checked_at
+                    ? t("sessionCheckedAt", { time: new Date(record.last_checked_at).toLocaleString() })
+                    : undefined
+                }
+              >
+                <div className="flex flex-col items-start gap-0.5">
+                  <Tag className="!m-0" color={checkStatusTagColor(record.last_check_status)}>
+                    {t(checkStatusLabelKey(record.last_check_status))}
+                  </Tag>
+                  {record.last_checked_at && record.last_check_status ? (
+                    <span className="text-[11px] text-[var(--muted)]">{formatRelativeTime(record.last_checked_at, t)}</span>
+                  ) : null}
+                </div>
+              </Tooltip>
+            ),
           },
           {
             title: t("columnProxy"),

@@ -4,7 +4,6 @@ import { useEffect, useSyncExternalStore, type ReactNode } from "react";
 import ContentSkeleton from "@/components/PageSkeleton";
 import {
   AUTH_PENDING,
-  REQUIRED_AUTH_KEY,
   getAuthServerSnapshot,
   getAuthSnapshot,
   login,
@@ -20,7 +19,6 @@ export default function AuthGate({ children }: { children: ReactNode }) {
     resyncAuth();
   }, []);
 
-  if (!REQUIRED_AUTH_KEY) return <>{children}</>;
   if (storedKey === AUTH_PENDING) {
     return (
       <div className="min-h-screen bg-[var(--paper)] p-6 sm:p-8">
@@ -28,7 +26,10 @@ export default function AuthGate({ children }: { children: ReactNode }) {
       </div>
     );
   }
-  if (storedKey === REQUIRED_AUTH_KEY) return <>{children}</>;
+  // Only ever stored after login() accepted it (cinemark-api's /auth/check,
+  // or the legacy client-side key) - and the first 401 from the API clears
+  // it again (lib/api.ts), so a rotated key drops back to this screen.
+  if (storedKey) return <>{children}</>;
 
   return <LoginScreen onSubmit={login} />;
 }

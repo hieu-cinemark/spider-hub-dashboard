@@ -1,15 +1,25 @@
+import { currentAuthKey, logout } from "./auth";
+import { API_BASE_URL } from "./constants";
 import type {
   Account,
+  AccountCredentials,
   AccountInput,
   AiProvider,
   AiProviderInput,
   AiSettings,
   AiSettingsInput,
+  AutoLoginRunHistoryEntry,
+  AutoLoginSettings,
+  AutoLoginSettingsResponse,
+  AutoLoginSettingsInput,
   ProxyProvider,
   ProxyProviderInput,
   ProxySettings,
   ProxySettingsResponse,
   ApiErrorBody,
+  CleanupSettingsInput,
+  CleanupSettingsResponse,
+  CleanupRunSummary,
   Comment,
   CommentPage,
   CommentSchedule,
@@ -45,16 +55,18 @@ import type {
   RunScraperParams,
   RunScraperResponse,
   StopScraperResponse,
+  HourlyPoint,
+  IngestFunnel,
   TimeseriesPoint,
   TokenStatus,
   TotpCodeResponse,
   TriggerTokenRefreshResponse,
 } from "./types";
 
-// cinemark-api (FastAPI) - see cinemark-api/app/main.py. Public by design
-// (no auth on this service today), so it's safe to expose as NEXT_PUBLIC_*
-// and call directly from the browser.
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+// cinemark-api (FastAPI). Every request carries the access key typed at the
+// login screen as X-API-Key - the API enforces it once API_AUTH_KEY is set
+// on its side (see cinemark-api/app/core/auth.py).
+export { API_BASE_URL };
 
 // Thrown by request() below. `code` is cinemark-api's machine-readable
 // error.code (see app/core/errors.py's AppError subclasses - a closed set:
@@ -90,7 +102,7 @@ async function request<T>(path: string, init?: RequestOptions): Promise<T> {
   let res: Response;
   try {
     res = await fetch(`${API_BASE_URL}${path}`, {
-      headers: { "Content-Type": "application/json", ...(rest.headers ?? {}) },
+      headers: { "Content-Type": "application/json", "X-API-Key": currentAuthKey(), ...(rest.headers ?? {}) },
       cache: "no-store",
       ...rest,
       signal,
@@ -100,6 +112,11 @@ async function request<T>(path: string, init?: RequestOptions): Promise<T> {
       throw new ApiError(`Request timed out after ${timeoutMs / 1000}s`, 0, "upstream_error");
     }
     throw err;
+  }
+  if (res.status === 401) {
+    // Key rotated on the server (or never valid) - back to the login screen
+    // instead of every panel showing its own "unauthorized" error.
+    logout();
   }
   if (!res.ok) {
     const body: ApiErrorBody | null = await res.json().catch(() => null);
@@ -206,6 +223,9 @@ export const api = {
 
   // Settings: platform_accounts / platform_proxies (Supabase, see
   // cinemark-api/app/services/platform_config_db.py)
+  accountCredentials: (id: number) => request<AccountCredentials>(`/settings/accounts/${id}/credentials`),
+  hourly: (hours = 24) => request<HourlyPoint[]>(`/stats/hourly?hours=${hours}`),
+  ingestFunnel: (hours = 24) => request<IngestFunnel[]>(`/stats/ingest-funnel?hours=${hours}`),
   accounts: (platform?: string) => request<Account[]>(`/settings/accounts${platform ? `?platform=${platform}` : ""}`),
   createAccount: (input: AccountInput) =>
     request<Account>("/settings/accounts", { method: "POST", body: JSON.stringify(input) }),
@@ -246,6 +266,32 @@ export const api = {
   commentSchedule: () => request<CommentSchedule[]>("/settings/comment-schedule"),
   setCommentSchedule: (platform: string, input: CommentScheduleInput) =>
     request<CommentSchedule>(`/settings/comment-schedule/${platform}`, { method: "PUT", body: JSON.stringify(input) }),
+
+  // Irrelevant-post cleanup (cinemark-api's app/services/cleanup.py +
+  // scheduler.py). GET returns the effective knobs + whether a run is in
+  // flight + the most recent run's summary; PUT is partial-update like
+  // /settings/proxy above; POST /run triggers a manual purge and returns
+  // immediately (the actual purge runs in the background).
+  cleanupSettings: () => request<CleanupSettingsResponse>("/settings/cleanup"),
+  setCleanupSettings: (input: CleanupSettingsInput) =>
+    request<CleanupSettingsResponse>("/settings/cleanup", { method: "PUT", body: JSON.stringify(input) }),
+  runCleanup: () => request<{ started: boolean }>("/settings/cleanup/run", { method: "POST" }),
+  cleanupHistory: (limit = 20) =>
+    request<CleanupRunSummary[]>(`/settings/cleanup/history?limit=${limit}`),
+
+  // Auto-login scheduler (cinemark-api's app/services/auto_login.py).
+  // GET returns effective knobs + whether a tick is in flight + last_run_at.
+  // PUT is partial-update - just send `{enabled: true}` to flip the toggle.
+  // POST /run triggers one tick and returns whether it actually started.
+  autoLoginSettings: () => request<AutoLoginSettingsResponse>("/settings/auto-login"),
+  setAutoLoginSettings: (input: AutoLoginSettingsInput) =>
+    request<AutoLoginSettingsResponse>("/settings/auto-login", {
+      method: "PUT",
+      body: JSON.stringify(input),
+    }),
+  runAutoLogin: () => request<{ started: boolean }>("/settings/auto-login/run", { method: "POST" }),
+  autoLoginHistory: (limit = 20) =>
+    request<AutoLoginRunHistoryEntry[]>(`/settings/auto-login/history?limit=${limit}`),
 
   aiSettings: () => request<AiSettings>("/settings/ai"),
   setAiSettings: (input: AiSettingsInput) =>

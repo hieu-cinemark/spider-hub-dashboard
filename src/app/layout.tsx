@@ -1,20 +1,21 @@
 import { AntdRegistry } from "@ant-design/nextjs-registry";
 import type { Metadata } from "next";
-import { DM_Sans, IBM_Plex_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import AppShell from "@/components/AppShell";
 import AuthGate from "@/components/auth/AuthGate";
 import "./globals.css";
 import Providers from "./providers";
 
-const dmSans = DM_Sans({
-  variable: "--font-dm-sans",
-  subsets: ["latin"],
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin", "vietnamese"],
+  weight: ["400", "500", "600"],
 });
 
-const plexMono = IBM_Plex_Mono({
-  variable: "--font-plex-mono",
+const jetbrains = JetBrains_Mono({
+  variable: "--font-jetbrains",
+  subsets: ["latin", "vietnamese"],
   weight: ["400", "500"],
-  subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
@@ -24,7 +25,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${dmSans.variable} ${plexMono.variable} h-full antialiased`}>
+    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${jetbrains.variable} h-full antialiased`}>
       <body className="min-h-full">
         <script
           dangerouslySetInnerHTML={{

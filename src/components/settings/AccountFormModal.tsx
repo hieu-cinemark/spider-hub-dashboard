@@ -29,6 +29,11 @@ export default function AccountFormModal({
   // TikTok: cookie from a real logged-in browser (sessionid + ttwid).
   // device_id/odin_id are filled by restore/import bootstrap, not typed here.
   const isTikTok = platform === "tiktok";
+  // Editing: secret inputs start empty (the API never sends them back) -
+  // leaving one empty keeps the stored value, see cinemark-api's
+  // update_account.
+  const keepHint = (field: string) =>
+    account?.secrets_set?.includes(field) ? t("secretKeepUnchanged") : undefined;
 
   useEffect(() => {
     if (open) {
@@ -98,26 +103,26 @@ export default function AccountFormModal({
               <Input />
             </Form.Item>
             <Form.Item name="email_password" label={t("recoveryEmailPassword")}>
-              <Input.Password />
+              <Input.Password placeholder={keepHint("email_password")} />
             </Form.Item>
             <Form.Item name="password" label={t("password")}>
-              <Input.Password />
+              <Input.Password placeholder={keepHint("password")} />
             </Form.Item>
             <Form.Item name="totp_secret" label={t("twoFaSecret")}>
-              <Input.Password />
+              <Input.Password placeholder={keepHint("totp_secret")} />
             </Form.Item>
           </>
         )}
         <Form.Item
           name="cookie"
           label={isTikTok ? t("cookieHeaderTikTok") : t("cookieHeaderGeneric")}
-          rules={isTikTok ? [{ required: true }] : undefined}
+          rules={isTikTok && !account?.secrets_set?.includes("cookie") ? [{ required: true }] : undefined}
         >
-          <Input.TextArea rows={isTikTok ? 4 : 2} />
+          <Input.TextArea rows={isTikTok ? 4 : 2} placeholder={keepHint("cookie")} />
         </Form.Item>
         {!isTikTok && (
           <Form.Item name="token" label={t("tokenReserved")}>
-            <Input.Password />
+            <Input.Password placeholder={keepHint("token")} />
           </Form.Item>
         )}
         {/* No manual "enabled" control anymore - the account pool (see

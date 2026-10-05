@@ -1,7 +1,7 @@
 "use client";
 
 import { ControlOutlined } from "@ant-design/icons";
-import { Button, Form, Input, InputNumber, Select, Space, Typography } from "antd";
+import { Button, Collapse, Form, Input, InputNumber, Select, Space, Typography } from "antd";
 import { useEffect } from "react";
 import DashboardCard, { CardHeading } from "@/components/DashboardCard";
 import { useProxyProviders, useProxySettings, useSetProxySettings } from "@/hooks/useSettings";
@@ -103,7 +103,7 @@ export default function ProxySettingsCard() {
         max={field.max}
         step={field.kind === "int" ? 1 : 0.5}
         precision={field.kind === "int" ? 0 : undefined}
-        addonAfter={field.unit ? t(field.unit) : undefined}
+        suffix={field.unit ? <span className="text-xs text-[var(--muted)]">{t(field.unit)}</span> : undefined}
       />
     );
   }
@@ -119,15 +119,22 @@ export default function ProxySettingsCard() {
         requiredMark={false}
         onFinish={(values) => save.mutate({ ...data!.values, ...values })}
       >
-        <div className="flex flex-col gap-6">
-          {SECTIONS.map((section) => (
-            <section key={section.title}>
-              <Typography.Title level={5} className="!mb-0.5">
-                {t(section.title)}
-              </Typography.Title>
-              <Typography.Paragraph type="secondary" className="!mb-3 text-xs">
-                {t(section.desc)}
-              </Typography.Paragraph>
+        {/* One collapsible group per section - 20+ tuning fields open at once
+            made this card longer than the rest of the page. forceRender keeps
+            every Form.Item mounted, so values in a closed group still save. */}
+        <Collapse
+          className="settings-collapse"
+          defaultActiveKey={[SECTIONS[0].title]}
+          items={SECTIONS.map((section) => ({
+            key: section.title,
+            forceRender: true,
+            label: (
+              <div className="flex flex-col">
+                <span className="font-semibold text-[var(--ink)]">{t(section.title)}</span>
+                <span className="text-xs font-normal text-[var(--muted)]">{t(section.desc)}</span>
+              </div>
+            ),
+            children: (
               <div className="grid grid-cols-1 gap-x-4 md:grid-cols-2 xl:grid-cols-3">
                 {section.fields.map((field) => (
                   <Form.Item
@@ -148,10 +155,10 @@ export default function ProxySettingsCard() {
                   </Form.Item>
                 ))}
               </div>
-            </section>
-          ))}
-        </div>
-        <Space className="mt-2" wrap>
+            ),
+          }))}
+        />
+        <Space className="mt-4" wrap>
           <Button type="primary" htmlType="submit" loading={save.isPending}>
             {t("save")}
           </Button>

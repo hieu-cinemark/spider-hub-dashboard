@@ -1,10 +1,12 @@
 "use client";
 
-import { ClockCircleOutlined, FilterOutlined, KeyOutlined, RobotOutlined } from "@ant-design/icons";
+import { ClockCircleOutlined, FilterOutlined, GlobalOutlined, KeyOutlined, RobotOutlined } from "@ant-design/icons";
 import { Tabs } from "antd";
 import AccountsTable from "@/components/settings/AccountsTable";
 import AiProvidersCard from "@/components/settings/AiProvidersCard";
 import AiSettingsCard from "@/components/settings/AiSettingsCard";
+import AutoLoginCard from "@/components/settings/AutoLoginCard";
+import CleanupScheduleCard from "@/components/settings/CleanupScheduleCard";
 import CommentScheduleCard from "@/components/settings/CommentScheduleCard";
 import CrawlScheduleCard from "@/components/settings/CrawlScheduleCard";
 import FilterKeywordsTable from "@/components/settings/FilterKeywordsTable";
@@ -29,16 +31,28 @@ export default function SettingsPage() {
             key: "accounts-proxies",
             label: (
               <span className="inline-flex items-center gap-2">
-                <KeyOutlined /> {t("tabProxyAccounts")}
+                <KeyOutlined /> {t("tabAccounts")}
               </span>
             ),
             children: (
               <div className="flex flex-col gap-4 animate-fade-in-up">
                 <SettingsSummary />
                 <AccountsTable />
+              </div>
+            ),
+          },
+          {
+            key: "proxies",
+            label: (
+              <span className="inline-flex items-center gap-2">
+                <GlobalOutlined /> {t("tabProxies")}
+              </span>
+            ),
+            children: (
+              <div className="flex flex-col gap-4 animate-fade-in-up">
                 <ProxiesTable />
-                <ProxySettingsCard />
                 <ProxyProvidersCard />
+                <ProxySettingsCard />
               </div>
             ),
           },
@@ -53,6 +67,8 @@ export default function SettingsPage() {
               <div className="flex flex-col gap-4 animate-fade-in-up">
                 <CrawlScheduleCard />
                 <CommentScheduleCard />
+                <CleanupScheduleCard />
+                <AutoLoginCard />
               </div>
             ),
           },
