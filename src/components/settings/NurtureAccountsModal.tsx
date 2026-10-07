@@ -17,7 +17,7 @@ export default function NurtureAccountsModal({
   const [open, setOpen] = useState(false);
   const [platform, setPlatform] = useState<NurturePlatform>("all");
   const [like, setLike] = useState(true);
-  const [comment, setComment] = useState(true);
+  const [comment, setComment] = useState(false);
   const [browse, setBrowse] = useState(true);
 
   async function handleOk() {
