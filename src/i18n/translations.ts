@@ -588,8 +588,8 @@ const en = {
 
   commentScheduleTitle: "Comment collection schedule",
   commentScheduleDesc:
-    "Daily time to sweep each platform's enabled keywords for top posts still missing comments, and queue comment collection for them.",
-  columnCommentTopN: "Top posts checked",
+    "Runs every hour: follows each tracked film's hottest posts (fastest-growing engagement, last 72h) and re-collects new comments as they grow. At the set time and 12 hours later it also samples posts spread across time slots and source types so analysis is not dominated by promo clips.",
+  columnCommentTopN: "Hot posts per film",
   toastCommentScheduleUpdated: "Comment schedule updated",
 
   // CleanupScheduleCard - daily purge of posts the relevance pipeline
@@ -1403,8 +1403,8 @@ const vi: Record<keyof typeof en, string> = {
 
   commentScheduleTitle: "Lịch thu thập bình luận",
   commentScheduleDesc:
-    "Giờ chạy hằng ngày để quét các từ khoá đang bật của mỗi nền tảng, tìm bài top chưa có bình luận và xếp lịch thu thập bình luận cho chúng.",
-  columnCommentTopN: "Số bài top kiểm tra",
+    "Chạy mỗi giờ: theo dõi các bài nóng nhất của từng phim (tương tác tăng nhanh nhất, 72 giờ gần đây) và lấy thêm bình luận mới khi bài còn đang lên. Vào giờ đặt và 12 tiếng sau còn lấy mẫu bài rải đều theo khung giờ và loại nguồn, để phần phân tích không bị clip quảng bá chi phối.",
+  columnCommentTopN: "Số bài nóng mỗi phim",
   toastCommentScheduleUpdated: "Đã cập nhật lịch bình luận",
 
   cleanupScheduleTitle: "Lịch dọn dữ liệu không liên quan",

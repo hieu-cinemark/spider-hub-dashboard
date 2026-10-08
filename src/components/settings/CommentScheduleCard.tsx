@@ -16,7 +16,8 @@ import type { CommentSchedule } from "@/lib/types";
 
 const TIME_FORMAT = "HH:mm";
 const DEFAULT_RUN_TIME = "08:00";
-const DEFAULT_TOP_N = 100;
+// Số bài nóng mỗi phim (cinemark-api kẹp trong 3-30; giá trị cũ > 30 coi như mặc định).
+const DEFAULT_TOP_N = 15;
 
 // One row per platform with a comments spider, whether or not it has a
 // comment_crawl_schedules row yet - same "not configured yet" vs "broken"
@@ -96,8 +97,8 @@ export default function CommentScheduleCard() {
               render: (_: unknown, record: CommentSchedule) => (
                 <InputNumber
                   size="small"
-                  min={1}
-                  max={500}
+                  min={3}
+                  max={30}
                   value={record.top_n}
                   onChange={(value) => {
                     if (value == null) return;
@@ -154,8 +155,8 @@ export default function CommentScheduleCard() {
               <ItemField label={t("columnCommentTopN")}>
                 <InputNumber
                   size="small"
-                  min={1}
-                  max={500}
+                  min={3}
+                  max={30}
                   value={record.top_n}
                   onChange={(value) => {
                     if (value == null) return;
