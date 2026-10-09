@@ -64,10 +64,13 @@ export default function SpiderWebBackdrop() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d", { alpha: true, desynchronized: true });
-    if (!ctx) return;
+    // Gán sang biến có kiểu không-null: TypeScript không giữ việc thu hẹp kiểu bên trong các hàm lồng phía dưới.
+    const canvasEl = canvasRef.current;
+    if (!canvasEl) return;
+    const context = canvasEl.getContext("2d", { alpha: true, desynchronized: true });
+    if (!context) return;
+    const canvas: HTMLCanvasElement = canvasEl;
+    const ctx: CanvasRenderingContext2D = context;
 
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
     let nodes: Node[] = [];

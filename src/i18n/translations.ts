@@ -84,6 +84,8 @@ const en = {
   lastCrawlPerPlatform: "Last collected, per platform",
   columnPostsCollected: "Posts",
   columnCommentsCollected: "Comments",
+  columnPostsDelta: "Posts vs previous day",
+  columnCommentsDelta: "Comments vs previous day",
   deltaPostsLabel: "Posts delta (today vs yesterday)",
   deltaCommentsLabel: "Comments delta (today vs yesterday)",
   kpiJobSuccess: "Job success rate",
