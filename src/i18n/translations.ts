@@ -457,6 +457,9 @@ const en = {
   crawlScheduleDesc:
     "Daily collection time per platform. Facebook and Threads can also warm up login sessions before and/or after that run — they share the same queue, so warm-up finishes before collection starts (or runs after it drains).",
   columnRunTime: "Run time",
+  addRunTime: "Add run time",
+  removeRunTime: "Remove this run time",
+  runTimesHint: "Up to 3 runs per day, at least 60 minutes apart",
   crawlScheduleNotSet: "Not scheduled yet",
   columnLastTriggered: "Last triggered",
   columnSessionWarmup: "Session warm-up",
@@ -1273,6 +1276,9 @@ const vi: Record<keyof typeof en, string> = {
   crawlScheduleDesc:
     "Giờ thu thập mỗi ngày cho từng nền tảng. Facebook và Threads có thể nuôi session trước và/hoặc sau lần chạy đó — cùng một hàng đợi, nên nuôi xong mới thu thập (hoặc nuôi sau khi thu thập xong).",
   columnRunTime: "Giờ chạy",
+  addRunTime: "Thêm giờ chạy",
+  removeRunTime: "Bỏ giờ chạy này",
+  runTimesHint: "Tối đa 3 lần mỗi ngày, cách nhau ít nhất 60 phút",
   crawlScheduleNotSet: "Chưa đặt lịch",
   columnLastTriggered: "Lần chạy gần nhất",
   columnSessionWarmup: "Nuôi session",

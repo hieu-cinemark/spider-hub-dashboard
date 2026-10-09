@@ -341,7 +341,10 @@ export interface TotpCodeResponse {
 
 export interface CrawlSchedule {
   platform: string;
+  /** First run of the day (kept for older API builds) - the full list is run_times. */
   run_time: string;
+  /** 1-3 daily run times "HH:mm", sorted. */
+  run_times?: string[];
   enabled: boolean;
   last_triggered_date: string | null;
   nurture_before: boolean;
@@ -350,7 +353,7 @@ export interface CrawlSchedule {
 }
 
 export interface CrawlScheduleInput {
-  run_time: string;
+  run_times: string[];
   enabled: boolean;
   nurture_before: boolean;
   nurture_after: boolean;

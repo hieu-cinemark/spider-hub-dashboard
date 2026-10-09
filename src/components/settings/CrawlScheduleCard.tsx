@@ -1,7 +1,7 @@
 "use client";
 
-import { ClockCircleOutlined } from "@ant-design/icons";
-import { Switch, Table, TimePicker, Tooltip, Typography } from "antd";
+import { ClockCircleOutlined, CloseOutlined, PlusOutlined } from "@ant-design/icons";
+import { Button, Switch, Table, TimePicker, Tooltip, Typography } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
 import DashboardCard, { CardHeading } from "@/components/DashboardCard";
 import { ItemCard, ItemCardList, ItemField } from "@/components/ItemCards";
@@ -17,6 +17,24 @@ import type { CrawlSchedule } from "@/lib/types";
 const NURTURE_SCHEDULE_PLATFORMS = new Set(["facebook", "threads", "tiktok"]);
 const TIME_FORMAT = "HH:mm";
 const DEFAULT_RUN_TIME = "07:00";
+const MAX_RUNS_PER_DAY = 3;
+const MIN_GAP_MINUTES = 60;
+
+const toMinutes = (hm: string) => Number(hm.slice(0, 2)) * 60 + Number(hm.slice(3, 5));
+
+/** Next free slot for "+": 6h after the last run, nudged forward until it is MIN_GAP_MINUTES from every run. */
+function nextRunTime(times: string[]): string {
+  let candidate = (toMinutes(times[times.length - 1] ?? DEFAULT_RUN_TIME) + 360) % 1440;
+  for (let i = 0; i < 24; i++) {
+    const ok = times.every((t) => {
+      const d = Math.abs(toMinutes(t) - candidate);
+      return Math.min(d, 1440 - d) >= MIN_GAP_MINUTES;
+    });
+    if (ok) break;
+    candidate = (candidate + 60) % 1440;
+  }
+  return `${String(Math.floor(candidate / 60)).padStart(2, "0")}:${String(candidate % 60).padStart(2, "0")}`;
+}
 
 // One row per platform we can trigger, whether or not it has a
 // crawl_schedules row yet (a platform with no row just hasn't had its
@@ -28,12 +46,51 @@ function rowFor(platform: string, schedules: CrawlSchedule[] | undefined): Crawl
   return {
     platform,
     run_time: found?.run_time ?? DEFAULT_RUN_TIME,
+    run_times: found?.run_times?.length ? found.run_times : [found?.run_time ?? DEFAULT_RUN_TIME],
     enabled: found?.enabled ?? false,
     nurture_before: found?.nurture_before ?? false,
     nurture_after: found?.nurture_after ?? false,
     last_triggered_date: found?.last_triggered_date ?? null,
     updated_at: found?.updated_at ?? "",
   };
+}
+
+// 1-3 daily runs: one TimePicker per run, "+" adds one (6h after the last), "x" removes one. The API rejects runs
+// closer than MIN_GAP_MINUTES apart and shows its error toast; the picker snaps back to the saved value.
+function RunTimesEditor({ record, onSave }: { record: CrawlSchedule; onSave: (runTimes: string[]) => void }) {
+  const { t } = useTranslation();
+  const times = record.run_times ?? [record.run_time];
+  const save = (next: string[]) => onSave([...new Set(next)].sort());
+  return (
+    <div className="flex flex-col gap-1">
+      {times.map((time, index) => (
+        <div key={`${time}-${index}`} className="flex items-center gap-1">
+          <TimePicker
+            size="small"
+            format={TIME_FORMAT}
+            value={dayjs(time, TIME_FORMAT)}
+            allowClear={false}
+            onChange={(value: Dayjs | null) => {
+              if (!value) return;
+              save(times.map((existing, i) => (i === index ? value.format(TIME_FORMAT) : existing)));
+            }}
+          />
+          {times.length > 1 && (
+            <Tooltip title={t("removeRunTime")}>
+              <Button size="small" type="text" icon={<CloseOutlined />} onClick={() => save(times.filter((_, i) => i !== index))} />
+            </Tooltip>
+          )}
+        </div>
+      ))}
+      {times.length < MAX_RUNS_PER_DAY && (
+        <Tooltip title={t("runTimesHint")}>
+          <Button size="small" type="dashed" icon={<PlusOutlined />} className="self-start" onClick={() => save([...times, nextRunTime(times)])}>
+            {t("addRunTime")}
+          </Button>
+        </Tooltip>
+      )}
+    </div>
+  );
 }
 
 export default function CrawlScheduleCard() {
@@ -50,7 +107,7 @@ export default function CrawlScheduleCard() {
     setSchedule.mutate({
       platform: record.platform,
       input: {
-        run_time: patch.run_time ?? record.run_time,
+        run_times: patch.run_times ?? record.run_times ?? [record.run_time],
         enabled: patch.enabled ?? record.enabled,
         nurture_before: patch.nurture_before ?? record.nurture_before,
         nurture_after: patch.nurture_after ?? record.nurture_after,
@@ -79,19 +136,8 @@ export default function CrawlScheduleCard() {
           {
             title: t("columnRunTime"),
             key: "run_time",
-            width: 128,
-            render: (_: unknown, record: CrawlSchedule) => (
-              <TimePicker
-                size="small"
-                format={TIME_FORMAT}
-                value={dayjs(record.run_time, TIME_FORMAT)}
-                allowClear={false}
-                onChange={(value: Dayjs | null) => {
-                  if (!value) return;
-                  persist(record, { run_time: value.format(TIME_FORMAT) });
-                }}
-              />
-            ),
+            width: 190,
+            render: (_: unknown, record: CrawlSchedule) => <RunTimesEditor record={record} onSave={(runTimes) => persist(record, { run_times: runTimes })} />,
           },
           {
             title: t("enabled"),
@@ -164,16 +210,7 @@ export default function CrawlScheduleCard() {
                 <PlatformBadge platform={record.platform} size={22} />
               </div>
               <ItemField label={t("columnRunTime")}>
-                <TimePicker
-                  size="small"
-                  format={TIME_FORMAT}
-                  value={dayjs(record.run_time, TIME_FORMAT)}
-                  allowClear={false}
-                  onChange={(value: Dayjs | null) => {
-                    if (!value) return;
-                    persist(record, { run_time: value.format(TIME_FORMAT) });
-                  }}
-                />
+                <RunTimesEditor record={record} onSave={(runTimes) => persist(record, { run_times: runTimes })} />
               </ItemField>
               <ItemField label={t("enabled")}>
                 <Switch
