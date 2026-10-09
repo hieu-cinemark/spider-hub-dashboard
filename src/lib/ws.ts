@@ -10,5 +10,7 @@ export function wsUrl(path: string): string {
   // Browsers can't set headers on a WebSocket handshake - the API also
   // accepts the key as ?api_key= (see cinemark-api/app/core/auth.py).
   const sep = path.includes("?") ? "&" : "?";
-  return `${protocol}//${base.host}${path}${sep}api_key=${encodeURIComponent(currentAuthKey())}`;
+  // Giữ cả đường dẫn của API_BASE_URL (vd. http://IP/api khi API nằm sau Nginx cùng origin với dashboard).
+  const prefix = base.pathname.replace(/\/$/, "");
+  return `${protocol}//${base.host}${prefix}${path}${sep}api_key=${encodeURIComponent(currentAuthKey())}`;
 }
