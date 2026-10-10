@@ -54,6 +54,14 @@ export default function PlatformActions({ platform }: { platform: string }) {
   const platformAccounts = (accounts ?? []).filter((a) => a.platform === platform && a.enabled);
   const [importAccountId, setImportAccountId] = useState<number | undefined>(undefined);
   const [cookiesText, setCookiesText] = useState("");
+  // The refresh stream reports the platform's last run, not which account it was for - remember that here so
+  // switching the account picker doesn't keep showing another account's "refresh failed". "any" = the result was
+  // already there when the page loaded (account unknown): shown until the picker is changed.
+  const [resultFor, setResultFor] = useState<number | "any">("any");
+  const selectAccount = (id: number | undefined) => {
+    if (resultFor === "any") setResultFor(importAccountId ?? -1);
+    setImportAccountId(id);
+  };
 
   useEffect(() => {
     if (platformAccounts.length === 0) {
@@ -77,6 +85,7 @@ export default function PlatformActions({ platform }: { platform: string }) {
     void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.settingsAccounts });
   }, [stream.status, platform, queryClient]);
 
+  const runStatus = resultFor === "any" || resultFor === importAccountId ? stream.status : "idle";
   const tokenValid = Boolean(tokenStatus?.valid);
   const needsRepair = !tokenLoading && tokenStatus != null && !tokenValid;
 
@@ -114,7 +123,7 @@ export default function PlatformActions({ platform }: { platform: string }) {
         }
       />
     );
-  } else if (stream.status === "failed") {
+  } else if (runStatus === "failed") {
     statusNode = (
       <Alert
         type="error"
@@ -125,7 +134,7 @@ export default function PlatformActions({ platform }: { platform: string }) {
         description={t("sessionRefreshFailedHint")}
       />
     );
-  } else if (stream.status === "success" && needsRepair) {
+  } else if (runStatus === "success" && needsRepair) {
     statusNode = (
       <Alert
         type="warning"
@@ -205,7 +214,7 @@ export default function PlatformActions({ platform }: { platform: string }) {
                 size="large"
                 placeholder={t("importCookiesAccountPlaceholder")}
                 value={importAccountId}
-                onChange={setImportAccountId}
+                onChange={selectAccount}
                 notFoundContent={t("noEnabledAccountsForPlatform")}
                 options={platformAccounts.map((a) => ({
                   value: a.id,
@@ -229,7 +238,11 @@ export default function PlatformActions({ platform }: { platform: string }) {
                 icon={<ReloadOutlined />}
                 disabled={importAccountId === undefined || isRefreshing}
                 loading={restoreSession.isPending}
-                onClick={() => importAccountId !== undefined && restoreSession.mutate(importAccountId)}
+                onClick={() => {
+                  if (importAccountId === undefined) return;
+                  setResultFor(importAccountId);
+                  restoreSession.mutate(importAccountId);
+                }}
               >
                 {t("restoreSavedSessionAction")}
               </Button>
@@ -278,6 +291,7 @@ export default function PlatformActions({ platform }: { platform: string }) {
                 disabled={importAccountId === undefined || !cookiesText.trim() || isRefreshing}
                 loading={importCookies.isPending}
                 onClick={() => {
+                  setResultFor(importAccountId as number);
                   importCookies.mutate(
                     { accountId: importAccountId as number, cookies: cookiesText.trim() },
                     { onSuccess: () => setCookiesText("") },
