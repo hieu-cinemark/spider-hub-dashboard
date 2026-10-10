@@ -1,8 +1,10 @@
 "use client";
 
-import { Form, Input, Modal, Select } from "antd";
+import { useQuery } from "@tanstack/react-query";
+import { Alert, Form, Input, Modal, Select, Spin } from "antd";
 import { useEffect } from "react";
 import { useTranslation } from "@/i18n/LocaleProvider";
+import { api } from "@/lib/api";
 import { PLATFORM_META } from "@/lib/platform";
 import type { Account, AccountInput } from "@/lib/types";
 
@@ -29,16 +31,25 @@ export default function AccountFormModal({
   // TikTok: cookie from a real logged-in browser (sessionid + ttwid).
   // device_id/odin_id are filled by restore/import bootstrap, not typed here.
   const isTikTok = platform === "tiktok";
-  // Editing: secret inputs start empty (the API never sends them back) -
-  // leaving one empty keeps the stored value, see cinemark-api's
-  // update_account.
+  // Editing: the accounts list masks secrets, so the stored values are
+  // fetched here (same endpoint as CredentialsModal, dropped from the cache
+  // on close) and shown in the inputs. An input left empty still keeps the
+  // stored value, see cinemark-api's update_account.
+  const editing = open && !!account;
+  const { data: creds, isLoading: credsLoading, error: credsError } = useQuery({
+    queryKey: ["settings", "account-credentials", account?.id],
+    queryFn: () => api.accountCredentials(account!.id),
+    enabled: editing,
+    gcTime: 0,
+    staleTime: 0,
+  });
   const keepHint = (field: string) =>
-    account?.secrets_set?.includes(field) ? t("secretKeepUnchanged") : undefined;
+    credsError && account?.secrets_set?.includes(field) ? t("secretKeepUnchanged") : undefined;
 
   useEffect(() => {
     if (open) {
       form.setFieldsValue(
-        account ?? {
+        account ? { ...account, ...(creds ?? {}) } : {
           platform: "facebook",
           account_id: "",
           password: "",
@@ -51,7 +62,7 @@ export default function AccountFormModal({
         },
       );
     }
-  }, [open, account, form]);
+  }, [open, account, creds, form]);
 
   return (
     <Modal
@@ -81,11 +92,16 @@ export default function AccountFormModal({
         })
       }
       confirmLoading={loading}
+      okButtonProps={{ disabled: editing && credsLoading }}
       destroyOnHidden
       centered
       width={560}
       styles={{ body: { maxHeight: "calc(100vh - 240px)", overflowY: "auto" } }}
     >
+      {credsError ? (
+        <Alert type="warning" showIcon className="!mb-4" title={t("credentialsLoadFailed")} />
+      ) : null}
+      <Spin spinning={editing && credsLoading}>
       <Form form={form} layout="vertical" requiredMark={false}>
         <Form.Item name="platform" label={t("platform")} rules={[{ required: true }]}>
           <Select options={PLATFORM_OPTIONS} disabled={!!account} />
@@ -103,13 +119,13 @@ export default function AccountFormModal({
               <Input />
             </Form.Item>
             <Form.Item name="email_password" label={t("recoveryEmailPassword")}>
-              <Input.Password placeholder={keepHint("email_password")} />
+              <Input placeholder={keepHint("email_password")} autoComplete="off" />
             </Form.Item>
             <Form.Item name="password" label={t("password")}>
-              <Input.Password placeholder={keepHint("password")} />
+              <Input placeholder={keepHint("password")} autoComplete="off" />
             </Form.Item>
             <Form.Item name="totp_secret" label={t("twoFaSecret")}>
-              <Input.Password placeholder={keepHint("totp_secret")} />
+              <Input placeholder={keepHint("totp_secret")} autoComplete="off" />
             </Form.Item>
           </>
         )}
@@ -122,7 +138,7 @@ export default function AccountFormModal({
         </Form.Item>
         {!isTikTok && (
           <Form.Item name="token" label={t("tokenReserved")}>
-            <Input.Password placeholder={keepHint("token")} />
+            <Input placeholder={keepHint("token")} autoComplete="off" />
           </Form.Item>
         )}
         {/* No manual "enabled" control anymore - the account pool (see
@@ -133,6 +149,7 @@ export default function AccountFormModal({
             which get_accounts()'s own query still excludes on). AccountsTable
             shows the pool's own status instead - see poolStatusInfo. */}
       </Form>
+      </Spin>
     </Modal>
   );
 }
