@@ -158,6 +158,8 @@ export default function OmarTab() {
                 requests: fmtNumber(round.stats.requests),
                 budget: fmtNumber(round.stats.budget),
                 videos: fmtNumber(round.stats.videos),
+                published: fmtNumber(round.stats.published),
+                skipped: fmtNumber(round.stats.skipped_seen),
                 keywords: fmtNumber(round.stats.keywords),
                 failed: fmtNumber(round.stats.failed),
               })}

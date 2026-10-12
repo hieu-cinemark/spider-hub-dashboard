@@ -718,7 +718,16 @@ export interface OmarStatus {
     started_at: string | null;
     finished_at: string | null;
     stop_requested: boolean;
-    stats: { budget?: number; requests?: number; videos?: number; keywords?: number; failed?: number; stopped?: string };
+    stats: {
+      budget?: number;
+      requests?: number;
+      videos?: number;
+      published?: number;
+      skipped_seen?: number;
+      keywords?: number;
+      failed?: number;
+      stopped?: string;
+    };
   };
   mode: "continuous" | "spread_daily";
   hashtags: OmarHashtagProgress[];
