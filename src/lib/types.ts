@@ -691,3 +691,36 @@ export type RefreshSocketMessage =
   | { type: "snapshot"; status: RefreshStatus; started_at: string | null; finished_at: string | null; lines: string[] }
   | { type: "line"; line: string }
   | { type: "status"; status: RefreshStatus; finished_at?: string | null };
+
+// GET /omar/status (cinemark-api app/api/routes/omar.py).
+export interface OmarHashtagProgress {
+  keyword_id: string;
+  hashtag: string;
+  movie: string | null;
+  pages: number;
+  cursor: string | null;
+  done_at: string | null;
+  fresh_at: string | null;
+}
+
+export interface OmarStatus {
+  key_set: boolean;
+  usage: {
+    plan: string | null;
+    status: string | null;
+    expires_at: string | null;
+    day?: { limit: number; used: number; remaining: number; resets_in: number };
+    minute?: { limit: number; used: number; remaining: number; resets_in: number };
+  } | null;
+  round: {
+    running: boolean;
+    trigger: string | null;
+    started_at: string | null;
+    finished_at: string | null;
+    stop_requested: boolean;
+    stats: { budget?: number; requests?: number; videos?: number; keywords?: number; failed?: number; stopped?: string };
+  };
+  mode: "continuous" | "spread_daily";
+  hashtags: OmarHashtagProgress[];
+  totals: { hashtags: number; finished: number; started: number; pages: number };
+}

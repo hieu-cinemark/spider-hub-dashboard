@@ -1,6 +1,6 @@
 "use client";
 
-import { ClockCircleOutlined, FilterOutlined, GlobalOutlined, KeyOutlined, RobotOutlined } from "@ant-design/icons";
+import { ClockCircleOutlined, FilterOutlined, GlobalOutlined, KeyOutlined, RobotOutlined, TagsOutlined } from "@ant-design/icons";
 import { Tabs } from "antd";
 import AccountsTable from "@/components/settings/AccountsTable";
 import AiProvidersCard from "@/components/settings/AiProvidersCard";
@@ -10,6 +10,7 @@ import CleanupScheduleCard from "@/components/settings/CleanupScheduleCard";
 import CommentScheduleCard from "@/components/settings/CommentScheduleCard";
 import CrawlScheduleCard from "@/components/settings/CrawlScheduleCard";
 import FilterKeywordsTable from "@/components/settings/FilterKeywordsTable";
+import OmarTab from "@/components/settings/OmarTab";
 import ProxiesTable from "@/components/settings/ProxiesTable";
 import ProxyProvidersCard from "@/components/settings/ProxyProvidersCard";
 import ProxySettingsCard from "@/components/settings/ProxySettingsCard";
@@ -96,6 +97,19 @@ export default function SettingsPage() {
               <div className="flex flex-col gap-4 animate-fade-in-up">
                 <AiSettingsCard />
                 <AiProvidersCard />
+              </div>
+            ),
+          },
+          {
+            key: "omar",
+            label: (
+              <span className="inline-flex items-center gap-2">
+                <TagsOutlined /> {t("tabOmar")}
+              </span>
+            ),
+            children: (
+              <div className="animate-fade-in-up">
+                <OmarTab />
               </div>
             ),
           },

@@ -1,6 +1,7 @@
 import { currentAuthKey, logout } from "./auth";
 import { API_BASE_URL } from "./constants";
 import type {
+  OmarStatus,
   Account,
   AccountCredentials,
   AccountInput,
@@ -292,6 +293,12 @@ export const api = {
   runAutoLogin: () => request<{ started: boolean }>("/settings/auto-login/run", { method: "POST" }),
   autoLoginHistory: (limit = 20) =>
     request<AutoLoginRunHistoryEntry[]>(`/settings/auto-login/history?limit=${limit}`),
+
+  omarStatus: () => request<OmarStatus>("/omar/status"),
+  omarRun: () => request<{ started: boolean }>("/omar/run", { method: "POST" }),
+  omarStop: () => request<{ stopping: boolean }>("/omar/stop", { method: "POST" }),
+  setOmarApiKey: (apiKey: string) =>
+    request<{ api_key_set: boolean }>("/settings/omar-api", { method: "PUT", body: JSON.stringify({ api_key: apiKey }) }),
 
   aiSettings: () => request<AiSettings>("/settings/ai"),
   setAiSettings: (input: AiSettingsInput) =>
