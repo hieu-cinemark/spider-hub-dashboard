@@ -704,6 +704,7 @@ export interface OmarHashtagProgress {
   video_count: number | null;
   view_count: number | null;
   info_at: string | null;
+  missing_at: string | null;
 }
 
 export interface OmarCommentsJob {

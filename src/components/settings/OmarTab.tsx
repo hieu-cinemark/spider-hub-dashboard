@@ -321,7 +321,11 @@ export default function OmarTab() {
               title: t("omarColStatus"),
               key: "status",
               render: (_, row) =>
-                row.done_at ? (
+                row.missing_at ? (
+                  <Tooltip title={t("omarMissingHint")}>
+                    <Tag color="orange">{t("omarMissing", { time: formatRelativeTime(row.missing_at, t) })}</Tag>
+                  </Tooltip>
+                ) : row.done_at ? (
                   <Tag color="green">{t("omarDone", { time: formatRelativeTime(row.done_at, t) })}</Tag>
                 ) : row.pages > 0 ? (
                   <Tag color="blue">{t("omarInProgress")}</Tag>
