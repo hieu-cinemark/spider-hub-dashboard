@@ -2,10 +2,11 @@
 
 import { ApiOutlined, CommentOutlined, PauseCircleOutlined, PlayCircleOutlined, TagsOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { App, Button, Input, Progress, Space, Table, Tag, Tooltip, Typography } from "antd";
+import { App, Button, Input, Progress, Select, Space, Table, Tag, Tooltip, Typography } from "antd";
 import { useState } from "react";
 import DashboardCard, { CardHeading } from "@/components/DashboardCard";
 import { useTranslation } from "@/i18n/LocaleProvider";
+import { useMovies } from "@/hooks/useMovies";
 import { api } from "@/lib/api";
 import { formatRelativeTime } from "@/lib/format";
 import type { OmarHashtagProgress } from "@/lib/types";
@@ -36,6 +37,9 @@ export default function OmarTab() {
   const { message } = App.useApp();
   const queryClient = useQueryClient();
   const [newKey, setNewKey] = useState("");
+  const movies = useMovies();
+  const [tagMovie, setTagMovie] = useState<string | undefined>();
+  const [newTag, setNewTag] = useState("");
 
   const status = useQuery({
     queryKey: STATUS_KEY,
@@ -65,6 +69,16 @@ export default function OmarTab() {
     mutationFn: api.omarCommentsRun,
     onSuccess: (res) => {
       message.success(t("omarCommentsQueued", { queued: fmtNumber(res.queued), pending: fmtNumber(res.pending) }));
+      refresh();
+    },
+    onError: (err: Error) => message.error(err.message),
+  });
+  // Người dùng tự gõ hashtag cho một phim: kiểm tra có trên TikTok, tạo từ khoá rồi cào ngay tới hết (POST /omar/hashtags).
+  const addTag = useMutation({
+    mutationFn: () => api.omarAddHashtag(tagMovie!, newTag.trim()),
+    onSuccess: (res) => {
+      setNewTag("");
+      message.success(t(res.started ? "omarTagAdded" : "omarTagAlreadyRunning", { tag: res.keyword.keyword }));
       refresh();
     },
     onError: (err: Error) => message.error(err.message),
@@ -278,6 +292,38 @@ export default function OmarTab() {
           />
         }
       >
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <Select
+            showSearch
+            className="min-w-[240px]"
+            placeholder={t("omarTagMovie")}
+            value={tagMovie}
+            onChange={setTagMovie}
+            loading={movies.isLoading}
+            optionFilterProp="label"
+            options={(movies.data ?? []).map((movie) => ({ value: movie.id, label: movie.title }))}
+          />
+          <Input
+            className="max-w-[320px]"
+            prefix="#"
+            placeholder={t("omarTagPlaceholder")}
+            value={newTag}
+            onChange={(e) => setNewTag(e.target.value.replace(/^#/, ""))}
+            onPressEnter={() => tagMovie && newTag.trim() && addTag.mutate()}
+          />
+          <Button
+            type="primary"
+            icon={<PlayCircleOutlined />}
+            disabled={!data?.key_set || !tagMovie || !newTag.trim()}
+            loading={addTag.isPending}
+            onClick={() => addTag.mutate()}
+          >
+            {t("omarTagAdd")}
+          </Button>
+          <Typography.Text type="secondary" className="text-xs">
+            {t("omarTagHint")}
+          </Typography.Text>
+        </div>
         <Table<OmarHashtagProgress>
           size="small"
           rowKey="keyword_id"

@@ -297,6 +297,11 @@ export const api = {
   omarStatus: () => request<OmarStatus>("/omar/status"),
   omarRun: () => request<{ started: boolean }>("/omar/run", { method: "POST" }),
   omarStop: () => request<{ stopping: boolean }>("/omar/stop", { method: "POST" }),
+  omarAddHashtag: (movieId: string, hashtag: string) =>
+    request<{ keyword: { id: string; keyword: string }; started: boolean; verified: boolean }>("/omar/hashtags", {
+      method: "POST",
+      body: JSON.stringify({ movie_id: movieId, hashtag }),
+    }),
   omarCommentsRun: () =>
     request<{ queued: number; pending: number; started: boolean }>("/omar/comments/run", { method: "POST" }),
   setOmarApiKey: (apiKey: string) =>
