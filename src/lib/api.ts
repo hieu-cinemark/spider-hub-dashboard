@@ -297,6 +297,8 @@ export const api = {
   omarStatus: () => request<OmarStatus>("/omar/status"),
   omarRun: () => request<{ started: boolean }>("/omar/run", { method: "POST" }),
   omarStop: () => request<{ stopping: boolean }>("/omar/stop", { method: "POST" }),
+  omarCommentsRun: () =>
+    request<{ queued: number; pending: number; started: boolean }>("/omar/comments/run", { method: "POST" }),
   setOmarApiKey: (apiKey: string) =>
     request<{ api_key_set: boolean }>("/settings/omar-api", { method: "PUT", body: JSON.stringify({ api_key: apiKey }) }),
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { ApiOutlined, PauseCircleOutlined, PlayCircleOutlined, TagsOutlined } from "@ant-design/icons";
+import { ApiOutlined, CommentOutlined, PauseCircleOutlined, PlayCircleOutlined, TagsOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App, Button, Input, Progress, Space, Table, Tag, Tooltip, Typography } from "antd";
 import { useState } from "react";
@@ -19,6 +19,11 @@ function fmtNumber(n: number | null | undefined) {
   return n == null ? "—" : n.toLocaleString();
 }
 
+const WEEKDAYS = {
+  vi: ["Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy", "Chủ nhật"],
+  en: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+};
+
 function fmtDuration(seconds: number | null | undefined) {
   if (seconds == null) return "—";
   const h = Math.floor(seconds / 3600);
@@ -27,7 +32,7 @@ function fmtDuration(seconds: number | null | undefined) {
 }
 
 export default function OmarTab() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const { message } = App.useApp();
   const queryClient = useQueryClient();
   const [newKey, setNewKey] = useState("");
@@ -56,6 +61,14 @@ export default function OmarTab() {
     },
     onError: (err: Error) => message.error(err.message),
   });
+  const runComments = useMutation({
+    mutationFn: api.omarCommentsRun,
+    onSuccess: (res) => {
+      message.success(t("omarCommentsQueued", { queued: fmtNumber(res.queued), pending: fmtNumber(res.pending) }));
+      refresh();
+    },
+    onError: (err: Error) => message.error(err.message),
+  });
   const saveKey = useMutation({
     mutationFn: (key: string) => api.setOmarApiKey(key),
     onSuccess: () => {
@@ -71,6 +84,8 @@ export default function OmarTab() {
   const round = data?.round;
   const day = usage?.day;
   const dayPct = day?.limit ? Math.round((day.used / day.limit) * 100) : 0;
+  const comments = data?.comments;
+  const job = comments?.last;
 
   return (
     <div className="flex flex-col gap-4">
@@ -164,9 +179,85 @@ export default function OmarTab() {
                 failed: fmtNumber(round.stats.failed),
               })}
               {round.stats.stopped ? ` · ${round.stats.stopped}` : ""}
+              {round.stats.comment_requests
+                ? ` · ${t("omarRoundComments", {
+                    videos: fmtNumber(round.stats.comment_videos),
+                    comments: fmtNumber(round.stats.comments),
+                    replies: fmtNumber(round.stats.comment_replies),
+                    published: fmtNumber(round.stats.comments_published),
+                  })}`
+                : ""}
             </Typography.Text>
           )}
         </div>
+      </DashboardCard>
+
+      <DashboardCard
+        loading={status.isLoading}
+        title={
+          <CardHeading
+            icon={<CommentOutlined />}
+            title={t("omarCommentsTitle")}
+            desc={
+              comments
+                ? t("omarCommentsDesc", {
+                    weekday: WEEKDAYS[locale === "vi" ? "vi" : "en"][comments.weekday] ?? String(comments.weekday),
+                    time: comments.time,
+                    top: comments.top_per_hashtag,
+                  })
+                : undefined
+            }
+          />
+        }
+        extra={
+          <Button
+            icon={<CommentOutlined />}
+            loading={runComments.isPending}
+            disabled={!data?.key_set}
+            onClick={() => runComments.mutate()}
+          >
+            {t("omarCommentsRun")}
+          </Button>
+        }
+      >
+        {job ? (
+          <div className="flex flex-col gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <Typography.Text>
+                {t("omarCommentsLast", {
+                  week: job.week,
+                  trigger: job.trigger,
+                  time: formatRelativeTime(job.queued_at, t),
+                  videos: fmtNumber(job.videos + job.kept_from_before),
+                  hashtags: fmtNumber(job.hashtags),
+                })}
+              </Typography.Text>
+              {job.finished_at ? (
+                <Tag color="green">{t("omarCommentsDone", { time: formatRelativeTime(job.finished_at, t) })}</Tag>
+              ) : (
+                <Tag color="blue">{t("omarInProgress")}</Tag>
+              )}
+            </div>
+            {job.videos + job.kept_from_before > 0 && (
+              <Progress
+                percent={Math.round(
+                  ((job.videos + job.kept_from_before - comments.pending_videos) / (job.videos + job.kept_from_before)) * 100,
+                )}
+                size="small"
+              />
+            )}
+            <Typography.Text type="secondary" className="text-xs">
+              {t("omarCommentsProgress", {
+                comments: fmtNumber(job.comments),
+                replies: fmtNumber(job.replies),
+                published: fmtNumber(job.published),
+                pending: fmtNumber(comments.pending_videos),
+              })}
+            </Typography.Text>
+          </div>
+        ) : (
+          <Typography.Text type="secondary">{t("omarCommentsNone")}</Typography.Text>
+        )}
       </DashboardCard>
 
       <DashboardCard
@@ -207,6 +298,24 @@ export default function OmarTab() {
                   <span>~{fmtNumber(row.pages * 20)}</span>
                 </Tooltip>
               ),
+            },
+            {
+              title: t("omarColTiktokVideos"),
+              key: "tiktok",
+              align: "right",
+              render: (_, row) =>
+                row.video_count ? (
+                  <Tooltip title={t("omarColTiktokVideosHint")}>
+                    <span>
+                      {fmtNumber(row.video_count)}{" "}
+                      <span className="text-xs text-[var(--muted)]">
+                        ({Math.min(100, Math.round(((row.pages * 20) / row.video_count) * 100))}%)
+                      </span>
+                    </span>
+                  </Tooltip>
+                ) : (
+                  "—"
+                ),
             },
             {
               title: t("omarColStatus"),

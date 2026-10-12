@@ -701,6 +701,22 @@ export interface OmarHashtagProgress {
   cursor: string | null;
   done_at: string | null;
   fresh_at: string | null;
+  video_count: number | null;
+  view_count: number | null;
+  info_at: string | null;
+}
+
+export interface OmarCommentsJob {
+  week: string;
+  trigger: string;
+  queued_at: string;
+  hashtags: number;
+  videos: number;
+  kept_from_before: number;
+  finished_at: string | null;
+  comments: number;
+  replies: number;
+  published: number;
 }
 
 export interface OmarStatus {
@@ -727,9 +743,21 @@ export interface OmarStatus {
       keywords?: number;
       failed?: number;
       stopped?: string;
+      comment_videos?: number;
+      comment_requests?: number;
+      comments?: number;
+      comment_replies?: number;
+      comments_published?: number;
     };
   };
   mode: "continuous" | "spread_daily";
   hashtags: OmarHashtagProgress[];
-  totals: { hashtags: number; finished: number; started: number; pages: number };
+  comments: {
+    last: OmarCommentsJob | null;
+    pending_videos: number;
+    weekday: number;
+    time: string;
+    top_per_hashtag: number;
+  };
+  totals: { hashtags: number; finished: number; started: number; pages: number; tiktok_videos: number };
 }
