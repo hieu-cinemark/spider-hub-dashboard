@@ -731,8 +731,7 @@ export interface OmarSearchQuery {
 
 export interface OmarSearchResponse {
   queries: OmarSearchQuery[];
-  date: string;
-  sort: string;
+  modes: { date?: string; sort?: string }[];
   pages: number;
 }
 

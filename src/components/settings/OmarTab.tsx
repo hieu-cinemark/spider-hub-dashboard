@@ -263,8 +263,7 @@ export default function OmarTab() {
               search.data
                 ? t("omarSearchDesc", {
                     n: search.data.queries.length,
-                    date: search.data.date || "-",
-                    sort: search.data.sort || "-",
+                    modes: search.data.modes.map((mode) => `${mode.date ?? "all"}/${mode.sort ?? "relevance"}`).join(" + "),
                     pages: search.data.pages,
                   })
                 : undefined
