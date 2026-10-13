@@ -1,6 +1,6 @@
 "use client";
 
-import { ApiOutlined, CommentOutlined, DeleteOutlined, PauseCircleOutlined, PlayCircleOutlined, SearchOutlined, TagsOutlined, UserOutlined } from "@ant-design/icons";
+import { ApiOutlined, BarChartOutlined, CommentOutlined, DeleteOutlined, FireOutlined, PauseCircleOutlined, PlayCircleOutlined, SearchOutlined, TagsOutlined, UserOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App, Button, Input, Progress, Select, Space, Table, Tag, Tooltip, Typography } from "antd";
 import { useState } from "react";
@@ -44,6 +44,8 @@ export default function OmarTab() {
   const [searchMovie, setSearchMovie] = useState<string | undefined>();
   const [newQuery, setNewQuery] = useState("");
   const [searchFilter, setSearchFilter] = useState("");
+  const yieldQuery = useQuery({ queryKey: ["omar", "yield"], queryFn: () => api.omarYield(7), refetchInterval: 5 * 60_000 });
+  const trending = useQuery({ queryKey: ["omar", "trending"], queryFn: () => api.omarTrending(24), refetchInterval: 10 * 60_000 });
   const search = useQuery({ queryKey: ["omar", "search"], queryFn: api.omarSearch, refetchInterval: 60_000 });
   const refreshSearch = () => queryClient.invalidateQueries({ queryKey: ["omar", "search"] });
   // Thêm câu tìm cho một phim - tìm ngay, các ngày sau tìm cùng lượt Omar (POST /omar/search).
@@ -251,6 +253,83 @@ export default function OmarTab() {
             </Typography.Text>
           )}
         </div>
+      </DashboardCard>
+
+      <DashboardCard
+        loading={yieldQuery.isLoading}
+        title={<CardHeading icon={<BarChartOutlined />} title={t("omarYieldTitle")} desc={t("omarYieldDesc")} />}
+      >
+        <Table
+          size="small"
+          pagination={false}
+          rowKey="source"
+          scroll={{ x: true }}
+          dataSource={Object.entries(yieldQuery.data?.totals ?? {}).map(([source, m]) => ({ source, ...m }))}
+          columns={[
+            { title: t("omarYieldSource"), dataIndex: "source", render: (v: string) => t(`omarYieldSource_${v as "hashtag" | "search" | "channel" | "comments"}`) },
+            { title: t("omarYieldRequests"), dataIndex: "requests", align: "right", render: (v: number) => fmtNumber(v) },
+            { title: t("omarYieldSent"), dataIndex: "sent", align: "right", render: (v: number) => fmtNumber(v) },
+            { title: t("omarYieldNew"), dataIndex: "new", align: "right", render: (v: number) => fmtNumber(v) },
+            {
+              title: t("omarYieldPer100"),
+              dataIndex: "new_per_100",
+              align: "right",
+              render: (v: number | null) => (v == null ? "—" : v.toLocaleString()),
+            },
+            {
+              title: t("omarYieldShare"),
+              key: "share",
+              align: "right",
+              render: (_, row: { source: string }) => {
+                const share = yieldQuery.data?.shares?.[row.source];
+                const base = yieldQuery.data?.base_shares?.[row.source];
+                if (share == null) return "—";
+                return (
+                  <Tooltip title={t("omarYieldShareHint", { base: Math.round((base ?? share) * 100) })}>
+                    <span>{Math.round(share * 100)}%</span>
+                  </Tooltip>
+                );
+              },
+            },
+          ]}
+        />
+      </DashboardCard>
+
+      <DashboardCard
+        loading={trending.isLoading}
+        title={<CardHeading icon={<FireOutlined />} title={t("omarTrendingTitle")} desc={t("omarTrendingDesc")} />}
+      >
+        {(trending.data?.movies ?? []).filter((movie) => movie.videos.length).length === 0 ? (
+          <Typography.Text type="secondary">{t("omarTrendingEmpty")}</Typography.Text>
+        ) : (
+          <div className="flex flex-col gap-4">
+            {(trending.data?.movies ?? [])
+              .filter((movie) => movie.videos.length)
+              .slice(0, 8)
+              .map((movie) => (
+                <div key={movie.movie_id}>
+                  <Typography.Text strong>{movie.title}</Typography.Text>
+                  <ul className="mt-1 flex flex-col gap-1">
+                    {movie.videos.slice(0, 5).map((video) => (
+                      <li key={video.video_id} className="flex flex-wrap items-center gap-2 text-sm">
+                        {video.hot && <Tag color="red">{t("omarTrendingHot")}</Tag>}
+                        <a href={video.url ?? "#"} target="_blank" rel="noreferrer" className="max-w-[420px] truncate">
+                          {video.desc || video.video_id}
+                        </a>
+                        <span className="text-xs text-[var(--muted)]">
+                          @{video.author ?? "?"} ·{" "}
+                          {t("omarTrendingSpeed", {
+                            views: fmtNumber(Math.round(video.velocity.views_per_hour)),
+                            comments: fmtNumber(Math.round(video.velocity.comments_per_hour)),
+                          })}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+          </div>
+        )}
       </DashboardCard>
 
       <DashboardCard

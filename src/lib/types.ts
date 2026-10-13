@@ -724,7 +724,7 @@ export interface OmarSearchQuery {
   query: string;
   movie: string;
   movie_id: string;
-  source: "title" | "title_plain" | "social" | "custom";
+  source: "title" | "title_plain" | "social" | "custom" | "suggest";
   id: string | null;
   last: { at: string; videos: number; published: number } | null;
 }
@@ -733,6 +733,38 @@ export interface OmarSearchResponse {
   queries: OmarSearchQuery[];
   modes: { date?: string; sort?: string }[];
   pages: number;
+}
+
+export interface OmarYieldMetrics {
+  requests: number;
+  sent: number;
+  new: number;
+  new_per_100?: number | null;
+}
+
+export interface OmarYieldResponse {
+  days: { day: string; sources: Record<string, OmarYieldMetrics> }[];
+  totals: Record<string, OmarYieldMetrics>;
+  shares: Record<string, number>;
+  base_shares: Record<string, number>;
+}
+
+export interface OmarTrendingVideo {
+  video_id: string;
+  url: string | null;
+  author: string | null;
+  desc: string | null;
+  views: number;
+  likes: number;
+  comments: number;
+  shares: number;
+  velocity: { views_per_hour: number; comments_per_hour: number; growth_pct_per_hour: number | null; span_hours: number };
+  hot: boolean;
+}
+
+export interface OmarTrendingResponse {
+  hours: number;
+  movies: { movie_id: string; title: string; hot: number; videos: OmarTrendingVideo[] }[];
 }
 
 export interface OmarStatus {

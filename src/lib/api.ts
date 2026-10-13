@@ -64,6 +64,8 @@ import type {
   TriggerTokenRefreshResponse,
   OmarSearchQuery,
   OmarSearchResponse,
+  OmarTrendingResponse,
+  OmarYieldResponse,
 } from "./types";
 
 // cinemark-api (FastAPI). Every request carries the access key typed at the
@@ -304,6 +306,8 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ movie_id: movieId, hashtag }),
     }),
+  omarYield: (days = 7) => request<OmarYieldResponse>(`/omar/yield?days=${days}`),
+  omarTrending: (hours = 24) => request<OmarTrendingResponse>(`/omar/trending?hours=${hours}&limit=10`),
   omarSearch: () => request<OmarSearchResponse>("/omar/search"),
   omarAddSearch: (movieId: string, query: string) =>
     request<{ query: OmarSearchQuery }>("/omar/search", { method: "POST", body: JSON.stringify({ movie_id: movieId, query }) }),
