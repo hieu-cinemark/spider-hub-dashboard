@@ -720,6 +720,22 @@ export interface OmarCommentsJob {
   published: number;
 }
 
+export interface OmarSearchQuery {
+  query: string;
+  movie: string;
+  movie_id: string;
+  source: "title" | "title_plain" | "social" | "custom";
+  id: string | null;
+  last: { at: string; videos: number; published: number } | null;
+}
+
+export interface OmarSearchResponse {
+  queries: OmarSearchQuery[];
+  date: string;
+  sort: string;
+  pages: number;
+}
+
 export interface OmarStatus {
   key_set: boolean;
   usage: {

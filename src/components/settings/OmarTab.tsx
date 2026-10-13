@@ -1,6 +1,6 @@
 "use client";
 
-import { ApiOutlined, CommentOutlined, PauseCircleOutlined, PlayCircleOutlined, TagsOutlined, UserOutlined } from "@ant-design/icons";
+import { ApiOutlined, CommentOutlined, DeleteOutlined, PauseCircleOutlined, PlayCircleOutlined, SearchOutlined, TagsOutlined, UserOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App, Button, Input, Progress, Select, Space, Table, Tag, Tooltip, Typography } from "antd";
 import { useState } from "react";
@@ -9,7 +9,7 @@ import { useTranslation } from "@/i18n/LocaleProvider";
 import { useMovies } from "@/hooks/useMovies";
 import { api } from "@/lib/api";
 import { formatRelativeTime } from "@/lib/format";
-import type { OmarHashtagProgress } from "@/lib/types";
+import type { OmarHashtagProgress, OmarSearchQuery } from "@/lib/types";
 
 // Tab Omar (Settings): key Omar API, hạn mức của gói, lượt cào hashtag TikTok đang chạy (Chạy ngay / Dừng) và tiến độ
 // từng hashtag - xem cinemark-api app/services/omar_tiktok.py và app/api/routes/omar.py.
@@ -41,6 +41,26 @@ export default function OmarTab() {
   const [tagMovie, setTagMovie] = useState<string | undefined>();
   const [newTag, setNewTag] = useState("");
   const [channel, setChannel] = useState("");
+  const [searchMovie, setSearchMovie] = useState<string | undefined>();
+  const [newQuery, setNewQuery] = useState("");
+  const [searchFilter, setSearchFilter] = useState("");
+  const search = useQuery({ queryKey: ["omar", "search"], queryFn: api.omarSearch, refetchInterval: 60_000 });
+  const refreshSearch = () => queryClient.invalidateQueries({ queryKey: ["omar", "search"] });
+  // Thêm câu tìm cho một phim - tìm ngay, các ngày sau tìm cùng lượt Omar (POST /omar/search).
+  const addQuery = useMutation({
+    mutationFn: () => api.omarAddSearch(searchMovie!, newQuery.trim()),
+    onSuccess: () => {
+      message.success(t("omarSearchAdded", { query: newQuery.trim() }));
+      setNewQuery("");
+      refreshSearch();
+    },
+    onError: (err: Error) => message.error(err.message),
+  });
+  const deleteQuery = useMutation({
+    mutationFn: (id: string) => api.omarDeleteSearch(id),
+    onSuccess: refreshSearch,
+    onError: (err: Error) => message.error(err.message),
+  });
 
   const status = useQuery({
     queryKey: STATUS_KEY,
@@ -231,6 +251,119 @@ export default function OmarTab() {
             </Typography.Text>
           )}
         </div>
+      </DashboardCard>
+
+      <DashboardCard
+        loading={search.isLoading}
+        title={
+          <CardHeading
+            icon={<SearchOutlined />}
+            title={t("omarSearchTitle")}
+            desc={
+              search.data
+                ? t("omarSearchDesc", {
+                    n: search.data.queries.length,
+                    date: search.data.date || "-",
+                    sort: search.data.sort || "-",
+                    pages: search.data.pages,
+                  })
+                : undefined
+            }
+          />
+        }
+      >
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <Select
+            showSearch
+            className="min-w-[220px]"
+            placeholder={t("omarTagMovie")}
+            value={searchMovie}
+            onChange={setSearchMovie}
+            optionFilterProp="label"
+            options={(movies.data ?? []).map((movie) => ({ value: movie.id, label: movie.title }))}
+          />
+          <Input
+            className="max-w-[320px]"
+            placeholder={t("omarSearchPlaceholder")}
+            value={newQuery}
+            onChange={(e) => setNewQuery(e.target.value)}
+            onPressEnter={() => searchMovie && newQuery.trim() && addQuery.mutate()}
+          />
+          <Button
+            type="primary"
+            icon={<SearchOutlined />}
+            disabled={!data?.key_set || !searchMovie || newQuery.trim().length < 3}
+            loading={addQuery.isPending}
+            onClick={() => addQuery.mutate()}
+          >
+            {t("omarSearchAdd")}
+          </Button>
+          <Input
+            allowClear
+            className="ml-auto max-w-[220px]"
+            prefix={<SearchOutlined />}
+            placeholder={t("omarSearchFilter")}
+            value={searchFilter}
+            onChange={(e) => setSearchFilter(e.target.value)}
+          />
+        </div>
+        <Table<OmarSearchQuery>
+          size="small"
+          rowKey={(row) => `${row.movie_id}:${row.query}`}
+          loading={search.isLoading}
+          dataSource={(search.data?.queries ?? []).filter((row) => {
+            const needle = searchFilter.trim().toLowerCase();
+            return !needle || row.query.toLowerCase().includes(needle) || row.movie.toLowerCase().includes(needle);
+          })}
+          pagination={{ pageSize: 10, showSizeChanger: false }}
+          scroll={{ x: true }}
+          columns={[
+            { title: t("omarSearchColQuery"), dataIndex: "query", render: (v: string) => <span className="font-medium">{v}</span> },
+            { title: t("omarColMovie"), dataIndex: "movie" },
+            {
+              title: t("omarSearchColSource"),
+              dataIndex: "source",
+              render: (v: OmarSearchQuery["source"]) => (
+                <Tag color={v === "custom" ? "purple" : v === "social" ? "blue" : undefined}>{t(`omarSearchSource_${v}`)}</Tag>
+              ),
+            },
+            {
+              title: t("omarSearchColLast"),
+              key: "last",
+              render: (_, row) => (row.last ? formatRelativeTime(row.last.at, t) : <Tag>{t("omarNotStarted")}</Tag>),
+            },
+            {
+              title: t("omarSearchColVideos"),
+              key: "videos",
+              align: "right",
+              render: (_, row) =>
+                row.last ? (
+                  <Tooltip title={t("omarSearchVideosHint")}>
+                    <span>
+                      {fmtNumber(row.last.videos)} <span className="text-xs text-[var(--muted)]">({fmtNumber(row.last.published)})</span>
+                    </span>
+                  </Tooltip>
+                ) : (
+                  "—"
+                ),
+            },
+            {
+              title: "",
+              key: "actions",
+              render: (_, row) =>
+                row.source === "custom" && row.id ? (
+                  <Button
+                    size="small"
+                    type="text"
+                    danger
+                    icon={<DeleteOutlined />}
+                    loading={deleteQuery.isPending && deleteQuery.variables === row.id}
+                    onClick={() => deleteQuery.mutate(row.id!)}
+                  />
+                ) : null,
+            },
+          ]}
+        />
       </DashboardCard>
 
       <DashboardCard
