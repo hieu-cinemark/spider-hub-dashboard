@@ -1,6 +1,6 @@
 "use client";
 
-import { ApiOutlined, CommentOutlined, PauseCircleOutlined, PlayCircleOutlined, TagsOutlined } from "@ant-design/icons";
+import { ApiOutlined, CommentOutlined, PauseCircleOutlined, PlayCircleOutlined, TagsOutlined, UserOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App, Button, Input, Progress, Select, Space, Table, Tag, Tooltip, Typography } from "antd";
 import { useState } from "react";
@@ -40,6 +40,7 @@ export default function OmarTab() {
   const movies = useMovies();
   const [tagMovie, setTagMovie] = useState<string | undefined>();
   const [newTag, setNewTag] = useState("");
+  const [channel, setChannel] = useState("");
 
   const status = useQuery({
     queryKey: STATUS_KEY,
@@ -79,6 +80,18 @@ export default function OmarTab() {
     onSuccess: (res) => {
       setNewTag("");
       message.success(t(res.started ? "omarTagAdded" : "omarTagAlreadyRunning", { tag: res.keyword.keyword }));
+      refresh();
+    },
+    onError: (err: Error) => message.error(err.message),
+  });
+  // Cào ngay một kênh TikTok qua Omar /posts (POST /tiktok/channels/run).
+  const crawlChannel = useMutation({
+    mutationFn: () => api.runChannelVideos({ username: channel.trim() }),
+    onSuccess: (res) => {
+      if (res.published) {
+        message.success(t("omarChannelStarted", { handle: channel.trim().replace(/^@/, "") }));
+        setChannel("");
+      } else message.error(t("omarChannelInvalid"));
       refresh();
     },
     onError: (err: Error) => message.error(err.message),
@@ -193,6 +206,20 @@ export default function OmarTab() {
                 failed: fmtNumber(round.stats.failed),
               })}
               {round.stats.stopped ? ` · ${round.stats.stopped}` : ""}
+              {round.stats.search_requests
+                ? ` · ${t("omarRoundSearch", {
+                    queries: fmtNumber(round.stats.search_queries),
+                    requests: fmtNumber(round.stats.search_requests),
+                    videos: fmtNumber(round.stats.search_videos),
+                  })}`
+                : ""}
+              {round.stats.channel_requests
+                ? ` · ${t("omarRoundChannels", {
+                    channels: fmtNumber(round.stats.channels),
+                    videos: fmtNumber(round.stats.channel_videos),
+                    matched: fmtNumber(round.stats.channel_matched),
+                  })}`
+                : ""}
               {round.stats.comment_requests
                 ? ` · ${t("omarRoundComments", {
                     videos: fmtNumber(round.stats.comment_videos),
@@ -202,6 +229,66 @@ export default function OmarTab() {
                   })}`
                 : ""}
             </Typography.Text>
+          )}
+        </div>
+      </DashboardCard>
+
+      <DashboardCard
+        loading={status.isLoading}
+        title={
+          <CardHeading
+            icon={<UserOutlined />}
+            title={t("omarChannelsTitle")}
+            desc={
+              data?.channels
+                ? t("omarChannelsDesc", { max: data.channels.max_channels, days: data.channels.days })
+                : undefined
+            }
+          />
+        }
+      >
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <Tag>{t("omarChannelsTracked", { n: fmtNumber(data?.channels?.tracked) })}</Tag>
+            <Tag color="blue">{t("omarChannelsToday", { n: fmtNumber(data?.channels?.done_today) })}</Tag>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Input
+              className="max-w-[320px]"
+              prefix="@"
+              placeholder={t("omarChannelPlaceholder")}
+              value={channel}
+              onChange={(e) => setChannel(e.target.value.replace(/^@/, ""))}
+              onPressEnter={() => channel.trim() && crawlChannel.mutate()}
+            />
+            <Button
+              icon={<PlayCircleOutlined />}
+              disabled={!data?.key_set || !channel.trim()}
+              loading={crawlChannel.isPending}
+              onClick={() => crawlChannel.mutate()}
+            >
+              {t("omarChannelCrawl")}
+            </Button>
+            <Typography.Text type="secondary" className="text-xs">
+              {t("omarChannelHint")}
+            </Typography.Text>
+          </div>
+          {!!data?.channels?.latest.length && (
+            <div className="flex flex-wrap gap-1.5">
+              <Typography.Text type="secondary" className="text-xs">
+                {t("omarChannelsLatest")}
+              </Typography.Text>
+              {data.channels.latest.map((item) => (
+                <Tooltip
+                  key={item.handle}
+                  title={item.newest_video_at ? formatRelativeTime(item.newest_video_at, t) : undefined}
+                >
+                  <a href={`https://www.tiktok.com/@${item.handle}`} target="_blank" rel="noreferrer">
+                    <Tag>@{item.handle}</Tag>
+                  </a>
+                </Tooltip>
+              ))}
+            </div>
           )}
         </div>
       </DashboardCard>

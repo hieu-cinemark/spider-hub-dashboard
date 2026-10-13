@@ -749,10 +749,24 @@ export interface OmarStatus {
       comments?: number;
       comment_replies?: number;
       comments_published?: number;
+      search_queries?: number;
+      search_requests?: number;
+      search_videos?: number;
+      channels?: number;
+      channel_requests?: number;
+      channel_videos?: number;
+      channel_matched?: number;
     };
   };
   mode: "continuous" | "spread_daily";
   hashtags: OmarHashtagProgress[];
+  channels?: {
+    tracked: number;
+    done_today: number;
+    max_channels: number;
+    days: number;
+    latest: { handle: string; newest_video_at: string | null }[];
+  };
   comments: {
     last: OmarCommentsJob | null;
     pending_videos: number;
