@@ -1,7 +1,7 @@
 "use client";
 
 import { PlayCircleOutlined, PlusOutlined, StopOutlined } from "@ant-design/icons";
-import { Alert, Button, DatePicker, InputNumber, TreeSelect } from "antd";
+import { Alert, Button, Checkbox, DatePicker, InputNumber, Tooltip, TreeSelect } from "antd";
 import type { Dayjs } from "dayjs";
 import { useMemo, useState } from "react";
 import AddKeywordModal, { type AddKeywordFormValues } from "@/components/AddKeywordModal";
@@ -38,13 +38,10 @@ export default function CrawlTriggerForm({ platform }: { platform: string }) {
   const [keywordId, setKeywordId] = useState<string | undefined>(undefined);
   const [range, setRange] = useState<DateRange>(null);
   const [maxPages, setMaxPages] = useState<number | null>(null);
+  const [recentPost, setRecentPost] = useState(false);
   const [addModalOpen, setAddModalOpen] = useState(false);
 
-  const crawlableKeywords = useMemo(() => {
-    const rows = keywords ?? [];
-    if (platform !== "tiktok") return rows;
-    return rows.filter((k) => k.keyword.startsWith("#"));
-  }, [keywords, platform]);
+  const crawlableKeywords = useMemo(() => keywords ?? [], [keywords]);
 
   const keywordTreeData = useMemo(() => {
     const byMovie = new Map<string, { title: string; children: { title: string; value: string }[] }>();
@@ -76,6 +73,7 @@ export default function CrawlTriggerForm({ platform }: { platform: string }) {
         keyword_id: keywordId,
         start_date: start ? start.format("YYYY-MM-DD") : undefined,
         end_date: end ? end.format("YYYY-MM-DD") : undefined,
+        recent_post: supportsDateRange && recentPost ? true : undefined,
         max_pages: maxPages ?? undefined,
       },
       {
@@ -88,7 +86,7 @@ export default function CrawlTriggerForm({ platform }: { platform: string }) {
 
   function handleAddKeyword({ movieId, keyword }: AddKeywordFormValues) {
     createKeyword.mutate(
-      { movieId, keyword: platform === "tiktok" && !keyword.trim().startsWith("#") ? `#${keyword.trim()}` : keyword.trim() },
+      { movieId, keyword: keyword.trim() },
       {
         onSuccess: (created) => {
           setKeywordId(created.id);
@@ -158,6 +156,14 @@ export default function CrawlTriggerForm({ platform }: { platform: string }) {
           />
         </label>
       </div>
+
+      {supportsDateRange && (
+        <Tooltip title={t("recentPostsHint")} placement="topLeft">
+          <Checkbox className="self-start" checked={recentPost} onChange={(e) => setRecentPost(e.target.checked)}>
+            {t("recentPostsOnly")}
+          </Checkbox>
+        </Tooltip>
+      )}
 
       <div className="mt-auto flex flex-wrap items-center gap-2 pt-2">
         <Button type="primary" icon={<PlayCircleOutlined />} loading={runCrawl.isPending} onClick={handleRun} className="min-w-[160px]">

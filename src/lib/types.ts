@@ -188,6 +188,7 @@ export interface RunScraperParams {
   keyword_id?: string;
   start_date?: string;
   end_date?: string;
+  recent_post?: boolean;
   max_pages?: number;
   bfs_depth?: number;
 }
