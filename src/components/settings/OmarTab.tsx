@@ -2,11 +2,12 @@
 
 import { ApiOutlined, BarChartOutlined, CommentOutlined, DeleteOutlined, FireOutlined, PauseCircleOutlined, PlayCircleOutlined, SearchOutlined, TagsOutlined, UserOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { App, Button, Input, Progress, Select, Space, Table, Tag, Tooltip, Typography } from "antd";
-import { useState } from "react";
+import { App, Button, Input, Progress, Select, Space, Table, Tag, Tooltip, TreeSelect, Typography } from "antd";
+import { useMemo, useState } from "react";
 import DashboardCard, { CardHeading } from "@/components/DashboardCard";
 import { useTranslation } from "@/i18n/LocaleProvider";
 import { useMovies } from "@/hooks/useMovies";
+import { useKeywords } from "@/hooks/useKeywords";
 import { api } from "@/lib/api";
 import { formatRelativeTime } from "@/lib/format";
 import type { OmarHashtagProgress, OmarSearchQuery } from "@/lib/types";
@@ -532,6 +533,7 @@ export default function OmarTab() {
           </Button>
         }
       >
+        <CommentKeywordPicker />
         {job ? (
           <div className="flex flex-col gap-2">
             <div className="flex flex-wrap items-center gap-2">
@@ -680,6 +682,75 @@ export default function OmarTab() {
           ]}
         />
       </DashboardCard>
+    </div>
+  );
+}
+
+/** Chọn từ khoá TikTok để cào bình luận (rỗng = mọi hashtag đang bật). Nhóm theo phim; tích một phim = mọi từ khoá của nó. */
+function CommentKeywordPicker() {
+  const { t } = useTranslation();
+  const { message } = App.useApp();
+  const queryClient = useQueryClient();
+  const { data: keywords, isLoading: keywordsLoading } = useKeywords("tiktok");
+  const saved = useQuery({ queryKey: ["omar", "comment-keywords"], queryFn: api.omarCommentKeywords });
+  // Bản nháp chưa lưu; null = đang hiện đúng danh sách đã lưu.
+  const [draft, setDraft] = useState<string[] | null>(null);
+  const value = draft ?? saved.data?.keyword_ids ?? [];
+
+  const hashtagCount = (keywords ?? []).filter((k) => k.keyword.startsWith("#")).length;
+  const treeData = useMemo(() => {
+    const byMovie = new Map<string, { title: string; children: { title: string; value: string }[] }>();
+    for (const k of keywords ?? []) {
+      const key = k.movie_id || k.movie_title || "—";
+      const group = byMovie.get(key) ?? { title: k.movie_title || "—", children: [] };
+      group.children.push({ title: k.keyword, value: k.id });
+      byMovie.set(key, group);
+    }
+    return [...byMovie.entries()]
+      .sort((a, b) => a[1].title.localeCompare(b[1].title, undefined, { sensitivity: "base" }))
+      .map(([key, group]) => ({
+        title: group.title,
+        value: `movie:${key}`,
+        children: group.children.sort((a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: "base" })),
+      }));
+  }, [keywords]);
+
+  const save = useMutation({
+    mutationFn: () => api.setOmarCommentKeywords(value.filter((id) => !id.startsWith("movie:"))),
+    onSuccess: (res) => {
+      queryClient.setQueryData(["omar", "comment-keywords"], res);
+      setDraft(null);
+      message.success(res.keyword_ids.length ? t("omarCommentKeywordsSaved", { n: res.keyword_ids.length }) : t("omarCommentKeywordsReset"));
+    },
+  });
+  const dirty = JSON.stringify([...value].sort()) !== JSON.stringify([...(saved.data?.keyword_ids ?? [])].sort());
+
+  return (
+    <div className="mb-4 flex flex-col gap-1.5">
+      <span className="text-[11px] font-semibold tracking-wide text-[var(--muted)] uppercase">{t("omarCommentKeywords")}</span>
+      <div className="flex gap-2">
+        <TreeSelect
+          multiple
+          treeCheckable
+          showCheckedStrategy={TreeSelect.SHOW_CHILD}
+          allowClear
+          showSearch
+          treeNodeFilterProp="title"
+          maxTagCount="responsive"
+          className="min-w-0 flex-1"
+          loading={keywordsLoading || saved.isLoading}
+          placeholder={t("omarCommentKeywordsPlaceholder", { n: hashtagCount })}
+          value={value}
+          onChange={(next) => setDraft(next as string[])}
+          treeData={treeData}
+        />
+        <Button type="primary" disabled={!dirty} loading={save.isPending} onClick={() => save.mutate()}>
+          {t("omarCommentKeywordsSave")}
+        </Button>
+      </div>
+      <Typography.Text type="secondary" className="text-xs">
+        {t("omarCommentKeywordsHint")}
+      </Typography.Text>
     </div>
   );
 }

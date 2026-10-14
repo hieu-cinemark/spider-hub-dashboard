@@ -312,6 +312,9 @@ export const api = {
   omarAddSearch: (movieId: string, query: string) =>
     request<{ query: OmarSearchQuery }>("/omar/search", { method: "POST", body: JSON.stringify({ movie_id: movieId, query }) }),
   omarDeleteSearch: (id: string) => request<{ ok: boolean }>(`/omar/search/${id}`, { method: "DELETE" }),
+  omarCommentKeywords: () => request<{ keyword_ids: string[] }>("/omar/comments/keywords"),
+  setOmarCommentKeywords: (keywordIds: string[]) =>
+    request<{ keyword_ids: string[] }>("/omar/comments/keywords", { method: "PUT", body: JSON.stringify({ keyword_ids: keywordIds }) }),
   omarCommentsRun: () =>
     request<{ queued: number; pending: number; started: boolean }>("/omar/comments/run", { method: "POST" }),
   setOmarApiKey: (apiKey: string) =>
