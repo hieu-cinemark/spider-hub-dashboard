@@ -2,7 +2,7 @@
 
 import { ApiOutlined, BarChartOutlined, CommentOutlined, DeleteOutlined, FireOutlined, PauseCircleOutlined, PlayCircleOutlined, SearchOutlined, TagsOutlined, UserOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { App, Button, Input, Progress, Select, Space, Table, Tag, Tooltip, TreeSelect, Typography } from "antd";
+import { App, Button, Checkbox, Input, Progress, Select, Space, Table, Tag, Tooltip, TreeSelect, Typography } from "antd";
 import { useMemo, useState } from "react";
 import DashboardCard, { CardHeading } from "@/components/DashboardCard";
 import { useTranslation } from "@/i18n/LocaleProvider";
@@ -696,6 +696,9 @@ function CommentKeywordPicker() {
   // Bản nháp chưa lưu; null = đang hiện đúng danh sách đã lưu.
   const [draft, setDraft] = useState<string[] | null>(null);
   const value = draft ?? saved.data?.keyword_ids ?? [];
+  const [allDraft, setAllDraft] = useState<boolean | null>(null);
+  const allVideos = allDraft ?? saved.data?.all_videos ?? false;
+  const selectedIds = value.filter((id) => !id.startsWith("movie:"));
 
   const hashtagCount = (keywords ?? []).filter((k) => k.keyword.startsWith("#")).length;
   const treeData = useMemo(() => {
@@ -716,14 +719,17 @@ function CommentKeywordPicker() {
   }, [keywords]);
 
   const save = useMutation({
-    mutationFn: () => api.setOmarCommentKeywords(value.filter((id) => !id.startsWith("movie:"))),
+    mutationFn: () => api.setOmarCommentKeywords(selectedIds, allVideos),
     onSuccess: (res) => {
       queryClient.setQueryData(["omar", "comment-keywords"], res);
       setDraft(null);
+      setAllDraft(null);
       message.success(res.keyword_ids.length ? t("omarCommentKeywordsSaved", { n: res.keyword_ids.length }) : t("omarCommentKeywordsReset"));
     },
   });
-  const dirty = JSON.stringify([...value].sort()) !== JSON.stringify([...(saved.data?.keyword_ids ?? [])].sort());
+  const dirty =
+    JSON.stringify([...value].sort()) !== JSON.stringify([...(saved.data?.keyword_ids ?? [])].sort()) ||
+    allVideos !== (saved.data?.all_videos ?? false);
 
   return (
     <div className="mb-4 flex flex-col gap-1.5">
@@ -748,8 +754,18 @@ function CommentKeywordPicker() {
           {t("omarCommentKeywordsSave")}
         </Button>
       </div>
+      <Tooltip title={selectedIds.length ? t("omarCommentAllVideosHint") : t("omarCommentAllVideosNeedKeywords")} placement="topLeft">
+        <Checkbox
+          className="self-start"
+          checked={allVideos && selectedIds.length > 0}
+          disabled={selectedIds.length === 0}
+          onChange={(e) => setAllDraft(e.target.checked)}
+        >
+          {t("omarCommentAllVideos")}
+        </Checkbox>
+      </Tooltip>
       <Typography.Text type="secondary" className="text-xs">
-        {t("omarCommentKeywordsHint")}
+        {allVideos && selectedIds.length > 0 ? t("omarCommentKeywordsHintAll") : t("omarCommentKeywordsHint")}
       </Typography.Text>
     </div>
   );
