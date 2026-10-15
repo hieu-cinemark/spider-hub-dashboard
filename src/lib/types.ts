@@ -826,3 +826,20 @@ export interface OmarStatus {
   };
   totals: { hashtags: number; finished: number; started: number; pages: number; tiktok_videos: number };
 }
+
+/** Hiệu quả một từ khoá Facebook/Threads 14 ngày qua (cinemark-api app/services/keyword_yield.py). */
+export interface KeywordYield {
+  id: string;
+  keyword: string;
+  movie_title: string;
+  enabled: boolean;
+  /** Bị tự tắt vì tỉ lệ bài liên quan quá thấp. */
+  auto_paused: boolean;
+  stored?: number;
+  relevant?: number;
+  matched?: number;
+  dropped?: number;
+  sample: number;
+  /** 0-1, null = chưa có dữ liệu. */
+  ratio: number | null;
+}

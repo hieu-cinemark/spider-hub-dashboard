@@ -66,6 +66,7 @@ import type {
   OmarSearchResponse,
   OmarTrendingResponse,
   OmarYieldResponse,
+  KeywordYield,
 } from "./types";
 
 // cinemark-api (FastAPI). Every request carries the access key typed at the
@@ -180,6 +181,7 @@ export const api = {
   ingestLogs: (lines = 300) => request<LogTailResponse>(`/logs/ingest?lines=${lines}`),
   tokenStatus: (platform: string) => request<TokenStatus>(`/${platform}/token-status`),
   keywords: (platform: string) => request<Keyword[]>(`/${platform}/keywords`),
+  keywordYield: (platform: string) => request<{ items: KeywordYield[] }>(`/${platform}/keywords/yield`),
   createKeyword: (platform: string, movieId: string, keyword: string) =>
     request<Keyword>(`/${platform}/keywords`, {
       method: "POST",

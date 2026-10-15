@@ -17,6 +17,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import DashboardCard, { CardHeading } from "@/components/DashboardCard";
 import CrawlTriggerForm from "@/components/platform/CrawlTriggerForm";
 import ChannelVideosForm from "@/components/platform/ChannelVideosForm";
+import KeywordYieldCard from "@/components/platform/KeywordYieldCard";
 import { useJobStatus } from "@/hooks/useJobStatus";
 import { useRefreshTokenStream } from "@/hooks/useRefreshTokenStream";
 import { useAccountMutations, useAccounts } from "@/hooks/useSettings";
@@ -178,132 +179,135 @@ export default function PlatformActions({ platform }: { platform: string }) {
   }
 
   return (
-    <div className={`grid items-stretch gap-4 ${hasTokenRefresh ? "lg:grid-cols-2" : ""}`}>
-      <div className="flex flex-col gap-4">
-        {/* h-full only when this is the column's only card (matches the
-            token-refresh column's height) - with ChannelVideosForm also
-            stacked below it (TikTok), height:100% on this first card
-            fights its sibling for the items-stretch'd column's height,
-            and DashboardCard's own overflow:hidden then clips the
-            sibling's bottom content (its Max pages field + Run button -
-            confirmed happening for real on the TikTok actions page). */}
-        <DashboardCard
-          className={isTiktok ? "" : "h-full"}
-          title={<CardHeading icon={<PlayCircleOutlined />} title={t("runACrawl")} />}
-        >
-          <CrawlTriggerForm platform={platform} />
-        </DashboardCard>
-        {isTiktok && (
-          <DashboardCard title={<CardHeading icon={<PlayCircleOutlined />} title={t("channelVideosTitle")} />}>
-            <ChannelVideosForm />
+    <div className="flex flex-col gap-4">
+      <div className={`grid items-stretch gap-4 ${hasTokenRefresh ? "lg:grid-cols-2" : ""}`}>
+        <div className="flex flex-col gap-4">
+          {/* h-full only when this is the column's only card (matches the
+              token-refresh column's height) - with ChannelVideosForm also
+              stacked below it (TikTok), height:100% on this first card
+              fights its sibling for the items-stretch'd column's height,
+              and DashboardCard's own overflow:hidden then clips the
+              sibling's bottom content (its Max pages field + Run button -
+              confirmed happening for real on the TikTok actions page). */}
+          <DashboardCard
+            className={isTiktok ? "" : "h-full"}
+            title={<CardHeading icon={<PlayCircleOutlined />} title={t("runACrawl")} />}
+          >
+            <CrawlTriggerForm platform={platform} />
+          </DashboardCard>
+          {isTiktok && (
+            <DashboardCard title={<CardHeading icon={<PlayCircleOutlined />} title={t("channelVideosTitle")} />}>
+              <ChannelVideosForm />
+            </DashboardCard>
+          )}
+        </div>
+
+        {hasTokenRefresh && (
+          <DashboardCard className="h-full" title={<CardHeading icon={<KeyOutlined />} title={t("token")} />}>
+            <div className="flex min-h-0 flex-1 flex-col gap-4">
+              {statusNode}
+
+              <div className="flex flex-col gap-1.5">
+                <span className="text-[12px] font-semibold tracking-wide text-[var(--muted)]">
+                  {t("importCookiesAccountPlaceholder")}
+                </span>
+                <Select
+                  className="w-full"
+                  size="large"
+                  placeholder={t("importCookiesAccountPlaceholder")}
+                  value={importAccountId}
+                  onChange={selectAccount}
+                  notFoundContent={t("noEnabledAccountsForPlatform")}
+                  options={platformAccounts.map((a) => ({
+                    value: a.id,
+                    label: a.email ? `${a.account_id} (${a.email})` : a.account_id,
+                  }))}
+                />
+              </div>
+
+              <div className="inset-panel flex flex-col gap-3 p-4">
+                <div>
+                  <div className="text-[13px] font-semibold uppercase tracking-wide text-[var(--accent)]">
+                    1 · {t("restoreSavedSessionAction")}
+                  </div>
+                  <p className="mt-1 mb-0 text-sm leading-relaxed text-[var(--muted)]">
+                    {t(isTiktok ? "restoreSavedSessionDescTikTok" : "restoreSavedSessionDesc")}
+                  </p>
+                </div>
+                <Button
+                  type="primary"
+                  size="large"
+                  icon={<ReloadOutlined />}
+                  disabled={importAccountId === undefined || isRefreshing}
+                  loading={restoreSession.isPending}
+                  onClick={() => {
+                    if (importAccountId === undefined) return;
+                    setResultFor(importAccountId);
+                    restoreSession.mutate(importAccountId);
+                  }}
+                >
+                  {t("restoreSavedSessionAction")}
+                </Button>
+              </div>
+
+              <div className="flex flex-col gap-3 rounded-xl border border-dashed border-[var(--line)] p-4">
+                <div>
+                  <div className="text-[13px] font-semibold uppercase tracking-wide text-[var(--muted)]">
+                    2 · {t("importCookiesTitle")}
+                  </div>
+                  <p className="mt-1 mb-0 text-sm leading-relaxed text-[var(--muted)]">
+                    {t(isTiktok ? "importCookiesDescTikTok" : "importCookiesDesc")}
+                  </p>
+                </div>
+                {!isTiktok && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      icon={<KeyOutlined />}
+                      disabled={importAccountId === undefined}
+                      loading={totpCode.isPending}
+                      onClick={() =>
+                        importAccountId !== undefined &&
+                        totpCode.mutate(importAccountId, {
+                          onError: () => message.error(t("toastTotpCodeFailed")),
+                        })
+                      }
+                    >
+                      {t("get2faCodeAction")}
+                    </Button>
+                    {totpCode.data && (
+                      <span className="rounded-lg bg-[var(--paper-deep)] px-2.5 py-1 font-mono text-sm tabular-nums">
+                        {totpCode.data.code} · {t("totpCodeExpiresIn", { n: totpCode.data.expires_in_seconds })}
+                      </span>
+                    )}
+                  </div>
+                )}
+                <Input.TextArea
+                  rows={4}
+                  className="font-mono text-xs"
+                  placeholder={t(isTiktok ? "importCookiesPlaceholderTikTok" : "importCookiesPlaceholder")}
+                  value={cookiesText}
+                  onChange={(e) => setCookiesText(e.target.value)}
+                />
+                <Button
+                  icon={<ImportOutlined />}
+                  disabled={importAccountId === undefined || !cookiesText.trim() || isRefreshing}
+                  loading={importCookies.isPending}
+                  onClick={() => {
+                    setResultFor(importAccountId as number);
+                    importCookies.mutate(
+                      { accountId: importAccountId as number, cookies: cookiesText.trim() },
+                      { onSuccess: () => setCookiesText("") },
+                    );
+                  }}
+                >
+                  {t("importCookiesAction")}
+                </Button>
+              </div>
+            </div>
           </DashboardCard>
         )}
       </div>
-
-      {hasTokenRefresh && (
-        <DashboardCard className="h-full" title={<CardHeading icon={<KeyOutlined />} title={t("token")} />}>
-          <div className="flex min-h-0 flex-1 flex-col gap-4">
-            {statusNode}
-
-            <div className="flex flex-col gap-1.5">
-              <span className="text-[12px] font-semibold tracking-wide text-[var(--muted)]">
-                {t("importCookiesAccountPlaceholder")}
-              </span>
-              <Select
-                className="w-full"
-                size="large"
-                placeholder={t("importCookiesAccountPlaceholder")}
-                value={importAccountId}
-                onChange={selectAccount}
-                notFoundContent={t("noEnabledAccountsForPlatform")}
-                options={platformAccounts.map((a) => ({
-                  value: a.id,
-                  label: a.email ? `${a.account_id} (${a.email})` : a.account_id,
-                }))}
-              />
-            </div>
-
-            <div className="inset-panel flex flex-col gap-3 p-4">
-              <div>
-                <div className="text-[13px] font-semibold uppercase tracking-wide text-[var(--accent)]">
-                  1 · {t("restoreSavedSessionAction")}
-                </div>
-                <p className="mt-1 mb-0 text-sm leading-relaxed text-[var(--muted)]">
-                  {t(isTiktok ? "restoreSavedSessionDescTikTok" : "restoreSavedSessionDesc")}
-                </p>
-              </div>
-              <Button
-                type="primary"
-                size="large"
-                icon={<ReloadOutlined />}
-                disabled={importAccountId === undefined || isRefreshing}
-                loading={restoreSession.isPending}
-                onClick={() => {
-                  if (importAccountId === undefined) return;
-                  setResultFor(importAccountId);
-                  restoreSession.mutate(importAccountId);
-                }}
-              >
-                {t("restoreSavedSessionAction")}
-              </Button>
-            </div>
-
-            <div className="flex flex-col gap-3 rounded-xl border border-dashed border-[var(--line)] p-4">
-              <div>
-                <div className="text-[13px] font-semibold uppercase tracking-wide text-[var(--muted)]">
-                  2 · {t("importCookiesTitle")}
-                </div>
-                <p className="mt-1 mb-0 text-sm leading-relaxed text-[var(--muted)]">
-                  {t(isTiktok ? "importCookiesDescTikTok" : "importCookiesDesc")}
-                </p>
-              </div>
-              {!isTiktok && (
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button
-                    icon={<KeyOutlined />}
-                    disabled={importAccountId === undefined}
-                    loading={totpCode.isPending}
-                    onClick={() =>
-                      importAccountId !== undefined &&
-                      totpCode.mutate(importAccountId, {
-                        onError: () => message.error(t("toastTotpCodeFailed")),
-                      })
-                    }
-                  >
-                    {t("get2faCodeAction")}
-                  </Button>
-                  {totpCode.data && (
-                    <span className="rounded-lg bg-[var(--paper-deep)] px-2.5 py-1 font-mono text-sm tabular-nums">
-                      {totpCode.data.code} · {t("totpCodeExpiresIn", { n: totpCode.data.expires_in_seconds })}
-                    </span>
-                  )}
-                </div>
-              )}
-              <Input.TextArea
-                rows={4}
-                className="font-mono text-xs"
-                placeholder={t(isTiktok ? "importCookiesPlaceholderTikTok" : "importCookiesPlaceholder")}
-                value={cookiesText}
-                onChange={(e) => setCookiesText(e.target.value)}
-              />
-              <Button
-                icon={<ImportOutlined />}
-                disabled={importAccountId === undefined || !cookiesText.trim() || isRefreshing}
-                loading={importCookies.isPending}
-                onClick={() => {
-                  setResultFor(importAccountId as number);
-                  importCookies.mutate(
-                    { accountId: importAccountId as number, cookies: cookiesText.trim() },
-                    { onSuccess: () => setCookiesText("") },
-                  );
-                }}
-              >
-                {t("importCookiesAction")}
-              </Button>
-            </div>
-          </div>
-        </DashboardCard>
-      )}
+      {(platform === "facebook" || platform === "threads") && <KeywordYieldCard platform={platform} />}
     </div>
   );
 }
