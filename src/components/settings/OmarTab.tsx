@@ -206,6 +206,19 @@ export default function OmarTab() {
             </Button>
             {round?.running ? (
               <Tag color="processing">{t("omarRunning", { trigger: round.trigger ?? "" })}</Tag>
+            ) : data?.paused ? (
+              <Tooltip title={t(data.paused.reason === "key" ? "omarPausedKeyHint" : "omarPausedQuotaHint")}>
+                <Tag color="warning">
+                  {t(data.paused.reason === "key" ? "omarPausedKey" : "omarPausedQuota", {
+                    time: new Date(data.paused.until).toLocaleString(locale === "vi" ? "vi-VN" : "en-US", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      day: "2-digit",
+                      month: "2-digit",
+                    }),
+                  })}
+                </Tag>
+              </Tooltip>
             ) : (
               <Tag>{t("omarIdle")}</Tag>
             )}

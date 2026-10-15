@@ -777,6 +777,8 @@ export interface OmarStatus {
     day?: { limit: number; used: number; remaining: number; resets_in: number };
     minute?: { limit: number; used: number; remaining: number; resets_in: number };
   } | null;
+  /** Lượt Omar đang dừng chờ hạn mức reset (quota) hoặc key mới (key); null khi chạy bình thường. */
+  paused?: { reason: "quota" | "key"; until: string; at: string } | null;
   round: {
     running: boolean;
     trigger: string | null;
