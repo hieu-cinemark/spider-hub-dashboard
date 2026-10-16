@@ -17,7 +17,7 @@ import type { CrawlSchedule } from "@/lib/types";
 const NURTURE_SCHEDULE_PLATFORMS = new Set(["facebook", "threads", "tiktok"]);
 const TIME_FORMAT = "HH:mm";
 const DEFAULT_RUN_TIME = "07:00";
-const MAX_RUNS_PER_DAY = 3;
+const MAX_RUNS_PER_DAY = 8;
 const MIN_GAP_MINUTES = 60;
 
 const toMinutes = (hm: string) => Number(hm.slice(0, 2)) * 60 + Number(hm.slice(3, 5));
