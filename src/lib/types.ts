@@ -551,6 +551,9 @@ export interface ProxyProvider {
   token_set: boolean;
   ip_allowlist: boolean;
   updated_at: string | null;
+  // Lần spider-hub thực sự dùng gói này và kết quả ("ok" / "error: ...").
+  last_used_at: string | null;
+  last_status: string | null;
 }
 
 export interface ProxyProviderInput {

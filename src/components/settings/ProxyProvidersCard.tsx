@@ -1,7 +1,7 @@
 "use client";
 
 import { CloudServerOutlined, PlusOutlined } from "@ant-design/icons";
-import { Button, Table, Tag, Typography } from "antd";
+import { Button, Table, Tag, Tooltip, Typography } from "antd";
 import { useState } from "react";
 import DashboardCard, { CardHeading } from "@/components/DashboardCard";
 import { ItemCard, ItemCardList, ItemField } from "@/components/ItemCards";
@@ -46,6 +46,24 @@ export default function ProxyProvidersCard() {
   const modeTag = (r: ProxyProvider) =>
     r.ip_allowlist ? <Tag>{t("proxyProviderModeIpAllow")}</Tag> : <Tag>{t("proxyProviderModeUserPass")}</Tag>;
 
+  const usage = (r: ProxyProvider) =>
+    r.last_used_at ? (
+      <div className="flex flex-col gap-1">
+        <span className="text-xs text-[var(--muted)]">{formatRelativeTime(r.last_used_at, t)}</span>
+        {r.last_status && r.last_status.startsWith("ok") ? (
+          <Tag color="green">OK</Tag>
+        ) : (
+          <Tooltip title={r.last_status}>
+            <Tag color="red" className="max-w-[200px] truncate">
+              {r.last_status ?? t("proxyProviderNeverUsed")}
+            </Tag>
+          </Tooltip>
+        )}
+      </div>
+    ) : (
+      <Typography.Text type="secondary">{t("proxyProviderNeverUsed")}</Typography.Text>
+    );
+
   return (
     <DashboardCard
       title={<CardHeading icon={<CloudServerOutlined />} title={t("proxyProvidersTitle")} desc={t("proxyProvidersDesc")} />}
@@ -69,14 +87,9 @@ export default function ProxyProvidersCard() {
             { title: t("proxyProviderToken"), key: "token", width: 260, render: (_: unknown, r: ProxyProvider) => tokenTag(r) },
             {
               title: t("columnLastTriggered"),
-              key: "updated_at",
-              width: 140,
-              render: (_: unknown, r: ProxyProvider) =>
-                r.updated_at ? (
-                  <span className="text-xs text-[var(--muted)]">{formatRelativeTime(r.updated_at, t)}</span>
-                ) : (
-                  <Typography.Text type="secondary">{t("crawlScheduleNotSet")}</Typography.Text>
-                ),
+              key: "last_used_at",
+              width: 220,
+              render: (_: unknown, r: ProxyProvider) => usage(r),
             },
             {
               title: "",
@@ -98,6 +111,7 @@ export default function ProxyProvidersCard() {
               </ItemField>
               <ItemField label={t("proxyProviderMode")}>{modeTag(record)}</ItemField>
               <ItemField label={t("proxyProviderToken")}>{tokenTag(record)}</ItemField>
+              <ItemField label={t("columnLastTriggered")}>{usage(record)}</ItemField>
             </ItemCard>
           )}
         </ItemCardList>

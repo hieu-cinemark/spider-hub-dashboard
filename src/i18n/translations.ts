@@ -737,6 +737,7 @@ const en = {
   proxyProviderModeUserPass: "Username/password",
   proxyProviderTokenInDb: "Token set",
   proxyProviderTokenMissing: "No token",
+  proxyProviderNeverUsed: "Never used",
 
   commentScheduleTitle: "Comment collection schedule",
   commentScheduleDesc:
@@ -1702,6 +1703,7 @@ const vi: Record<keyof typeof en, string> = {
   proxyProviderModeUserPass: "User/mật khẩu",
   proxyProviderTokenInDb: "Đã có token",
   proxyProviderTokenMissing: "Chưa có token",
+  proxyProviderNeverUsed: "Chưa dùng lần nào",
 
   commentScheduleTitle: "Lịch thu thập bình luận",
   commentScheduleDesc:
