@@ -843,3 +843,32 @@ export interface KeywordYield {
   /** 0-1, null = chưa có dữ liệu. */
   ratio: number | null;
 }
+
+/** Trang nguồn Facebook (cinemark-api app/services/source_pages.py). movie_id null = trang chung nhiều phim. */
+export interface SourcePage {
+  id: string;
+  url: string;
+  page_id: string | null;
+  name: string | null;
+  movie_id: string | null;
+  movie_title: string | null;
+  enabled: number;
+  last_queued_at: string | null;
+  created_at: string;
+  /** "ai" = Kira tự duyệt thêm, "manual" = người thêm. */
+  added_by: string | null;
+  ai_reason: string | null;
+  /** Số lượt cào liền không có bài mới - lịch cào giãn gấp đôi mỗi lượt (tối đa x8). */
+  quiet_runs: number;
+}
+
+export interface SourcePageSuggestion {
+  kind: "film" | "shared";
+  movie_id: string | null;
+  movie_title: string | null;
+  name: string;
+  url: string;
+  posts: number;
+  engagement: number;
+  films: string[];
+}

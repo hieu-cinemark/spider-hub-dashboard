@@ -67,6 +67,8 @@ import type {
   OmarTrendingResponse,
   OmarYieldResponse,
   KeywordYield,
+  SourcePage,
+  SourcePageSuggestion,
 } from "./types";
 
 // cinemark-api (FastAPI). Every request carries the access key typed at the
@@ -182,6 +184,14 @@ export const api = {
   tokenStatus: (platform: string) => request<TokenStatus>(`/${platform}/token-status`),
   keywords: (platform: string) => request<Keyword[]>(`/${platform}/keywords`),
   keywordYield: (platform: string) => request<{ items: KeywordYield[] }>(`/${platform}/keywords/yield`),
+  sourcePages: () => request<{ items: SourcePage[] }>("/facebook/sources"),
+  sourcePageSuggestions: () => request<{ items: SourcePageSuggestion[] }>("/facebook/sources/suggestions"),
+  addSourcePage: (url: string, movieId: string | null, name?: string | null) =>
+    request<SourcePage>("/facebook/sources", { method: "POST", body: JSON.stringify({ url, movie_id: movieId, name }) }),
+  setSourcePageEnabled: (id: string, enabled: boolean) =>
+    request<{ ok: boolean }>(`/facebook/sources/${id}`, { method: "PATCH", body: JSON.stringify({ enabled }) }),
+  deleteSourcePage: (id: string) => request<{ ok: boolean }>(`/facebook/sources/${id}`, { method: "DELETE" }),
+  runSourcePage: (id: string) => request<{ published: boolean }>(`/facebook/sources/${id}/run`, { method: "POST" }),
   createKeyword: (platform: string, movieId: string, keyword: string) =>
     request<Keyword>(`/${platform}/keywords`, {
       method: "POST",

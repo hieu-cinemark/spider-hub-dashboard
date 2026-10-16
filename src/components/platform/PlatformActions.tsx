@@ -18,6 +18,7 @@ import DashboardCard, { CardHeading } from "@/components/DashboardCard";
 import CrawlTriggerForm from "@/components/platform/CrawlTriggerForm";
 import ChannelVideosForm from "@/components/platform/ChannelVideosForm";
 import KeywordYieldCard from "@/components/platform/KeywordYieldCard";
+import SourcePagesCard from "@/components/platform/SourcePagesCard";
 import { useJobStatus } from "@/hooks/useJobStatus";
 import { useRefreshTokenStream } from "@/hooks/useRefreshTokenStream";
 import { useAccountMutations, useAccounts } from "@/hooks/useSettings";
@@ -308,6 +309,7 @@ export default function PlatformActions({ platform }: { platform: string }) {
         )}
       </div>
       {(platform === "facebook" || platform === "threads") && <KeywordYieldCard platform={platform} />}
+      {platform === "facebook" && <SourcePagesCard />}
     </div>
   );
 }
