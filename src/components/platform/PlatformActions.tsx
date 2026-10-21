@@ -94,7 +94,7 @@ export default function PlatformActions({ platform }: { platform: string }) {
   const accountLabel = tokenStatus?.account
     ? t("accountLabel", { account: tokenStatus.account })
     : undefined;
-  const validDescription =
+  const validAccount =
     tokenStatus?.account != null
       ? `${t("accountLabel", { account: tokenStatus.account })}${
           !isTiktok && tokenStatus.expires_in_seconds != null
@@ -102,6 +102,20 @@ export default function PlatformActions({ platform }: { platform: string }) {
             : ""
         }`
       : undefined;
+  // A failed refresh only matters while the session is actually broken: once the token is valid again (e.g. the
+  // consumer re-bootstrapped with another account), keep the old failure as a footnote instead of the headline.
+  const failedAt = stream.finishedAt
+    ? ` (${new Date(stream.finishedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })})`
+    : "";
+  const validDescription =
+    runStatus === "failed" ? (
+      <span>
+        {validAccount}
+        <span className="mt-1 block text-xs opacity-70">{t("lastRefreshFailedNote", { at: failedAt })}</span>
+      </span>
+    ) : (
+      validAccount
+    );
 
   // One status only — never show "refreshed" beside "needs new token".
   let statusNode: ReactNode = null;
@@ -125,7 +139,7 @@ export default function PlatformActions({ platform }: { platform: string }) {
         }
       />
     );
-  } else if (runStatus === "failed") {
+  } else if (runStatus === "failed" && !tokenValid) {
     statusNode = (
       <Alert
         type="error"
