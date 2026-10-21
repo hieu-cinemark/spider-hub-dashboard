@@ -7,7 +7,6 @@ import DashboardCard, { CardHeading } from "@/components/DashboardCard";
 import { useAiSettings, useSetAiSettings } from "@/hooks/useSettings";
 import { useTranslation } from "@/i18n/LocaleProvider";
 import type { TranslationKey } from "@/i18n/translations";
-import type { ReportAiProvider } from "@/lib/types";
 
 const TASK_LABEL_KEYS: Record<string, TranslationKey> = {
   relevance: "aiPromptTaskRelevance",
@@ -17,7 +16,6 @@ const TASK_LABEL_KEYS: Record<string, TranslationKey> = {
   narrative: "aiPromptTaskNarrative",
   import_accounts: "aiPromptTaskImportAccounts",
   import_proxies: "aiPromptTaskImportProxies",
-  hashtag_bfs: "aiPromptTaskHashtagBfs",
   diagnosis: "aiPromptTaskDiagnosis",
   selector: "aiPromptTaskSelector",
 };
@@ -30,13 +28,11 @@ export default function AiSettingsCard() {
   const [model, setModel] = useState("");
   const [task, setTask] = useState("relevance");
   const [drafts, setDrafts] = useState<Record<string, string>>({});
-  const [activeReportProvider, setActiveReportProvider] = useState<ReportAiProvider>("bee");
 
   useEffect(() => {
     if (!data) return;
     setEnabled(data.enabled);
     setModel(data.model);
-    setActiveReportProvider(data.active_report_provider);
     const next: Record<string, string> = {};
     for (const prompt of data.prompts) {
       next[prompt.task] = prompt.system_prompt;
@@ -49,7 +45,7 @@ export default function AiSettingsCard() {
   const currentDraft = drafts[task] ?? current?.system_prompt ?? "";
 
   function persist() {
-    save.mutate({ enabled, model: model.trim(), prompts: drafts, active_report_provider: activeReportProvider });
+    save.mutate({ enabled, model: model.trim(), prompts: drafts, active_report_provider: "bee" });
   }
 
   function resetPrompt() {
@@ -70,17 +66,7 @@ export default function AiSettingsCard() {
           <Typography.Text>{enabled ? t("aiSettingsEnabled") : t("aiSettingsDisabled")}</Typography.Text>
         </div>
         <Form.Item label={t("aiSettingsModel")} extra={t("aiSettingsModelHint")}>
-          <Input value={model} onChange={(e) => setModel(e.target.value)} placeholder="qwen3.8-flash" />
-        </Form.Item>
-        <Form.Item label={t("aiSettingsReportProvider")} extra={t("aiSettingsReportProviderHint")}>
-          <Select<ReportAiProvider>
-            value={activeReportProvider}
-            onChange={setActiveReportProvider}
-            options={[
-              { value: "bee", label: "Bee (Claude Sonnet 5)" },
-              { value: "kira", label: `Kira (${model || "..."})` },
-            ]}
-          />
+          <Input value={model} onChange={(e) => setModel(e.target.value)} placeholder="claude-opus-4-8" />
         </Form.Item>
         <Form.Item label={t("aiSettingsPromptTask")}>
           <Select

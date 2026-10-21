@@ -30,7 +30,7 @@ const PROXY_FIELD_LABELS: Record<string, string> = {
 // (review/edit/remove the parsed rows before actually writing them) -
 // never a direct paste-to-DB path, since a parsing mistake here would
 // silently write a real password/cookie into the wrong field. See
-// cinemark-api's app/kira/import_parser.py for the actual parsing.
+// cinemark-api's app/ai/tasks/import_parser.py for the actual parsing.
 export default function ImportWithAiModal({ defaultTarget }: { defaultTarget: ImportTarget }) {
   const { t } = useTranslation();
   const { parse, commit } = useImportMutations();

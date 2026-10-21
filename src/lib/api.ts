@@ -209,7 +209,7 @@ export const api = {
   deleteMovie: (id: string) => request<{ ok: boolean }>(`/movies/${id}`, { method: "DELETE" }),
   // Enqueues server-side (app/services/report_queue.py) and returns
   // immediately - no long client timeout needed here anymore. The actual
-  // generation (two sequential Bee/Kira calls; confirmed live the
+  // generation (two sequential Bee calls; confirmed live the
   // topics-clustering call alone can take 2+ minutes on a movie with a
   // large comment sample) runs in the background; poll
   // generateMovieReportStatus for the result.

@@ -341,7 +341,7 @@ export function useSetAiProvider() {
     mutationFn: ({ key, input }: { key: string; input: AiProviderInput }) => api.setAiProvider(key, input),
     onSuccess: () => {
       message.success(t("toastAiProviderUpdated"));
-      // AI settings' own "configured" flag reads the kira provider row too.
+      // AI settings' own "configured" flag reads the bee provider row too.
       queryClient.invalidateQueries({ queryKey: AI_PROVIDERS_KEY });
       queryClient.invalidateQueries({ queryKey: AI_SETTINGS_KEY });
     },

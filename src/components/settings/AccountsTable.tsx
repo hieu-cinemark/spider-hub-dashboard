@@ -145,7 +145,7 @@ function AccountPoolTag({ account }: { account: Account }) {
     );
   }
   if (account.last_check_note) {
-    // AI diagnosis (see spider-hub's services/kira.
+    // AI diagnosis (see spider-hub's clients/ai.
     // diagnose_account_failure) from the last hard-disable -
     // the icon signals there's more to read on hover, a
     // plain colored tag gives no such hint.

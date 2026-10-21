@@ -212,7 +212,7 @@ export interface Account {
   // "unknown"), not an enum, matching the Postgres column.
   last_checked_at: string | null;
   last_check_status: string | null;
-  // AI-generated diagnosis (spider-hub's services/kira.
+  // AI-generated diagnosis (spider-hub's clients/ai.
   // diagnose_account_failure) whenever this account gets hard-disabled -
   // null once it's healthy again.
   last_check_note: string | null;
@@ -477,6 +477,7 @@ export interface AiPrompt {
   default_system_prompt: string;
 }
 
+/** Kira đã bỏ (2026-10-21) - report luôn do Bee viết; trường này chỉ còn để tương thích API. */
 export type ReportAiProvider = "kira" | "bee";
 
 export interface AiSettings {
@@ -578,7 +579,7 @@ export interface NurtureResponse {
   queued: number;
 }
 
-// AI-assisted bulk import (see cinemark-api's app/kira/import_parser.py +
+// AI-assisted bulk import (see cinemark-api's app/ai/tasks/import_parser.py +
 // POST /settings/import/parse|commit) - paste raw account/proxy data plus a
 // plain-language description of its shape, get back structured rows to
 // review before committing. ImportRow's exact keys depend on `target`
@@ -858,7 +859,7 @@ export interface SourcePage {
   enabled: number;
   last_queued_at: string | null;
   created_at: string;
-  /** "ai" = Kira tự duyệt thêm, "manual" = người thêm. */
+  /** "ai" = AI (Bee) tự duyệt thêm, "manual" = người thêm. */
   added_by: string | null;
   ai_reason: string | null;
   /** Số lượt cào liền không có bài mới - lịch cào giãn gấp đôi mỗi lượt (tối đa x8). */

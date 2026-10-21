@@ -21,7 +21,7 @@ export default function TokenStatusBadge({ platform }: { platform: string }) {
   // Same accounts list AccountsTable already fetches/caches (react-query
   // dedups this, no extra request) - just to pull one account's own
   // last_check_note, the AI diagnosis spider-hub generates the moment it
-  // hard-disables an account (see services/kira.diagnose_account_failure).
+  // hard-disables an account (see clients/ai.diagnose_account_failure).
   // Surfacing it right here, next to the exact "session expired" signal
   // someone's debugging a failed refresh from, saves a trip to the
   // Accounts tab to find the same information.

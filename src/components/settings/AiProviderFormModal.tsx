@@ -59,7 +59,7 @@ export default function AiProviderFormModal({
           extra={t("aiProviderKeyHint")}
           rules={[{ required: true }, { pattern: /^[a-z0-9_-]+$/, message: t("aiProviderKeyInvalid") }]}
         >
-          <Input placeholder="kira" disabled={!!provider} />
+          <Input placeholder="bee" disabled={!!provider} />
         </Form.Item>
         <Form.Item name="base_url" label={t("aiProviderBaseUrl")} rules={[{ required: true }]}>
           <Input placeholder="https://api.example.com/v1" />
