@@ -57,7 +57,7 @@ export default function ProxyProviderFormModal({
         <Form.Item
           name="key"
           label={t("proxyProviderKey")}
-          extra={t("proxyProviderKeyHint")}
+          tooltip={t("proxyProviderKeyHint")}
           rules={[{ required: true }, { pattern: /^[a-z0-9_]{1,64}$/, message: t("proxyProviderKeyInvalid") }]}
         >
           <Input placeholder="proxiestrust_tiktok_us" disabled={!isNew} />
@@ -65,7 +65,7 @@ export default function ProxyProviderFormModal({
         <Form.Item
           name="api_url"
           label={t("proxyProviderApiUrl")}
-          extra={t("proxyProviderApiUrlHint")}
+          tooltip={t("proxyProviderApiUrlHint")}
           rules={[{ required: true }, { type: "url" }]}
         >
           <Input placeholder="https://proxiestrust.com/sp07api/get_new" />
@@ -81,7 +81,7 @@ export default function ProxyProviderFormModal({
         <Form.Item
           name="ip_allowlist"
           label={t("proxyProviderIpAllowlist")}
-          extra={t("proxyProviderIpAllowlistHint")}
+          tooltip={t("proxyProviderIpAllowlistHint")}
           valuePropName="checked"
         >
           <Switch />

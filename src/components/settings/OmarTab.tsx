@@ -11,6 +11,7 @@ import { useKeywords } from "@/hooks/useKeywords";
 import { api } from "@/lib/api";
 import { formatRelativeTime } from "@/lib/format";
 import type { OmarHashtagProgress, OmarSearchQuery } from "@/lib/types";
+import Hint from "@/components/Hint";
 
 // Tab Omar (Settings): key Omar API, hạn mức của gói, lượt cào hashtag TikTok đang chạy (Chạy ngay / Dừng) và tiến độ
 // từng hashtag - xem cinemark-api app/services/omar_tiktok.py và app/api/routes/omar.py.
@@ -494,9 +495,7 @@ export default function OmarTab() {
             >
               {t("omarChannelCrawl")}
             </Button>
-            <Typography.Text type="secondary" className="text-xs">
-              {t("omarChannelHint")}
-            </Typography.Text>
+            <Hint text={t("omarChannelHint")} />
           </div>
           {!!data?.channels?.latest.length && (
             <div className="flex flex-wrap gap-1.5">
@@ -633,9 +632,7 @@ export default function OmarTab() {
           >
             {t("omarTagAdd")}
           </Button>
-          <Typography.Text type="secondary" className="text-xs">
-            {t("omarTagHint")}
-          </Typography.Text>
+          <Hint text={t("omarTagHint")} />
         </div>
         <Table<OmarHashtagProgress>
           size="small"
@@ -777,9 +774,7 @@ function CommentKeywordPicker() {
           {t("omarCommentAllVideos")}
         </Checkbox>
       </Tooltip>
-      <Typography.Text type="secondary" className="text-xs">
-        {allVideos && selectedIds.length > 0 ? t("omarCommentKeywordsHintAll") : t("omarCommentKeywordsHint")}
-      </Typography.Text>
+      <Hint text={allVideos && selectedIds.length > 0 ? t("omarCommentKeywordsHintAll") : t("omarCommentKeywordsHint")} />
     </div>
   );
 }

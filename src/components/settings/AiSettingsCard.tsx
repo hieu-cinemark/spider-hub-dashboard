@@ -7,6 +7,7 @@ import DashboardCard, { CardHeading } from "@/components/DashboardCard";
 import { useAiProviders, useAiSettings, useSetActiveAiProvider, useSetAiSettings } from "@/hooks/useSettings";
 import { useTranslation } from "@/i18n/LocaleProvider";
 import type { TranslationKey } from "@/i18n/translations";
+import Hint from "@/components/Hint";
 
 const TASK_LABEL_KEYS: Record<string, TranslationKey> = {
   relevance: "aiPromptTaskRelevance",
@@ -87,16 +88,14 @@ export default function AiSettingsCard() {
             })}
           </Typography.Paragraph>
         ) : null}
-        <Typography.Paragraph type="secondary" className="!mb-0 !mt-1 text-xs">
-          {t("aiActiveProviderHint")}
-        </Typography.Paragraph>
+        <Hint text={t("aiActiveProviderHint")} className="mt-1" />
       </div>
       <Form layout="vertical" disabled={isLoading || save.isPending}>
         <div className="mb-4 flex flex-wrap items-center gap-3">
           <Switch checked={enabled} onChange={setEnabled} />
           <Typography.Text>{enabled ? t("aiSettingsEnabled") : t("aiSettingsDisabled")}</Typography.Text>
         </div>
-        <Form.Item label={t("aiSettingsModel")} extra={t("aiSettingsModelHint")}>
+        <Form.Item label={t("aiSettingsModel")} tooltip={t("aiSettingsModelHint")}>
           <Input value={model} onChange={(e) => setModel(e.target.value)} placeholder="claude-opus-4-8" />
         </Form.Item>
         <Form.Item label={t("aiSettingsPromptTask")}>

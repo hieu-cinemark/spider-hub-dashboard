@@ -1,10 +1,11 @@
 "use client";
 
 import { LinkOutlined, MessageOutlined } from "@ant-design/icons";
-import { Button, Empty, Modal, Table, Typography } from "antd";
+import { Button, Empty, Modal, Table } from "antd";
 import EngagementMetrics from "@/components/EngagementMetrics";
 import PlatformBadge from "@/components/PlatformBadge";
 import { PostMediaThumb, UserAvatar } from "@/components/UserAvatar";
+import Hint from "@/components/Hint";
 import SharedPostCard from "@/components/SharedPostCard";
 import {
   useRunCommentsBulk,
@@ -71,12 +72,7 @@ export default function TopPostsModal({
       }}
     >
       <div className="mb-4 flex shrink-0 flex-wrap items-start justify-between gap-3">
-        <Typography.Text
-          type="secondary"
-          className="block max-w-[640px] text-sm leading-relaxed"
-        >
-          {t("topPostsDesc")}
-        </Typography.Text>
+        <Hint text={t("topPostsDesc")} />
         {showCommentsButton ? (
           <Button
             type="primary"

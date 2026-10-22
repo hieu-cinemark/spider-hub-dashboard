@@ -9,6 +9,7 @@ import { useMovies } from "@/hooks/useMovies";
 import { useTranslation } from "@/i18n/LocaleProvider";
 import { api } from "@/lib/api";
 import type { SourcePage, SourcePageSuggestion } from "@/lib/types";
+import Hint from "@/components/Hint";
 
 const SOURCES_KEY = ["facebook", "source-pages"];
 const SUGGESTIONS_KEY = ["facebook", "source-page-suggestions"];
@@ -139,12 +140,10 @@ export default function SourcePagesCard() {
         ]}
       />
 
-      <Typography.Title level={5} className="!mt-6">
+      <Typography.Title level={5} className="!mt-6 flex items-center gap-1.5">
         {t("sourcePagesSuggestions")}
+        <Hint text={t("sourcePagesSuggestionsHint")} />
       </Typography.Title>
-      <Typography.Paragraph type="secondary" className="text-xs">
-        {t("sourcePagesSuggestionsHint")}
-      </Typography.Paragraph>
       <Table<SourcePageSuggestion>
         size="small"
         rowKey={(row) => `${row.kind}|${row.movie_id ?? ""}|${row.url}`}

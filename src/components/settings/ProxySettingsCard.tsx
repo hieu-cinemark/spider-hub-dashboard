@@ -1,13 +1,14 @@
 "use client";
 
 import { ControlOutlined } from "@ant-design/icons";
-import { Button, Collapse, Form, Input, InputNumber, Select, Space, Typography } from "antd";
+import { Button, Collapse, Form, Input, InputNumber, Select, Space } from "antd";
 import { useEffect } from "react";
 import DashboardCard, { CardHeading } from "@/components/DashboardCard";
 import { useProxyProviders, useProxySettings, useSetProxySettings } from "@/hooks/useSettings";
 import { useTranslation } from "@/i18n/LocaleProvider";
 import type { TranslationKey } from "@/i18n/translations";
 import type { ProxySettings } from "@/lib/types";
+import Hint from "@/components/Hint";
 
 type FieldKind = "int" | "float" | "url" | "provider";
 
@@ -165,9 +166,7 @@ export default function ProxySettingsCard() {
           <Button disabled={!defaults} onClick={() => defaults && form.setFieldsValue(defaults)}>
             {t("proxyResetDefaults")}
           </Button>
-          <Typography.Text type="secondary" className="text-xs">
-            {t("proxySettingsApplyNote")}
-          </Typography.Text>
+          <Hint text={t("proxySettingsApplyNote")} />
         </Space>
       </Form>
     </DashboardCard>

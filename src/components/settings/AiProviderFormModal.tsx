@@ -61,7 +61,7 @@ export default function AiProviderFormModal({
         <Form.Item
           name="key"
           label={t("aiProviderKey")}
-          extra={t("aiProviderKeyHint")}
+          tooltip={t("aiProviderKeyHint")}
           rules={[{ required: true }, { pattern: /^[a-z0-9_-]+$/, message: t("aiProviderKeyInvalid") }]}
         >
           <Input placeholder="bee" disabled={!!provider} />
@@ -69,16 +69,16 @@ export default function AiProviderFormModal({
         <Form.Item name="base_url" label={t("aiProviderBaseUrl")} rules={[{ required: true }]}>
           <Input placeholder="https://api.example.com/v1" />
         </Form.Item>
-        <Form.Item name="chat_path" label={t("aiProviderChatPath")} extra={t("aiProviderChatPathHint")}>
+        <Form.Item name="chat_path" label={t("aiProviderChatPath")} tooltip={t("aiProviderChatPathHint")}>
           <Input placeholder="/chat/completions" />
         </Form.Item>
-        <Form.Item name="model" label={t("aiProviderChatModel")} extra={t("aiProviderChatModelHint")} rules={[{ required: true }]}>
+        <Form.Item name="model" label={t("aiProviderChatModel")} tooltip={t("aiProviderChatModelHint")} rules={[{ required: true }]}>
           <Input placeholder="qwen3.8-flash" />
         </Form.Item>
-        <Form.Item name="image_model" label={t("aiProviderImageModel")} extra={t("aiProviderImageModelHint")}>
+        <Form.Item name="image_model" label={t("aiProviderImageModel")} tooltip={t("aiProviderImageModelHint")}>
           <Input placeholder="agnes-image-2.1-flash" />
         </Form.Item>
-        <Form.Item name="decisions_path" label={t("aiProviderDecisionsPath")} extra={t("aiProviderDecisionsPathHint")}>
+        <Form.Item name="decisions_path" label={t("aiProviderDecisionsPath")} tooltip={t("aiProviderDecisionsPathHint")}>
           <Input placeholder="/decisions" />
         </Form.Item>
         <div className="grid grid-cols-2 gap-3">

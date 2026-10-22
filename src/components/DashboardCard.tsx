@@ -1,6 +1,8 @@
 import { Card, type CardProps } from "antd";
 import type { ReactNode } from "react";
 
+import Hint, { SHORT_DESC_MAX } from "./Hint";
+
 export function CardHeading({ icon, title, desc }: { icon: ReactNode; title: string; desc?: string }) {
   return (
     <div className="flex items-center gap-2.5 py-0.5">
@@ -8,8 +10,13 @@ export function CardHeading({ icon, title, desc }: { icon: ReactNode; title: str
         {icon}
       </span>
       <div className="flex min-w-0 flex-col">
-        <span className="text-sm font-semibold leading-snug text-[var(--ink)]">{title}</span>
-        {desc ? <span className="whitespace-normal text-xs font-medium leading-snug text-[var(--ink-soft)]">{desc}</span> : null}
+        <span className="flex items-center gap-1.5 text-sm font-semibold leading-snug text-[var(--ink)]">
+          {title}
+          {desc && desc.length > SHORT_DESC_MAX ? <Hint text={desc} /> : null}
+        </span>
+        {desc && desc.length <= SHORT_DESC_MAX ? (
+          <span className="whitespace-normal text-xs font-medium leading-snug text-[var(--ink-soft)]">{desc}</span>
+        ) : null}
       </div>
     </div>
   );
