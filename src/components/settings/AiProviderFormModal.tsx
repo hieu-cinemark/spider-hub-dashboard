@@ -33,6 +33,11 @@ export default function AiProviderFormModal({
         base_url: provider?.base_url ?? "",
         api_key: "",
         model: provider?.model ?? "",
+        chat_path: provider?.chat_path ?? "/chat/completions",
+        image_model: provider?.image_model ?? "",
+        decisions_path: provider?.decisions_path ?? "",
+        comment_model: provider?.comment_model ?? "",
+        post_model: provider?.post_model ?? "",
       });
     }
   }, [open, provider, form]);
@@ -64,9 +69,26 @@ export default function AiProviderFormModal({
         <Form.Item name="base_url" label={t("aiProviderBaseUrl")} rules={[{ required: true }]}>
           <Input placeholder="https://api.example.com/v1" />
         </Form.Item>
-        <Form.Item name="model" label={t("aiSettingsModel")} rules={[{ required: true }]}>
+        <Form.Item name="chat_path" label={t("aiProviderChatPath")} extra={t("aiProviderChatPathHint")}>
+          <Input placeholder="/chat/completions" />
+        </Form.Item>
+        <Form.Item name="model" label={t("aiProviderChatModel")} extra={t("aiProviderChatModelHint")} rules={[{ required: true }]}>
           <Input placeholder="qwen3.8-flash" />
         </Form.Item>
+        <Form.Item name="image_model" label={t("aiProviderImageModel")} extra={t("aiProviderImageModelHint")}>
+          <Input placeholder="agnes-image-2.1-flash" />
+        </Form.Item>
+        <Form.Item name="decisions_path" label={t("aiProviderDecisionsPath")} extra={t("aiProviderDecisionsPathHint")}>
+          <Input placeholder="/decisions" />
+        </Form.Item>
+        <div className="grid grid-cols-2 gap-3">
+          <Form.Item name="comment_model" label={t("aiProviderCommentModel")}>
+            <Input placeholder="typesafe/jev-1.14" />
+          </Form.Item>
+          <Form.Item name="post_model" label={t("aiProviderPostModel")}>
+            <Input placeholder="openai/gpt-6-luna-decisions" />
+          </Form.Item>
+        </div>
         <Form.Item
           name="api_key"
           label={t("aiProviderApiKey")}

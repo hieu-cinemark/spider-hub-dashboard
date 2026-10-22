@@ -339,6 +339,8 @@ export const api = {
   setAiSettings: (input: AiSettingsInput) =>
     request<AiSettings>("/settings/ai", { method: "PUT", body: JSON.stringify(input) }),
 
+  setActiveAiProvider: (provider: string) =>
+    request<AiSettings>("/settings/ai/active", { method: "PUT", body: JSON.stringify({ provider }) }),
   aiProviders: () => request<AiProvider[]>("/settings/ai/providers"),
   setAiProvider: (key: string, input: AiProviderInput) =>
     request<AiProvider>(`/settings/ai/providers/${key}`, { method: "PUT", body: JSON.stringify(input) }),

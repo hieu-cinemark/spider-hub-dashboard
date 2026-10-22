@@ -489,6 +489,8 @@ export interface AiSettings {
   // app/bee/report.py) - independent of `enabled` above, which only gates
   // ingest-time classifiers.
   active_report_provider: ReportAiProvider;
+  // Provider row every AI call uses ("beeknoee" = Bee, "kira" = Kira) - picked in the AI card.
+  active_provider: string;
   updated_at: string | null;
 }
 
@@ -508,6 +510,14 @@ export interface AiProvider {
   base_url: string;
   api_key_set: boolean;
   model: string;
+  // Path appended to base_url for chat (default /chat/completions).
+  chat_path: string;
+  // Image-reading model (Box Office AI) - Kira: agnes-image-2.1-flash, Bee: gemini-3.5-flash.
+  image_model: string;
+  // Decision-model path (Bee: /decisions); empty = none, hard classification cases use chat.
+  decisions_path: string;
+  comment_model: string;
+  post_model: string;
   updated_at: string | null;
 }
 
@@ -516,6 +526,11 @@ export interface AiProviderInput {
   // Omit or blank to keep whatever secret is already stored.
   api_key?: string;
   model: string;
+  chat_path?: string;
+  image_model?: string;
+  decisions_path?: string;
+  comment_model?: string;
+  post_model?: string;
 }
 
 // Proxy behavior tunables spider-hub reads (cinemark-api /settings/proxy).

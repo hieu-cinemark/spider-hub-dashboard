@@ -62,7 +62,8 @@ export default function AiProvidersCard() {
           columns={[
             { title: t("aiProviderKey"), dataIndex: "key", width: 140, render: (k: string) => <code>{k}</code> },
             { title: t("aiProviderBaseUrl"), dataIndex: "base_url", ellipsis: true },
-            { title: t("aiSettingsModel"), dataIndex: "model", width: 200 },
+            { title: t("aiProviderChatModel"), dataIndex: "model", width: 180 },
+            { title: t("aiProviderImageModel"), dataIndex: "image_model", width: 180 },
             { title: t("aiProviderApiKey"), key: "status", width: 140, render: (_: unknown, r: AiProvider) => statusTag(r) },
             {
               title: t("columnLastTriggered"),

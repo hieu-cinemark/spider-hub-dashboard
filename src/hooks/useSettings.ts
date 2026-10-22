@@ -328,6 +328,22 @@ export function useSetAiSettings() {
   });
 }
 
+export function useSetActiveAiProvider() {
+  const { message } = App.useApp();
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (provider: string) => api.setActiveAiProvider(provider),
+    onSuccess: () => {
+      message.success(t("toastAiActiveProviderUpdated"));
+      queryClient.invalidateQueries({ queryKey: AI_SETTINGS_KEY });
+      queryClient.invalidateQueries({ queryKey: AI_PROVIDERS_KEY });
+    },
+    onError: (err: unknown) => message.error(translateApiError(err, t)),
+  });
+}
+
 export function useAiProviders() {
   return useQuery({ queryKey: AI_PROVIDERS_KEY, queryFn: api.aiProviders });
 }
