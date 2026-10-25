@@ -553,6 +553,7 @@ export interface ProxySettings {
   tiktok_synthetic_provider: string;
   tiktok_hashtag_max_attempts: number;
   tiktok_comments_max_attempts: number;
+  fb_logged_out_metrics_enabled: boolean;
 }
 
 export interface ProxySettingsResponse {

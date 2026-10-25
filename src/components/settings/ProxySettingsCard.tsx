@@ -1,7 +1,7 @@
 "use client";
 
 import { ControlOutlined } from "@ant-design/icons";
-import { Button, Collapse, Form, Input, InputNumber, Select, Space } from "antd";
+import { Button, Collapse, Form, Input, InputNumber, Select, Space, Switch } from "antd";
 import { useEffect } from "react";
 import DashboardCard, { CardHeading } from "@/components/DashboardCard";
 import { useProxyProviders, useProxySettings, useSetProxySettings } from "@/hooks/useSettings";
@@ -10,7 +10,7 @@ import type { TranslationKey } from "@/i18n/translations";
 import type { ProxySettings } from "@/lib/types";
 import Hint from "@/components/Hint";
 
-type FieldKind = "int" | "float" | "url" | "provider";
+type FieldKind = "int" | "float" | "url" | "provider" | "switch";
 
 interface FieldMeta {
   name: keyof ProxySettings;
@@ -78,6 +78,11 @@ const SECTIONS: SectionMeta[] = [
       { name: "tiktok_comments_max_attempts", kind: "int", label: "proxyTiktokCommentsAttempts", hint: "proxyTiktokCommentsAttemptsHint", unit: "unitTimes", min: 1, max: 50 },
     ],
   },
+  {
+    title: "proxySectionFbLoggedOut",
+    desc: "proxySectionFbLoggedOutDesc",
+    fields: [{ name: "fb_logged_out_metrics_enabled", kind: "switch", label: "proxyFbLoggedOut", hint: "proxyFbLoggedOutHint" }],
+  },
 ];
 
 export default function ProxySettingsCard() {
@@ -97,6 +102,7 @@ export default function ProxySettingsCard() {
   function renderInput(field: FieldMeta) {
     if (field.kind === "url") return <Input placeholder="https://" />;
     if (field.kind === "provider") return <Select options={providerOptions} loading={!providers} />;
+    if (field.kind === "switch") return <Switch />;
     return (
       <InputNumber
         className="!w-full"
@@ -142,7 +148,8 @@ export default function ProxySettingsCard() {
                     key={field.name}
                     name={field.name}
                     label={t(field.label)}
-                    rules={[{ required: true }, ...(field.kind === "url" ? [{ type: "url" as const }] : [])]}
+                    valuePropName={field.kind === "switch" ? "checked" : "value"}
+                    rules={field.kind === "switch" ? [] : [{ required: true }, ...(field.kind === "url" ? [{ type: "url" as const }] : [])]}
                     extra={
                       <span>
                         {t(field.hint)}
