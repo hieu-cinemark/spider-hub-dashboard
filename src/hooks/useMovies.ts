@@ -99,6 +99,12 @@ export function useReportJobStatus(movieId: string) {
 
   const status = query.data?.status;
   useEffect(() => {
+    // A new run started: forget the last toast so this run's result is announced too (otherwise a second
+    // report for the same movie finished silently - same `${movieId}:done` key as the first one).
+    if (status === "queued" || status === "running") {
+      notified.current = null;
+      return;
+    }
     if (status !== "done" && status !== "failed") return;
     const key = `${movieId}:${status}`;
     if (notified.current === key) return;
