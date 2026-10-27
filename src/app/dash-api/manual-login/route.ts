@@ -1,7 +1,7 @@
 // "Đăng nhập tay" (27/10/2026): chạy spider-hub `scripts/manual_login.py` trên máy đang chạy dashboard, mở Chromium có
 // cửa sổ qua proxy đã ghim của tài khoản - xem docstring của script. Hai cách chạy:
 //  - Trên VPS (deploy/spider-hub-dashboard.service): MANUAL_LOGIN_DISPLAY=:99 (màn hình ảo, xem qua noVNC
-//    NEXT_PUBLIC_MANUAL_LOGIN_VIEWER_URL), MANUAL_LOGIN_REDIS_PORT=6379, MANUAL_LOGIN_ALLOW_REMOTE=1 - dashboard chỉ nghe
+//    NEXT_PUBLIC_MANUAL_LOGIN_VIEWER_URL), Redis lấy từ .env của spider-hub, MANUAL_LOGIN_ALLOW_REMOTE=1 - dashboard chỉ nghe
 //    127.0.0.1, vào từ ngoài qua nginx :8443 (TLS + Basic Auth, spider-hub deploy/login-display); nginx luôn ghi đè
 //    X-Spider-Auth-User bằng người đã qua Basic Auth, nên request từ xa phải mang header đó.
 //  - Trên Mac: Redis của server qua SSH tunnel (cổng 16379 mặc định), chỉ nhận request từ localhost.
@@ -17,7 +17,10 @@ export const runtime = "nodejs";
 
 const PLATFORMS = new Set(["facebook", "threads"]);
 const SPIDER_HUB_DIR = process.env.SPIDER_HUB_DIR || path.resolve(process.cwd(), "..", "spider-hub");
-const REDIS_PORT = process.env.MANUAL_LOGIN_REDIS_PORT || "16379";
+// Redis cho script: trên server KHÔNG đặt gì - script dùng REDIS_* trong .env của spider-hub như crawler (spider-hub
+// load_dotenv không ghi đè biến đã có, nên truyền REDIS_PORT ở đây sẽ thắng .env - 27/10/2026 làm script nối nhầm một
+// Redis trống). Trên Mac mặc định là cổng SSH tunnel 16379 tới Redis của server.
+const REDIS_PORT = process.env.MANUAL_LOGIN_REDIS_PORT ?? (process.platform === "darwin" ? "16379" : "");
 const DISPLAY = process.env.MANUAL_LOGIN_DISPLAY || process.env.DISPLAY || "";
 const ALLOW_REMOTE = process.env.MANUAL_LOGIN_ALLOW_REMOTE === "1";
 
@@ -68,8 +71,7 @@ export async function POST(req: NextRequest) {
       // Chạy trên máy cá nhân: không gửi cảnh báo Telegram thật (spider-hub .env có token).
       env: {
         ...process.env,
-        REDIS_HOST: "127.0.0.1",
-        REDIS_PORT,
+        ...(REDIS_PORT ? { REDIS_HOST: "127.0.0.1", REDIS_PORT } : {}),
         ...(DISPLAY ? { DISPLAY } : {}),
         TELEGRAM_BOT_TOKEN: "",
         TELEGRAM_CHAT_ID: "",
