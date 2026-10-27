@@ -15,7 +15,22 @@ import {
   SafetyCertificateOutlined,
   SearchOutlined,
 } from "@ant-design/icons";
-import { Alert, App, Button, Dropdown, Input, Modal, Select, Space, Spin, Table, Tag, Tooltip, Typography } from "antd";
+import {
+  Alert,
+  App,
+  Button,
+  Dropdown,
+  Input,
+  Modal,
+  Select,
+  Space,
+  Spin,
+  Switch,
+  Table,
+  Tag,
+  Tooltip,
+  Typography,
+} from "antd";
 import { useQuery } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
@@ -192,7 +207,7 @@ export default function AccountsTable() {
   const { modal } = App.useApp();
   const { data: accounts, isLoading } = useAccounts();
   const { data: proxies } = useProxies();
-  const { create, update, remove, check, nurture, resetProxy, setProxy, bulkRemove } = useAccountMutations();
+  const { create, update, remove, check, nurture, resetProxy, setProxy, setEnabled, bulkRemove } = useAccountMutations();
   const manualLogin = useManualLogin();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Account | null>(null);
@@ -265,8 +280,31 @@ export default function AccountsTable() {
     });
   }
 
+  function toggleEnabled(record: Account, enabled: boolean) {
+    // Bật lại tài khoản đang checkpoint cũng gỡ trạng thái đó (backend) - chỉ
+    // nên làm khi đã gỡ checkpoint bằng trình duyệt thật, nên hỏi lại trước.
+    if (enabled && record.pool_status === "checkpoint") {
+      modal.confirm({
+        title: t("enableCheckpointAccountConfirm"),
+        content: t("enableCheckpointAccountHint"),
+        okText: t("enableAccountAction"),
+        onOk: () => setEnabled.mutate({ id: record.id, enabled }),
+      });
+      return;
+    }
+    setEnabled.mutate({ id: record.id, enabled });
+  }
+
   const rowActions = (record: Account) => (
     <div className="flex items-center gap-1">
+      <Tooltip title={t(record.enabled ? "disableAccountAction" : "enableAccountAction")}>
+        <Switch
+          size="small"
+          checked={record.enabled}
+          loading={setEnabled.isPending && setEnabled.variables?.id === record.id}
+          onChange={(checked) => toggleEnabled(record, checked)}
+        />
+      </Tooltip>
       <Tooltip title={t("checkAccountAction")}>
         <Button
           size="small"
@@ -427,8 +465,7 @@ export default function AccountsTable() {
       {selectedIds.length > 0 && (
         <div className="mb-3 flex items-center gap-2 rounded-xl border border-[var(--line)] bg-[var(--paper-deep)] px-3 py-2">
           <span className="text-xs font-medium text-[var(--accent-deep)]">{t("selectedCountLabel", { n: selectedIds.length })}</span>
-          {/* No bulk enable/disable anymore - same reason the per-row Switch
-              became read-only, see that column's comment. */}
+          {/* Không bật/tắt hàng loạt - dùng nút bật/tắt từng dòng (useAccountMutations.setEnabled). */}
           <Button size="small" danger loading={bulkRemove.isPending} onClick={confirmBulkRemove}>
             {t("bulkRemoveAction")}
           </Button>

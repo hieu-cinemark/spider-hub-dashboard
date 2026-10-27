@@ -163,8 +163,19 @@ export function useAccountMutations() {
     onError,
   });
 
-  // No bulk enable/disable - `enabled` is pool-owned now (see AccountsTable's
-  // now-read-only Switch column), not something to flip in bulk from here.
+  // Bật/tắt từng tài khoản (27/10/2026). Pool của spider-hub vẫn tự tắt khi
+  // checkpoint / tự bật khi khôi phục phiên; bật tay ở đây cũng gỡ status
+  // checkpoint + cooldown (backend), nếu không pool vẫn bỏ qua tài khoản.
+  // Không có bật/tắt hàng loạt - mỗi tài khoản nên được xem riêng.
+  const setEnabled = useMutation({
+    mutationFn: ({ id, enabled }: { id: number; enabled: boolean }) => api.setAccountEnabled(id, enabled),
+    onSuccess: (account) => {
+      message.success(t(account.enabled ? "toastAccountEnabled" : "toastAccountDisabled"));
+      invalidate();
+    },
+    onError,
+  });
+
   const bulkRemove = useMutation({
     mutationFn: async (ids: number[]) => {
       const results = await Promise.allSettled(ids.map((id) => api.deleteAccount(id)));
@@ -179,7 +190,7 @@ export function useAccountMutations() {
     onError,
   });
 
-  return { create, update, remove, check, nurture, totpCode, resetCookies, resetProxy, setProxy, bulkRemove };
+  return { create, update, remove, check, nurture, totpCode, resetCookies, resetProxy, setProxy, setEnabled, bulkRemove };
 }
 
 export function useProxies() {

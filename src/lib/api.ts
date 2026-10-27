@@ -254,6 +254,8 @@ export const api = {
     request<NurtureResponse>("/settings/accounts/nurture", { method: "POST", body: JSON.stringify(input) }),
   getTotpCode: (id: number) => request<TotpCodeResponse>(`/settings/accounts/${id}/totp-code`, { method: "POST" }),
   resetTiktokCookies: (id: number) => request<{ ok: boolean }>(`/settings/accounts/${id}/reset-cookies`, { method: "POST" }),
+  setAccountEnabled: (id: number, enabled: boolean) =>
+    request<Account>(`/settings/accounts/${id}/enabled`, { method: "POST", body: JSON.stringify({ enabled }) }),
   resetAccountProxy: (id: number) => request<Account>(`/settings/accounts/${id}/reset-proxy`, { method: "POST" }),
   setAccountProxy: (id: number, proxyId: number) =>
     request<Account>(`/settings/accounts/${id}/set-proxy`, { method: "POST", body: JSON.stringify({ proxy_id: proxyId }) }),

@@ -306,6 +306,11 @@ export const vi: Record<TranslationKey, string> = {
   columnHealth: "Trạng thái",
   columnLastChecked: "Kiểm tra gần nhất",
   checkAccountAction: "Kiểm tra",
+  enableAccountAction: "Bật tài khoản",
+  disableAccountAction: "Tắt tài khoản",
+  enableCheckpointAccountConfirm: "Bật lại tài khoản đang bị Facebook/Threads checkpoint?",
+  enableCheckpointAccountHint:
+    "Thao tác này gỡ trạng thái checkpoint và cooldown để crawler dùng lại tài khoản. Chỉ bật khi đã gỡ checkpoint bằng trình duyệt thật - nếu không, lượt crawl kế tiếp sẽ lại bị chặn.",
   nurtureAccountsAction: "Nuôi phiên",
   nurtureAccountsTitle: "Nuôi phiên Facebook & Threads",
   nurtureAccountsDesc:
@@ -977,6 +982,8 @@ export const vi: Record<TranslationKey, string> = {
   toastNothingToStop: "{platform}: không có gì đang chạy để dừng",
   toastAccountAdded: "Đã thêm tài khoản",
   toastAccountUpdated: "Đã cập nhật tài khoản",
+  toastAccountEnabled: "Đã bật tài khoản",
+  toastAccountDisabled: "Đã tắt tài khoản",
   toastAccountRemoved: "Đã xoá tài khoản",
   toastProxyAdded: "Đã thêm proxy",
   toastProxyUpdated: "Đã cập nhật proxy",

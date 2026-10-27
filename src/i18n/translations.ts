@@ -325,6 +325,11 @@ const en = {
   columnHealth: "Status",
   columnLastChecked: "Last checked",
   checkAccountAction: "Check",
+  enableAccountAction: "Enable account",
+  disableAccountAction: "Disable account",
+  enableCheckpointAccountConfirm: "Re-enable an account Facebook/Threads put on checkpoint?",
+  enableCheckpointAccountHint:
+    "This clears its checkpoint and cooldown so the crawler uses it again. Only do this after clearing the checkpoint in a real browser - otherwise the next crawl hits the same wall.",
   nurtureAccountsAction: "Warm up sessions",
   nurtureAccountsTitle: "Warm up Facebook & Threads sessions",
   nurtureAccountsDesc:
@@ -1030,6 +1035,8 @@ const en = {
   toastNothingToStop: "{platform}: nothing running to stop",
   toastAccountAdded: "Account added",
   toastAccountUpdated: "Account updated",
+  toastAccountEnabled: "Account enabled",
+  toastAccountDisabled: "Account disabled",
   toastAccountRemoved: "Account removed",
   toastProxyAdded: "Proxy added",
   toastProxyUpdated: "Proxy updated",
