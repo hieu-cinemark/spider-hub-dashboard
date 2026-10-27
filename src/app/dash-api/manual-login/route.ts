@@ -6,6 +6,8 @@
 //    X-Spider-Auth-User bằng người đã qua Basic Auth, nên request từ xa phải mang header đó.
 //  - Trên Mac: Redis của server qua SSH tunnel (cổng 16379 mặc định), chỉ nhận request từ localhost.
 // Route này khởi chạy tiến trình trên máy - không bao giờ mở cho request chưa qua lớp mật khẩu của nginx.
+// Nằm ở /dash-api, KHÔNG ở /api: nginx chuyển mọi /api/* sang cinemark-api (27/10/2026: nút bấm trên VPS rơi vào
+// cinemark-api, 404, script không bao giờ chạy).
 import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, openSync, readFileSync, rmSync } from "node:fs";
 import path from "node:path";

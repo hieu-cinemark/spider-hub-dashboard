@@ -545,7 +545,7 @@ export function useAutoLoginHistory(limit = 20) {
 }
 
 // "Đăng nhập tay": mở Chromium có cửa sổ trên máy đang chạy dashboard, qua proxy đã ghim của tài khoản
-// (src/app/api/manual-login/route.ts -> spider-hub scripts/manual_login.py), rồi theo dõi tới khi lưu xong phiên.
+// (src/app/dash-api/manual-login/route.ts -> spider-hub scripts/manual_login.py), rồi theo dõi tới khi lưu xong phiên.
 export function useManualLogin() {
   const { message } = App.useApp();
   const { t } = useTranslation();
@@ -560,7 +560,7 @@ export function useManualLogin() {
     const viewerUrl = process.env.NEXT_PUBLIC_MANUAL_LOGIN_VIEWER_URL;
     if (viewerUrl) window.open(viewerUrl, "spider-hub-manual-login");
     message.loading({ key: msgKey, content: t("manualLoginStarting"), duration: 0 });
-    const res = await fetch("/api/manual-login", {
+    const res = await fetch("/dash-api/manual-login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ platform: account.platform, account: key }),
@@ -574,7 +574,7 @@ export function useManualLogin() {
     const poll = async () => {
       if (Date.now() - started > 20 * 60_000) return message.destroy(msgKey);
       const query = new URLSearchParams({ platform: account.platform, account: key });
-      const status = await fetch(`/api/manual-login?${query}`)
+      const status = await fetch(`/dash-api/manual-login?${query}`)
         .then((r) => r.json())
         .catch(() => ({ state: "pending" }));
       if (status.state === "done") {
