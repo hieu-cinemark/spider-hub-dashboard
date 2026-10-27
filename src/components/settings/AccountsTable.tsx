@@ -10,6 +10,7 @@ import {
   InfoCircleOutlined,
   KeyOutlined,
   LockOutlined,
+  LoginOutlined,
   PlusOutlined,
   SafetyCertificateOutlined,
   SearchOutlined,
@@ -29,7 +30,7 @@ import PlatformFilter, { ALL_PLATFORM_QUERY } from "@/components/PlatformFilter"
 import { useMdUp } from "@/hooks/useMdUp";
 import { usePagedList } from "@/hooks/usePagedList";
 import { useQueryRecord } from "@/hooks/useQueryParam";
-import { useAccountMutations, useAccounts, useProxies } from "@/hooks/useSettings";
+import { useAccountMutations, useAccounts, useManualLogin, useProxies } from "@/hooks/useSettings";
 import { useTranslation } from "@/i18n/LocaleProvider";
 import { TRIGGERABLE_PLATFORMS } from "@/lib/constants";
 import { api } from "@/lib/api";
@@ -186,6 +187,7 @@ export default function AccountsTable() {
   const { data: accounts, isLoading } = useAccounts();
   const { data: proxies } = useProxies();
   const { create, update, remove, check, nurture, resetProxy, setProxy, bulkRemove } = useAccountMutations();
+  const manualLogin = useManualLogin();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Account | null>(null);
   const [query, setQuery] = useQueryRecord(ACCOUNTS_QUERY);
@@ -413,12 +415,16 @@ export default function AccountsTable() {
                   menu={{
                     items: [
                       ...(record.platform === "facebook" || record.platform === "threads"
-                        ? [{ key: "nurture", label: t("nurtureThisAccount"), icon: <HeartOutlined /> }]
+                        ? [
+                            { key: "manualLogin", label: t("manualLoginAction"), icon: <LoginOutlined /> },
+                            { key: "nurture", label: t("nurtureThisAccount"), icon: <HeartOutlined /> },
+                          ]
                         : []),
                       { key: "edit", label: t("edit"), icon: <EditOutlined /> },
                       { key: "delete", label: t("remove"), icon: <DeleteOutlined />, danger: true },
                     ],
                     onClick: ({ key }) => {
+                      if (key === "manualLogin") void manualLogin(record);
                       if (key === "nurture") nurture.mutate({ account_id: record.id });
                       if (key === "edit") openEdit(record);
                       if (key === "delete") confirmDelete(record);
@@ -469,12 +475,16 @@ export default function AccountsTable() {
                       menu={{
                         items: [
                           ...(record.platform === "facebook" || record.platform === "threads"
-                            ? [{ key: "nurture", label: t("nurtureThisAccount"), icon: <HeartOutlined /> }]
+                            ? [
+                                { key: "manualLogin", label: t("manualLoginAction"), icon: <LoginOutlined /> },
+                                { key: "nurture", label: t("nurtureThisAccount"), icon: <HeartOutlined /> },
+                              ]
                             : []),
                           { key: "edit", label: t("edit"), icon: <EditOutlined /> },
                           { key: "delete", label: t("remove"), icon: <DeleteOutlined />, danger: true },
                         ],
                         onClick: ({ key }) => {
+                          if (key === "manualLogin") void manualLogin(record);
                           if (key === "nurture") nurture.mutate({ account_id: record.id });
                           if (key === "edit") openEdit(record);
                           if (key === "delete") confirmDelete(record);

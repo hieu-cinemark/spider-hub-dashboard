@@ -321,6 +321,11 @@ const en = {
   nurtureAccountsDesc:
     "Each click warms at most two enabled Facebook/Threads accounts per platform, preferring ones not warmed yet today. They open the home feed, scroll, like a few posts, may leave one short comment, then open a couple of posts and go back. There is a short random wait before the first account and several minutes between accounts. Accounts without a saved login are skipped — they are not signed in automatically. TikTok is not included.",
   nurtureThisAccount: "Warm up this account",
+  manualLoginAction: "Log in by hand (open browser)",
+  manualLoginStarting: "Opening a browser through this account's proxy…",
+  manualLoginWaiting: "Browser is open - log in there. It closes by itself when done.",
+  manualLoginDone: "Logged in - session saved.",
+  manualLoginFailed: "Manual login failed: {message}",
   nurturePlatformAll: "Facebook and Threads",
   nurtureLikeOption: "Like a few posts at random",
   nurtureCommentOption: "Leave one short comment if a comment box is available",
@@ -1322,6 +1327,11 @@ const vi: Record<keyof typeof en, string> = {
   nurtureAccountsDesc:
     "Mỗi lần bấm chỉ nuôi tối đa 2 account đang bật mỗi nền tảng (Facebook/Threads), ưu tiên chưa nuôi hôm nay. Account mở bảng tin, cuộn, like vài bài, có thể một bình luận ngắn, rồi mở vài bài và quay lại. Có chờ ngẫu nhiên trước account đầu và nghỉ vài phút giữa các account. Account chưa có phiên đăng nhập đã lưu sẽ bị bỏ qua — không tự nhập mật khẩu. TikTok không nằm trong luồng này.",
   nurtureThisAccount: "Nuôi account này",
+  manualLoginAction: "Đăng nhập tay (mở trình duyệt)",
+  manualLoginStarting: "Đang mở trình duyệt qua proxy của tài khoản…",
+  manualLoginWaiting: "Trình duyệt đã mở - hãy đăng nhập ở đó. Xong sẽ tự đóng.",
+  manualLoginDone: "Đăng nhập xong - đã lưu phiên.",
+  manualLoginFailed: "Đăng nhập tay không thành công: {message}",
   nurturePlatformAll: "Facebook và Threads",
   nurtureLikeOption: "Like ngẫu nhiên vài bài",
   nurtureCommentOption: "Bình luận ngắn một lần nếu có ô nhập",

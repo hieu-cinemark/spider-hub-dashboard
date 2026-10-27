@@ -6,6 +6,7 @@ import { api } from "@/lib/api";
 import { translateApiError } from "@/lib/apiError";
 import { REFRESH_INTERVAL_MS, QUERY_KEYS } from "@/lib/constants";
 import type {
+  Account,
   AccountInput,
   AiProviderInput,
   AiSettingsInput,
@@ -541,4 +542,49 @@ export function useAutoLoginHistory(limit = 20) {
     queryFn: () => api.autoLoginHistory(limit),
     refetchInterval: AUTO_LOGIN_REFRESH_MS,
   });
+}
+
+// "Đăng nhập tay": mở Chromium có cửa sổ trên máy đang chạy dashboard, qua proxy đã ghim của tài khoản
+// (src/app/api/manual-login/route.ts -> spider-hub scripts/manual_login.py), rồi theo dõi tới khi lưu xong phiên.
+export function useManualLogin() {
+  const { message } = App.useApp();
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  return async (account: Account) => {
+    const key = (account.platform === "facebook" ? account.email || account.account_id : account.account_id)
+      .trim()
+      .toLowerCase();
+    const msgKey = `manual-login-${account.id}`;
+    message.loading({ key: msgKey, content: t("manualLoginStarting"), duration: 0 });
+    const res = await fetch("/api/manual-login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ platform: account.platform, account: key }),
+    }).catch(() => null);
+    if (!res?.ok) {
+      const body = res ? await res.json().catch(() => ({})) : {};
+      message.error({ key: msgKey, content: t("manualLoginFailed", { message: body.error || "network" }), duration: 10 });
+      return;
+    }
+    const started = Date.now();
+    const poll = async () => {
+      if (Date.now() - started > 20 * 60_000) return message.destroy(msgKey);
+      const query = new URLSearchParams({ platform: account.platform, account: key });
+      const status = await fetch(`/api/manual-login?${query}`)
+        .then((r) => r.json())
+        .catch(() => ({ state: "pending" }));
+      if (status.state === "done") {
+        message.success({ key: msgKey, content: t("manualLoginDone"), duration: 6 });
+        queryClient.invalidateQueries({ queryKey: ACCOUNTS_KEY });
+        return;
+      }
+      if (status.state === "failed") {
+        message.error({ key: msgKey, content: t("manualLoginFailed", { message: status.message }), duration: 12 });
+        return;
+      }
+      if (status.state === "waiting_login") message.loading({ key: msgKey, content: t("manualLoginWaiting"), duration: 0 });
+      setTimeout(poll, 3000);
+    };
+    setTimeout(poll, 2000);
+  };
 }
