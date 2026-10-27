@@ -104,8 +104,8 @@ export default function CrawlQueuePanel({
             />
           ))}
           {queued.length > 0 ? (
-            <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--line)] bg-[var(--paper-deep)] px-3 py-2">
-              <Typography.Text className="text-sm text-[var(--ink-soft)]">
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[var(--line)] bg-[var(--paper-deep)] px-3 py-2">
+              <Typography.Text className="text-[12.5px] text-[var(--ink-soft)]">
                 {t("crawlQueueWaitingSummary", {
                   n: queued.length,
                   detail: Object.entries(queuedByPlatform)
@@ -167,7 +167,7 @@ function QueueItem({
 
   return (
     <div
-      className={`flex flex-wrap items-center justify-between gap-2 rounded-xl border px-3 ${
+      className={`flex flex-wrap items-center justify-between gap-2 rounded-lg border px-3 py-2 ${
         dense ? "py-1.5" : "py-2"
       } ${
         row.status === "failed"
@@ -180,8 +180,8 @@ function QueueItem({
       <div className="flex min-w-0 items-center gap-3">
         <PlatformBadge platform={row.platform} size={dense ? 18 : 22} />
         <div className="min-w-0">
-          <div className="truncate font-medium text-[var(--ink)]">{row.label || row.type}</div>
-          {!dense ? <div className="truncate text-xs text-[var(--muted)]">{row.type}</div> : null}
+          <div className="break-words font-medium text-[var(--ink)]">{row.label || row.type}</div>
+          {!dense ? <div className="break-words text-xs text-[var(--muted)]">{row.type}</div> : null}
         </div>
       </div>
       <div className="flex items-center gap-2">

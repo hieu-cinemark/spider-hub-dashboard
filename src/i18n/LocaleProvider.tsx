@@ -1,9 +1,25 @@
 "use client";
 
-import { createContext, useCallback, useContext, useMemo, useSyncExternalStore, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
 import { DEFAULT_LOCALE, translations, type Locale, type TranslationKey } from "./translations";
 
 const STORAGE_KEY = "spider-hub-dashboard.locale";
+
+// Bảng dịch tiếng Việt được nạp động - người dùng giao diện tiếng Anh
+// không phải tải nó. Cho tới khi tải xong, các khoá dịch còn thiếu rơi
+// về bản tiếng Anh (fallback ở `t` bên dưới) nên không có chỗ nào hiển thị
+// trống.
+let viDictionary: Record<TranslationKey, string> | null = null;
+let viPromise: Promise<Record<TranslationKey, string>> | null = null;
+
+function loadVi(): Promise<Record<TranslationKey, string>> {
+  if (viPromise) return viPromise;
+  viPromise = import("./translations.vi").then((mod) => {
+    viDictionary = mod.vi as Record<TranslationKey, string>;
+    return viDictionary;
+  });
+  return viPromise;
+}
 
 // Same useSyncExternalStore-based pattern as lib/auth.ts, for the same
 // reason: reading localStorage inside a useEffect and calling setState from
@@ -45,19 +61,63 @@ interface LocaleContextValue {
 
 const LocaleContext = createContext<LocaleContextValue | null>(null);
 
+// Placeholder trong template: `{ten}`. `tên` có thể chứa ký tự không
+// phải ASCII (tiếng Việt có dấu) - regex cũ chỉ nhận `\w` nên placeholder
+// tiếng Việt không bao giờ được nội dung.
+const PLACEHOLDER_RE = /\{([a-zA-Z_][a-zA-Z0-9_]*)\}/g;
+
+// Mọi `{...}` còn lại sau khi đã nội dung = placeholder hỏng (ví dụ
+// "{tài khoản}" do ai đó dịch luôn tên biến). Chúng không được phép lộ
+// ra giao diện.
+const STRAY_BRACE_RE = /\{[^{}]*\}/g;
+
+// Nội dung thiếu -> thay bằng dấu gạch ngang thay vì để lộ `{ten}` ra
+// giao diện. Lộ placeholder thô là lỗi hiển thị mà người dùng thấy
+// được (ví dụ "Tài khoản: {tài khoản}"); dấu gạch ngang cho biết
+// "không có giá trị" mà không trông như lỗi cú pháp.
+const MISSING = "—";
+
 function interpolate(template: string | undefined, vars?: Record<string, string | number>): string {
   if (!template) return "";
-  if (!vars) return template;
-  return template.replace(/\{(\w+)\}/g, (match, name) => (name in vars ? String(vars[name]) : match));
+  const filled = template.replace(PLACEHOLDER_RE, (match, name: string) => {
+    if (!vars) return MISSING;
+    if (name in vars) {
+      const value = vars[name];
+      return value === undefined || value === null || value === "" ? MISSING : String(value);
+    }
+    return MISSING;
+  });
+  // Dấu ngoặc còn sót = placeholder hỏng - thay bằng dấu gạch ngang thay
+  // vì hiển thị nguyên xi "{tài khoản}" ra giao diện.
+  return filled.replace(STRAY_BRACE_RE, MISSING);
 }
 
 export function LocaleProvider({ children }: { children: ReactNode }) {
   const locale = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  // Bảng dịch tiếng Việt được nạp động. Giữ trong state để `t` đổi
+  // identity khi bảng tải xong - nếu không, các useMemo dựa trên `t`
+  // (menu sidebar, danh sách nhãn) sẽ giữ nguyên chuỗi tiếng Anh đã
+  // tính lúc đầu.
+  const [viDict, setViDict] = useState<Record<TranslationKey, string> | null>(viDictionary);
+
+  useEffect(() => {
+    if (locale !== "vi" || viDict) return;
+    let cancelled = false;
+    void loadVi().then((dict) => {
+      if (!cancelled) setViDict(dict);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [locale, viDict]);
 
   const t = useCallback(
-    (key: TranslationKey, vars?: Record<string, string | number>) =>
-      interpolate(translations[locale][key] ?? translations[DEFAULT_LOCALE][key], vars),
-    [locale],
+    (key: TranslationKey, vars?: Record<string, string | number>) => {
+      const dictionary: Record<TranslationKey, string> | undefined =
+        locale === "vi" ? (viDict ?? undefined) : translations.en;
+      return interpolate(dictionary?.[key] ?? translations.en[key], vars);
+    },
+    [locale, viDict],
   );
 
   const value = useMemo(() => ({ locale, setLocale: setStoredLocale, t }), [locale, t]);

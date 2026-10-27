@@ -4,7 +4,7 @@ import { CommentOutlined } from "@ant-design/icons";
 import { InputNumber, Switch, Table, TimePicker, Typography } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
 import DashboardCard, { CardHeading } from "@/components/DashboardCard";
-import { ItemCard, ItemCardList, ItemField } from "@/components/ItemCards";
+import MobileTable, { type ResponsiveColumnType } from "@/components/MobileTable";
 import PlatformBadge from "@/components/PlatformBadge";
 import { useMdUp } from "@/hooks/useMdUp";
 import { usePagedList } from "@/hooks/usePagedList";
@@ -55,6 +55,74 @@ export default function CommentScheduleCard() {
     });
   }
 
+  const columns: ResponsiveColumnType<CommentSchedule>[] = [
+    {
+      title: t("platform"),
+      dataIndex: "platform",
+      width: 160,
+      mobilePrimary: true,
+      render: (p: string) => <PlatformBadge platform={p} size={22} />,
+    },
+    {
+      title: t("columnRunTime"),
+      key: "run_time",
+      width: 128,
+      render: (_: unknown, record: CommentSchedule) => (
+        <TimePicker
+          size="small"
+          format={TIME_FORMAT}
+          value={dayjs(record.run_time, TIME_FORMAT)}
+          allowClear={false}
+          onChange={(value: Dayjs | null) => {
+            if (!value) return;
+            persist(record, { run_time: value.format(TIME_FORMAT) });
+          }}
+        />
+      ),
+    },
+    {
+      title: t("columnCommentTopN"),
+      key: "top_n",
+      width: 140,
+      render: (_: unknown, record: CommentSchedule) => (
+        <InputNumber
+          size="small"
+          min={3}
+          max={30}
+          value={record.top_n}
+          onChange={(value) => {
+            if (value == null) return;
+            persist(record, { top_n: Number(value) });
+          }}
+        />
+      ),
+    },
+    {
+      title: t("enabled"),
+      key: "enabled",
+      align: "center",
+      width: 80,
+      render: (_: unknown, record: CommentSchedule) => (
+        <Switch
+          size="small"
+          checked={record.enabled}
+          loading={setSchedule.isPending && setSchedule.variables?.platform === record.platform}
+          onChange={(checked) => persist(record, { enabled: checked })}
+        />
+      ),
+    },
+    {
+      title: t("columnLastTriggered"),
+      key: "last_triggered_date",
+      render: (_: unknown, record: CommentSchedule) =>
+        record.last_triggered_date ? (
+          <span className="text-xs text-[var(--muted)]">{formatRelativeTime(record.last_triggered_date, t)}</span>
+        ) : (
+          <Typography.Text type="secondary">{t("crawlScheduleNotSet")}</Typography.Text>
+        ),
+    },
+  ];
+
   return (
     <DashboardCard
       title={<CardHeading icon={<CommentOutlined />} title={t("commentScheduleTitle")} desc={t("commentScheduleDesc")} />}
@@ -66,122 +134,16 @@ export default function CommentScheduleCard() {
           rowKey="platform"
           dataSource={rows}
           pagination={paging}
-          columns={[
-            {
-              title: t("platform"),
-              dataIndex: "platform",
-              width: 160,
-              render: (p: string) => <PlatformBadge platform={p} size={22} />,
-            },
-            {
-              title: t("columnRunTime"),
-              key: "run_time",
-              width: 128,
-              render: (_: unknown, record: CommentSchedule) => (
-                <TimePicker
-                  size="small"
-                  format={TIME_FORMAT}
-                  value={dayjs(record.run_time, TIME_FORMAT)}
-                  allowClear={false}
-                  onChange={(value: Dayjs | null) => {
-                    if (!value) return;
-                    persist(record, { run_time: value.format(TIME_FORMAT) });
-                  }}
-                />
-              ),
-            },
-            {
-              title: t("columnCommentTopN"),
-              key: "top_n",
-              width: 140,
-              render: (_: unknown, record: CommentSchedule) => (
-                <InputNumber
-                  size="small"
-                  min={3}
-                  max={30}
-                  value={record.top_n}
-                  onChange={(value) => {
-                    if (value == null) return;
-                    persist(record, { top_n: Number(value) });
-                  }}
-                />
-              ),
-            },
-            {
-              title: t("enabled"),
-              key: "enabled",
-              align: "center",
-              width: 80,
-              render: (_: unknown, record: CommentSchedule) => (
-                <Switch
-                  size="small"
-                  checked={record.enabled}
-                  loading={setSchedule.isPending && setSchedule.variables?.platform === record.platform}
-                  onChange={(checked) => persist(record, { enabled: checked })}
-                />
-              ),
-            },
-            {
-              title: t("columnLastTriggered"),
-              key: "last_triggered_date",
-              render: (_: unknown, record: CommentSchedule) =>
-                record.last_triggered_date ? (
-                  <span className="text-xs text-[var(--muted)]">{formatRelativeTime(record.last_triggered_date, t)}</span>
-                ) : (
-                  <Typography.Text type="secondary">{t("crawlScheduleNotSet")}</Typography.Text>
-                ),
-            },
-          ]}
+          columns={columns}
         />
       ) : (
-        <ItemCardList items={rows} loading={isLoading} rowKey={(r) => r.platform} pagination={paging}>
-          {(record) => (
-            <ItemCard>
-              <div className="mb-2">
-                <PlatformBadge platform={record.platform} size={22} />
-              </div>
-              <ItemField label={t("columnRunTime")}>
-                <TimePicker
-                  size="small"
-                  format={TIME_FORMAT}
-                  value={dayjs(record.run_time, TIME_FORMAT)}
-                  allowClear={false}
-                  onChange={(value: Dayjs | null) => {
-                    if (!value) return;
-                    persist(record, { run_time: value.format(TIME_FORMAT) });
-                  }}
-                />
-              </ItemField>
-              <ItemField label={t("columnCommentTopN")}>
-                <InputNumber
-                  size="small"
-                  min={3}
-                  max={30}
-                  value={record.top_n}
-                  onChange={(value) => {
-                    if (value == null) return;
-                    persist(record, { top_n: Number(value) });
-                  }}
-                />
-              </ItemField>
-              <ItemField label={t("enabled")}>
-                <Switch
-                  size="small"
-                  checked={record.enabled}
-                  loading={setSchedule.isPending && setSchedule.variables?.platform === record.platform}
-                  onChange={(checked) => persist(record, { enabled: checked })}
-                />
-              </ItemField>
-              <ItemField label={t("columnLastTriggered")}>
-                {record.last_triggered_date ? (
-                  formatRelativeTime(record.last_triggered_date, t)
-                ) : (
-                  <Typography.Text type="secondary">{t("crawlScheduleNotSet")}</Typography.Text>
-                )}
-              </ItemField>
-            </ItemCard>
-          )}
-        </ItemCardList>
+        <MobileTable
+          loading={isLoading}
+          rowKey={(r) => r.platform}
+          dataSource={rows}
+          columns={columns}
+          pagination={paging}
+        />
       )}
     </DashboardCard>
   );

@@ -4,7 +4,7 @@ import { ApiOutlined, PlusOutlined } from "@ant-design/icons";
 import { Button, Table, Tag, Typography } from "antd";
 import { useState } from "react";
 import DashboardCard, { CardHeading } from "@/components/DashboardCard";
-import { ItemCard, ItemCardList, ItemField } from "@/components/ItemCards";
+import MobileTable, { type ResponsiveColumnType } from "@/components/MobileTable";
 import { useMdUp } from "@/hooks/useMdUp";
 import { usePagedList } from "@/hooks/usePagedList";
 import { useAiProviders, useSetAiProvider } from "@/hooks/useSettings";
@@ -43,6 +43,47 @@ export default function AiProvidersCard() {
       <Tag color="orange">{t("aiProviderNotConfigured")}</Tag>
     );
 
+  const columns: ResponsiveColumnType<AiProvider>[] = [
+    {
+      title: t("aiProviderKey"),
+      dataIndex: "key",
+      width: 140,
+      mobilePrimary: true,
+      render: (k: string) => <code className="break-all">{k}</code>,
+    },
+    {
+      title: t("aiProviderBaseUrl"),
+      dataIndex: "base_url",
+      render: (v: string) => <span className="break-all">{v || "—"}</span>,
+    },
+    { title: t("aiProviderChatModel"), dataIndex: "model", width: 180, render: (v: string) => v || "—" },
+    { title: t("aiProviderImageModel"), dataIndex: "image_model", width: 180, render: (v: string) => v || "—" },
+    {
+      title: t("aiProviderApiKey"),
+      key: "status",
+      width: 140,
+      render: (_: unknown, r: AiProvider) => statusTag(r),
+    },
+    {
+      title: t("columnLastTriggered"),
+      key: "updated_at",
+      width: 160,
+      render: (_: unknown, r: AiProvider) =>
+        r.updated_at ? (
+          <span className="text-xs text-[var(--muted)]">{formatRelativeTime(r.updated_at, t)}</span>
+        ) : (
+          <Typography.Text type="secondary">{t("crawlScheduleNotSet")}</Typography.Text>
+        ),
+    },
+    {
+      title: "",
+      key: "actions",
+      width: 90,
+      mobileHidden: true,
+      render: (_: unknown, r: AiProvider) => <Button onClick={() => setEditing(r)}>{t("edit")}</Button>,
+    },
+  ];
+
   return (
     <DashboardCard
       title={<CardHeading icon={<ApiOutlined />} title={t("aiProvidersTitle")} desc={t("aiProvidersDesc")} />}
@@ -59,46 +100,21 @@ export default function AiProvidersCard() {
           rowKey="key"
           dataSource={rows}
           pagination={paging}
-          columns={[
-            { title: t("aiProviderKey"), dataIndex: "key", width: 140, render: (k: string) => <code>{k}</code> },
-            { title: t("aiProviderBaseUrl"), dataIndex: "base_url", ellipsis: true },
-            { title: t("aiProviderChatModel"), dataIndex: "model", width: 180 },
-            { title: t("aiProviderImageModel"), dataIndex: "image_model", width: 180 },
-            { title: t("aiProviderApiKey"), key: "status", width: 140, render: (_: unknown, r: AiProvider) => statusTag(r) },
-            {
-              title: t("columnLastTriggered"),
-              key: "updated_at",
-              width: 160,
-              render: (_: unknown, r: AiProvider) =>
-                r.updated_at ? (
-                  <span className="text-xs text-[var(--muted)]">{formatRelativeTime(r.updated_at, t)}</span>
-                ) : (
-                  <Typography.Text type="secondary">{t("crawlScheduleNotSet")}</Typography.Text>
-                ),
-            },
-            {
-              title: "",
-              key: "actions",
-              width: 90,
-              render: (_: unknown, r: AiProvider) => <Button onClick={() => setEditing(r)}>{t("edit")}</Button>,
-            },
-          ]}
+          columns={columns}
         />
       ) : (
-        <ItemCardList items={rows} loading={isLoading} rowKey={(r) => r.key} pagination={paging}>
-          {(record) => (
-            <ItemCard onClick={() => setEditing(record)}>
-              <ItemField label={t("aiProviderKey")}>
-                <code>{record.key}</code>
-              </ItemField>
-              <ItemField label={t("aiProviderBaseUrl")}>
-                <span className="break-all">{record.base_url || "—"}</span>
-              </ItemField>
-              <ItemField label={t("aiSettingsModel")}>{record.model || "—"}</ItemField>
-              <ItemField label={t("aiProviderApiKey")}>{statusTag(record)}</ItemField>
-            </ItemCard>
+        <MobileTable
+          loading={isLoading}
+          rowKey={(r) => r.key}
+          dataSource={rows}
+          columns={columns}
+          pagination={paging}
+          title={(record) => (
+            <Button size="small" onClick={() => setEditing(record)}>
+              {t("edit")}
+            </Button>
           )}
-        </ItemCardList>
+        />
       )}
 
       <AiProviderFormModal

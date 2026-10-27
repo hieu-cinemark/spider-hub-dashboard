@@ -3,6 +3,7 @@
 import { PlayCircleOutlined, SafetyCertificateOutlined } from "@ant-design/icons";
 import { Alert, Button, Checkbox, InputNumber, Switch, Table, Tooltip, Typography } from "antd";
 import DashboardCard, { CardHeading } from "@/components/DashboardCard";
+import MobileTable, { type ResponsiveColumnType } from "@/components/MobileTable";
 import { ItemCard, ItemCardList, ItemField } from "@/components/ItemCards";
 import { useMdUp } from "@/hooks/useMdUp";
 import { usePagedList } from "@/hooks/usePagedList";
@@ -84,6 +85,57 @@ export default function AutoLoginCard() {
   const historyRows: AutoLoginRunHistoryEntry[] = history ?? [];
   const historyPaging = usePagedList(historyRows);
   const historyTablePaging = historyPaging.paging((n) => t("tableTotal", { n: n.toLocaleString() }));
+
+  // Cùng một định nghĩa cột cho bảng desktop và thẻ mobile - không
+  // cột nào bị cắt bỏ hay bị "...".
+  const historyColumns: ResponsiveColumnType<AutoLoginRunHistoryEntry>[] = [
+    {
+      title: t("autoLoginHistoryStarted"),
+      dataIndex: "started_at",
+      width: 180,
+      mobilePrimary: true,
+      render: (v: string) => formatRelativeTime(v, t),
+    },
+    {
+      title: t("autoLoginHistoryTrigger"),
+      dataIndex: "triggered_by",
+      width: 110,
+      render: (v: "schedule" | "manual") =>
+        v === "manual" ? t("autoLoginHistoryTriggerManual") : t("autoLoginHistoryTriggerSchedule"),
+    },
+    {
+      title: t("autoLoginHistoryAttempted"),
+      dataIndex: "total_attempted",
+      align: "right",
+      width: 100,
+      render: shortNumber,
+    },
+    {
+      title: t("autoLoginHistoryKafkaPublished"),
+      dataIndex: "kafka_published",
+      align: "right",
+      width: 100,
+      render: shortNumber,
+    },
+    {
+      title: t("autoLoginHistoryKafkaFailed"),
+      dataIndex: "kafka_publish_failed",
+      align: "right",
+      width: 110,
+      render: (n: number) =>
+        n > 0 ? <Typography.Text type="warning">{shortNumber(n)}</Typography.Text> : shortNumber(n),
+    },
+    {
+      title: t("autoLoginHistoryDuration"),
+      key: "duration",
+      width: 110,
+      render: (_: unknown, row: AutoLoginRunHistoryEntry) => {
+        if (row.error) return <Typography.Text type="danger">{t("autoLoginHistoryErrorLabel")}</Typography.Text>;
+        const d = durationSec(row.started_at, row.finished_at);
+        return d ?? <Typography.Text type="secondary">{t("autoLoginHistoryRunning")}</Typography.Text>;
+      },
+    },
+  ];
 
   return (
     <DashboardCard
@@ -295,59 +347,14 @@ export default function AutoLoginCard() {
             <SafetyCertificateOutlined />
             {t("autoLoginHistoryTitle")}
           </div>
+          {mdUp ? (
           <Table<AutoLoginRunHistoryEntry>
             size="small"
             loading={historyLoading}
             rowKey={(r) => `${r.started_at}-${r.triggered_by}`}
             dataSource={historyRows}
             pagination={historyTablePaging}
-            columns={[
-              {
-                title: t("autoLoginHistoryStarted"),
-                dataIndex: "started_at",
-                width: 180,
-                render: (v: string) => formatRelativeTime(v, t),
-              },
-              {
-                title: t("autoLoginHistoryTrigger"),
-                dataIndex: "triggered_by",
-                width: 110,
-                render: (v: "schedule" | "manual") =>
-                  v === "manual" ? t("autoLoginHistoryTriggerManual") : t("autoLoginHistoryTriggerSchedule"),
-              },
-              {
-                title: t("autoLoginHistoryAttempted"),
-                dataIndex: "total_attempted",
-                align: "right",
-                width: 100,
-                render: shortNumber,
-              },
-              {
-                title: t("autoLoginHistoryKafkaPublished"),
-                dataIndex: "kafka_published",
-                align: "right",
-                width: 100,
-                render: shortNumber,
-              },
-              {
-                title: t("autoLoginHistoryKafkaFailed"),
-                dataIndex: "kafka_publish_failed",
-                align: "right",
-                width: 110,
-                render: (n: number) =>
-                  n > 0 ? <Typography.Text type="warning">{shortNumber(n)}</Typography.Text> : shortNumber(n),
-              },
-              {
-                title: t("autoLoginHistoryDuration"),
-                key: "duration",
-                width: 110,
-                render: (_: unknown, row: AutoLoginRunHistoryEntry) => {
-                  if (row.error) return <Typography.Text type="danger">{t("autoLoginHistoryErrorLabel")}</Typography.Text>;
-                  const d = durationSec(row.started_at, row.finished_at);
-                  return d ?? <Typography.Text type="secondary">{t("autoLoginHistoryRunning")}</Typography.Text>;
-                },
-              },
-            ]}
+            columns={historyColumns}
             expandable={{
               expandedRowRender: (row) => (
                 <div className="rounded-md bg-[var(--surface-muted)] p-3">
@@ -383,6 +390,16 @@ export default function AutoLoginCard() {
               emptyText: historyLoading ? " " : t("autoLoginHistoryEmpty"),
             }}
           />
+          ) : (
+            <MobileTable
+              loading={historyLoading}
+              rowKey={(r) => `${r.started_at}-${r.triggered_by}`}
+              dataSource={historyRows}
+              columns={historyColumns}
+              pagination={historyTablePaging}
+              empty={historyLoading ? " " : t("autoLoginHistoryEmpty")}
+            />
+          )}
         </div>
       </div>
     </DashboardCard>

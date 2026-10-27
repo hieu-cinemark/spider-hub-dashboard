@@ -65,6 +65,19 @@ export function TableCardSkeleton({ rows = 6 }: { rows?: number }) {
   );
 }
 
+// Skeleton dùng chung cho các panel nạp động (tab Settings, modal...).
+export function TabSkeleton({ rows = 4 }: { rows?: number }) {
+  return (
+    <div className="rounded-2xl border border-[var(--line)] bg-[var(--card)] p-4">
+      <div className="mb-4 flex items-center gap-2.5">
+        <SkelBlock className="h-8 w-8 rounded-xl" />
+        <SkelBlock className="h-3.5 w-40" />
+      </div>
+      <TableRowsSkeleton rows={rows} />
+    </div>
+  );
+}
+
 export function PostGridSkeleton({ count = 8 }: { count?: number }) {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">

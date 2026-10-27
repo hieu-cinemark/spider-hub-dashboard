@@ -14,12 +14,14 @@ import {
 } from "@ant-design/icons";
 import { Button, Empty, Segmented, Select, Table, Tag, Tooltip } from "antd";
 import dynamic from "next/dynamic";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import DashboardCard, { CardHeading } from "@/components/DashboardCard";
 import KafkaLagStrip from "@/components/KafkaLagStrip";
+import MobileTable, { type ResponsiveColumnType } from "@/components/MobileTable";
 import { ChartCardSkeleton } from "@/components/PageSkeleton";
 import PlatformBadge from "@/components/PlatformBadge";
 import StatCard from "@/components/StatCard";
+import { useIsMobile } from "@/hooks/useMediaQuery";
 import { useJobsSnapshot, useStopJob, useStopLiveQueue, useStoppingJobIds } from "@/hooks/useJobs";
 import { useTranslation } from "@/i18n/LocaleProvider";
 import type { TranslationKey } from "@/i18n/translations";
@@ -115,6 +117,88 @@ function LiveTable({
   onStop: (platform: string, id: string) => void;
 }) {
   const { t } = useTranslation();
+  const isMobile = useIsMobile();
+
+  const columns: ResponsiveColumnType<JobTask>[] = [
+    {
+      title: t("platform"),
+      dataIndex: "platform",
+      width: 140,
+      render: (platform: string) => <PlatformBadge platform={platform} size={22} />,
+    },
+    {
+      title: t("jobColumnType"),
+      dataIndex: "type",
+      width: 170,
+      render: (type: string) => <span className="cell-primary whitespace-nowrap">{typeLabel(t, type)}</span>,
+    },
+    {
+      title: t("jobColumnLabel"),
+      dataIndex: "label",
+      mobilePrimary: true,
+      render: (label: string) => <span className="cell-primary break-words">{label || "—"}</span>,
+    },
+    {
+      title: t("jobColumnStatus"),
+      dataIndex: "status",
+      width: 140,
+      render: (_: string, row: JobTask) => <StatusTag job={row} stopping={!!row.id && isStopping(row.id)} />,
+    },
+    {
+      title: t("jobColumnTime"),
+      key: "time",
+      width: 140,
+      render: (_: unknown, row: JobTask) => <TimeCell epoch={row.started_at ?? row.queued_at} />,
+    },
+    {
+      title: t("actions"),
+      key: "actions",
+      width: 110,
+      align: "right" as const,
+      mobileHidden: true,
+      render: (_: unknown, row: JobTask) => {
+        const stopping = !!row.id && isStopping(row.id);
+        return (
+          <Button
+            danger
+            size="small"
+            icon={<StopOutlined />}
+            loading={stopping}
+            disabled={stopping || !row.id}
+            onClick={() => onStop(row.platform, row.id)}
+          >
+            {t("stopCrawl")}
+          </Button>
+        );
+      },
+    },
+  ];
+
+  if (isMobile) {
+    return (
+      <MobileTable
+        rowKey={rowKey}
+        dataSource={rows}
+        columns={columns}
+        title={(row) => {
+          const stopping = !!row.id && isStopping(row.id);
+          return (
+            <Button
+              danger
+              size="small"
+              icon={<StopOutlined />}
+              loading={stopping}
+              disabled={stopping || !row.id}
+              onClick={() => onStop(row.platform, row.id)}
+            >
+              {t("stopCrawl")}
+            </Button>
+          );
+        }}
+      />
+    );
+  }
+
   return (
     <Table<JobTask>
       className="data-table"
@@ -122,59 +206,101 @@ function LiveTable({
       rowKey={rowKey}
       dataSource={rows}
       pagination={rows.length > 8 ? { pageSize: 8, showSizeChanger: false, size: "small" } : false}
-      columns={[
-        {
-          title: t("platform"),
-          dataIndex: "platform",
-          width: 140,
-          render: (platform: string) => <PlatformBadge platform={platform} size={22} />,
-        },
-        {
-          title: t("jobColumnType"),
-          dataIndex: "type",
-          width: 170,
-          render: (type: string) => <span className="cell-primary whitespace-nowrap">{typeLabel(t, type)}</span>,
-        },
-        {
-          title: t("jobColumnLabel"),
-          dataIndex: "label",
-          ellipsis: true,
-          render: (label: string) => <span className="cell-primary">{label || "—"}</span>,
-        },
-        {
-          title: t("jobColumnStatus"),
-          dataIndex: "status",
-          width: 140,
-          render: (_: string, row: JobTask) => <StatusTag job={row} stopping={!!row.id && isStopping(row.id)} />,
-        },
-        {
-          title: t("jobColumnTime"),
-          key: "time",
-          width: 140,
-          render: (_: unknown, row: JobTask) => <TimeCell epoch={row.started_at ?? row.queued_at} />,
-        },
-        {
-          title: t("actions"),
-          key: "actions",
-          width: 110,
-          align: "right" as const,
-          render: (_: unknown, row: JobTask) => {
-            const stopping = !!row.id && isStopping(row.id);
-            return (
-              <Button
-                danger
-                size="small"
-                icon={<StopOutlined />}
-                loading={stopping}
-                disabled={stopping || !row.id}
-                onClick={() => onStop(row.platform, row.id)}
-              >
-                {t("stopCrawl")}
-              </Button>
-            );
-          },
-        },
-      ]}
+      columns={columns}
+    />
+  );
+}
+
+function HistoryTable({
+  rows,
+  hasDurations,
+  empty,
+}: {
+  rows: JobTask[];
+  hasDurations: boolean;
+  empty: ReactNode;
+}) {
+  const { t } = useTranslation();
+  const isMobile = useIsMobile();
+
+  const columns: ResponsiveColumnType<JobTask>[] = [
+    {
+      title: t("platform"),
+      dataIndex: "platform",
+      width: 140,
+      render: (p: string) => <PlatformBadge platform={p} size={22} />,
+    },
+    {
+      title: t("jobColumnType"),
+      dataIndex: "type",
+      width: 170,
+      render: (type: string) => <span className="cell-primary whitespace-nowrap">{typeLabel(t, type)}</span>,
+    },
+    {
+      title: t("jobColumnLabel"),
+      dataIndex: "label",
+      mobilePrimary: true,
+      render: (label: string) => <span className="cell-primary break-words">{label || "—"}</span>,
+    },
+    {
+      title: t("jobColumnStatus"),
+      dataIndex: "status",
+      width: 130,
+      render: (_: string, row: JobTask) => <StatusTag job={row} />,
+    },
+    ...(hasDurations
+      ? [
+          {
+            title: t("jobsColumnDuration"),
+            key: "duration",
+            width: 110,
+            render: (_: unknown, row: JobTask) => (
+              <span className="cell-meta tabular-nums">{formatDuration(row)}</span>
+            ),
+          } as ResponsiveColumnType<JobTask>,
+        ]
+      : []),
+    {
+      title: t("jobColumnTime"),
+      key: "time",
+      width: 140,
+      render: (_: unknown, row: JobTask) => <TimeCell epoch={row.finished_at ?? row.started_at ?? row.queued_at} />,
+    },
+  ];
+
+  if (isMobile) {
+    return (
+      <MobileTable
+        rowKey={rowKey}
+        dataSource={rows}
+        columns={columns}
+        empty={empty}
+        title={(row) =>
+          row.error ? (
+            <pre className="m-0 max-w-[220px] whitespace-pre-wrap break-all font-mono text-[11px] text-[var(--danger)]">
+              {row.error}
+            </pre>
+          ) : null
+        }
+      />
+    );
+  }
+
+  return (
+    <Table<JobTask>
+      className="data-table"
+      size="middle"
+      rowKey={rowKey}
+      dataSource={rows}
+      locale={{ emptyText: empty }}
+      pagination={rows.length > 20 ? { pageSize: 20, showSizeChanger: false } : false}
+      expandable={{
+        rowExpandable: (row) => !!row.error,
+        expandedRowRender: (row) => (
+          <pre className="m-0 whitespace-pre-wrap break-all font-mono text-xs text-[var(--danger)]">{row.error}</pre>
+        ),
+      }}
+      columns={columns}
     />
   );
 }
@@ -227,13 +353,13 @@ export default function JobsPageView() {
   return (
     <div className="flex flex-col gap-5 animate-fade-in-up">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-        <StatCard title={t("jobsKpiRunning")} value={running.length} icon={<ThunderboltOutlined />} color="#0d9488" loading={isLoading} />
-        <StatCard title={t("jobsKpiQueued")} value={queued.length} icon={<ClockCircleOutlined />} color="#4f46e5" loading={isLoading} />
+        <StatCard title={t("jobsKpiRunning")} value={running.length} icon={<ThunderboltOutlined />} color="#35c08a" loading={isLoading} />
+        <StatCard title={t("jobsKpiQueued")} value={queued.length} icon={<ClockCircleOutlined />} color="#1076ae" loading={isLoading} />
         <StatCard
           title={t("jobsKpiDone")}
           value={counts.done}
           icon={<CheckCircleOutlined />}
-          color="#047857"
+          color="#3aa6dc"
           loading={isLoading}
           hint={successRate !== null ? t("jobsSuccessRate", { rate: successRate }) : windowHint}
         />
@@ -241,7 +367,7 @@ export default function JobsPageView() {
           title={t("jobsKpiFailed")}
           value={counts.failed}
           icon={<CloseCircleOutlined />}
-          color="#e11d48"
+          color="#f2545b"
           tone={counts.failed > counts.done ? "danger" : undefined}
           loading={isLoading}
           hint={windowHint}
@@ -250,7 +376,7 @@ export default function JobsPageView() {
           title={t("jobsKpiSkipped")}
           value={counts.skipped}
           icon={<MinusCircleOutlined />}
-          color="#d97706"
+          color="#f19542"
           loading={isLoading}
           hint={windowHint}
         />
@@ -328,63 +454,10 @@ export default function JobsPageView() {
             ]}
           />
         </div>
-        <Table<JobTask>
-          className="data-table"
-          size="middle"
-          rowKey={rowKey}
-          dataSource={filteredHistory}
-          locale={{ emptyText: <Empty description={t("jobsEmptyHistory")} /> }}
-          pagination={filteredHistory.length > 20 ? { pageSize: 20, showSizeChanger: false } : false}
-          expandable={{
-            rowExpandable: (row) => !!row.error,
-            expandedRowRender: (row) => (
-              <pre className="m-0 whitespace-pre-wrap break-all font-mono text-xs text-[var(--danger)]">{row.error}</pre>
-            ),
-          }}
-          columns={[
-            {
-              title: t("platform"),
-              dataIndex: "platform",
-              width: 140,
-              render: (p: string) => <PlatformBadge platform={p} size={22} />,
-            },
-            {
-              title: t("jobColumnType"),
-              dataIndex: "type",
-              width: 170,
-              render: (type: string) => <span className="cell-primary whitespace-nowrap">{typeLabel(t, type)}</span>,
-            },
-            {
-              title: t("jobColumnLabel"),
-              dataIndex: "label",
-              ellipsis: true,
-              render: (label: string) => <span className="cell-primary">{label || "—"}</span>,
-            },
-            {
-              title: t("jobColumnStatus"),
-              dataIndex: "status",
-              width: 130,
-              render: (_: string, row: JobTask) => <StatusTag job={row} />,
-            },
-            ...(hasDurations
-              ? [
-                  {
-                    title: t("jobsColumnDuration"),
-                    key: "duration",
-                    width: 110,
-                    render: (_: unknown, row: JobTask) => (
-                      <span className="cell-meta tabular-nums">{formatDuration(row)}</span>
-                    ),
-                  },
-                ]
-              : []),
-            {
-              title: t("jobColumnTime"),
-              key: "time",
-              width: 140,
-              render: (_: unknown, row: JobTask) => <TimeCell epoch={row.finished_at ?? row.started_at ?? row.queued_at} />,
-            },
-          ]}
+        <HistoryTable
+          rows={filteredHistory}
+          hasDurations={hasDurations}
+          empty={<Empty description={t("jobsEmptyHistory")} />}
         />
       </DashboardCard>
     </div>

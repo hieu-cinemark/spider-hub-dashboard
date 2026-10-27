@@ -4,7 +4,7 @@ import { CloudServerOutlined, PlusOutlined } from "@ant-design/icons";
 import { Button, Table, Tag, Tooltip, Typography } from "antd";
 import { useState } from "react";
 import DashboardCard, { CardHeading } from "@/components/DashboardCard";
-import { ItemCard, ItemCardList, ItemField } from "@/components/ItemCards";
+import MobileTable, { type ResponsiveColumnType } from "@/components/MobileTable";
 import { useMdUp } from "@/hooks/useMdUp";
 import { usePagedList } from "@/hooks/usePagedList";
 import { useProxyProviders, useSetProxyProvider } from "@/hooks/useSettings";
@@ -54,7 +54,7 @@ export default function ProxyProvidersCard() {
           <Tag color="green">OK</Tag>
         ) : (
           <Tooltip title={r.last_status}>
-            <Tag color="red" className="max-w-[200px] truncate">
+            <Tag color="red" className="max-w-[200px] break-all">
               {r.last_status ?? t("proxyProviderNeverUsed")}
             </Tag>
           </Tooltip>
@@ -63,6 +63,36 @@ export default function ProxyProvidersCard() {
     ) : (
       <Typography.Text type="secondary">{t("proxyProviderNeverUsed")}</Typography.Text>
     );
+
+  const columns: ResponsiveColumnType<ProxyProvider>[] = [
+    {
+      title: t("proxyProviderKey"),
+      dataIndex: "key",
+      width: 200,
+      mobilePrimary: true,
+      render: (k: string) => <code className="break-all">{k}</code>,
+    },
+    {
+      title: t("proxyProviderApiUrl"),
+      dataIndex: "api_url",
+      render: (v: string) => <span className="break-all">{v || "—"}</span>,
+    },
+    { title: t("proxyProviderMode"), key: "mode", width: 160, render: (_: unknown, r: ProxyProvider) => modeTag(r) },
+    { title: t("proxyProviderToken"), key: "token", width: 260, render: (_: unknown, r: ProxyProvider) => tokenTag(r) },
+    {
+      title: t("columnLastTriggered"),
+      key: "last_used_at",
+      width: 220,
+      render: (_: unknown, r: ProxyProvider) => usage(r),
+    },
+    {
+      title: "",
+      key: "actions",
+      width: 90,
+      mobileHidden: true,
+      render: (_: unknown, r: ProxyProvider) => <Button onClick={() => setEditing(r)}>{t("edit")}</Button>,
+    },
+  ];
 
   return (
     <DashboardCard
@@ -80,41 +110,21 @@ export default function ProxyProvidersCard() {
           rowKey="key"
           dataSource={rows}
           pagination={paging}
-          columns={[
-            { title: t("proxyProviderKey"), dataIndex: "key", width: 200, render: (k: string) => <code>{k}</code> },
-            { title: t("proxyProviderApiUrl"), dataIndex: "api_url", ellipsis: true },
-            { title: t("proxyProviderMode"), key: "mode", width: 160, render: (_: unknown, r: ProxyProvider) => modeTag(r) },
-            { title: t("proxyProviderToken"), key: "token", width: 260, render: (_: unknown, r: ProxyProvider) => tokenTag(r) },
-            {
-              title: t("columnLastTriggered"),
-              key: "last_used_at",
-              width: 220,
-              render: (_: unknown, r: ProxyProvider) => usage(r),
-            },
-            {
-              title: "",
-              key: "actions",
-              width: 90,
-              render: (_: unknown, r: ProxyProvider) => <Button onClick={() => setEditing(r)}>{t("edit")}</Button>,
-            },
-          ]}
+          columns={columns}
         />
       ) : (
-        <ItemCardList items={rows} loading={isLoading} rowKey={(r) => r.key} pagination={paging}>
-          {(record) => (
-            <ItemCard onClick={() => setEditing(record)}>
-              <ItemField label={t("proxyProviderKey")}>
-                <code>{record.key}</code>
-              </ItemField>
-              <ItemField label={t("proxyProviderApiUrl")}>
-                <span className="break-all">{record.api_url || "—"}</span>
-              </ItemField>
-              <ItemField label={t("proxyProviderMode")}>{modeTag(record)}</ItemField>
-              <ItemField label={t("proxyProviderToken")}>{tokenTag(record)}</ItemField>
-              <ItemField label={t("columnLastTriggered")}>{usage(record)}</ItemField>
-            </ItemCard>
+        <MobileTable
+          loading={isLoading}
+          rowKey={(r) => r.key}
+          dataSource={rows}
+          columns={columns}
+          pagination={paging}
+          title={(record) => (
+            <Button size="small" onClick={() => setEditing(record)}>
+              {t("edit")}
+            </Button>
           )}
-        </ItemCardList>
+        />
       )}
 
       <ProxyProviderFormModal

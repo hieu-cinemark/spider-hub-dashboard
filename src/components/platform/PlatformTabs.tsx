@@ -12,6 +12,7 @@ import { useTranslation } from "@/i18n/LocaleProvider";
 import { PLATFORM_META, PlatformIcon, platformLabel } from "@/lib/platform";
 import AllPlatformsOverview from "./AllPlatformsOverview";
 import PlatformDetail from "./PlatformDetail";
+import TikTokPlatformView from "./TikTokPlatformView";
 
 export default function PlatformTabs() {
   const { t } = useTranslation();
@@ -98,7 +99,11 @@ export default function PlatformTabs() {
               children: (
                 <div className="flex flex-col gap-4">
                   <CrawlHealthBanner platform={platform} />
-                  <PlatformDetail platform={platform} />
+                  {platform === "tiktok" ? (
+                    <TikTokPlatformView />
+                  ) : (
+                    <PlatformDetail platform={platform} />
+                  )}
                 </div>
               ),
             };

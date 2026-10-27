@@ -3,6 +3,7 @@
 import { LinkOutlined, MessageOutlined } from "@ant-design/icons";
 import { Button, Empty, Modal, Table } from "antd";
 import EngagementMetrics from "@/components/EngagementMetrics";
+import MobileTable, { type ResponsiveColumnType } from "@/components/MobileTable";
 import PlatformBadge from "@/components/PlatformBadge";
 import { PostMediaThumb, UserAvatar } from "@/components/UserAvatar";
 import Hint from "@/components/Hint";
@@ -12,6 +13,7 @@ import {
   useTopPostsByKeyword,
   useTopPostsByMovie,
 } from "@/hooks/useStats";
+import { useIsMobile } from "@/hooks/useMediaQuery";
 import { useTranslation } from "@/i18n/LocaleProvider";
 import { TOP_POSTS_COMMENT_PLATFORMS, TOP_POSTS_LIMIT } from "@/lib/constants";
 import { formatRelativeTime } from "@/lib/format";
@@ -31,6 +33,7 @@ export default function TopPostsModal({
   onClose: () => void;
 }) {
   const { t } = useTranslation();
+  const isMobile = useIsMobile();
   const byKeyword = useTopPostsByKeyword(keywordId ?? undefined);
   const byMovie = useTopPostsByMovie(movieId ?? undefined);
   const { data, isLoading } = movieId ? byMovie : byKeyword;
@@ -43,6 +46,74 @@ export default function TopPostsModal({
     commentTargets.length > 0 &&
     (platform == null ||
       (TOP_POSTS_COMMENT_PLATFORMS as readonly string[]).includes(platform));
+
+  const columns: ResponsiveColumnType<Post>[] = [
+    {
+      title: t("platform"),
+      dataIndex: "platform",
+      width: 128,
+      mobileHidden: true,
+      render: (p: string) => <PlatformBadge platform={p} size={22} />,
+    },
+    {
+      title: t("columnContent"),
+      dataIndex: "content",
+      mobilePrimary: true,
+      render: (v: string | null, record: Post) => (
+        <div className="flex min-w-0 items-start gap-3.5">
+          <PostMediaThumb mediaUrl={record.media_url} mediaType={record.media_type} alt={v} size={88} />
+          <div className="cell-stack min-w-0 flex-1">
+            <div className="flex items-start gap-2">
+              <span className="cell-primary whitespace-pre-line break-words">{v || "—"}</span>
+              {record.url && (
+                <a
+                  href={record.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="mt-0.5 flex shrink-0 items-center text-[var(--accent)]"
+                >
+                  <LinkOutlined />
+                </a>
+              )}
+            </div>
+            <SharedPostCard quoted={record.quoted} />
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: t("columnAuthor"),
+      dataIndex: "author",
+      width: 148,
+      render: (v: string | null) => (
+        <div className="flex min-w-0 items-center gap-2">
+          <UserAvatar name={v} size={28} />
+          <span className="cell-primary block break-words">{v || "—"}</span>
+        </div>
+      ),
+    },
+    {
+      title: t("columnEngagement"),
+      key: "engagement",
+      width: 210,
+      render: (_: unknown, record: Post) => (
+        <EngagementMetrics
+          likes={record.like_count}
+          replies={record.reply_count}
+          reposts={record.repost_count}
+        />
+      ),
+    },
+    {
+      title: t("columnScraped"),
+      dataIndex: "scraped_at",
+      width: 128,
+      render: (v: string) => (
+        <span className="cell-meta">{formatRelativeTime(v, t)}</span>
+      ),
+    },
+  ];
 
   return (
     <Modal
@@ -92,6 +163,15 @@ export default function TopPostsModal({
         ) : null}
       </div>
       <div className="min-h-0 flex-1 overflow-auto pr-1">
+        {isMobile ? (
+          <MobileTable
+            rowKey="id"
+            loading={isLoading}
+            dataSource={items}
+            columns={columns}
+            empty={<Empty description={t("noTopPostsYet")} />}
+          />
+        ) : (
         <Table<Post>
           size="middle"
           rowKey="id"
@@ -106,73 +186,9 @@ export default function TopPostsModal({
             showSizeChanger: false,
           }}
           tableLayout="fixed"
-          columns={[
-            {
-              title: t("platform"),
-              dataIndex: "platform",
-              width: 128,
-              render: (p: string) => <PlatformBadge platform={p} size={22} />,
-            },
-            {
-              title: t("columnContent"),
-              dataIndex: "content",
-              render: (v: string | null, record: Post) => (
-                <div className="flex min-w-0 items-start gap-3.5">
-                  <PostMediaThumb mediaUrl={record.media_url} mediaType={record.media_type} alt={v} size={88} />
-                  <div className="cell-stack min-w-0 flex-1">
-                    <div className="flex items-start gap-2">
-                      <span className="cell-primary line-clamp-4">{v || "—"}</span>
-                      {record.url && (
-                        <a
-                          href={record.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="mt-0.5 flex shrink-0 items-center text-[var(--accent)]"
-                        >
-                          <LinkOutlined />
-                        </a>
-                      )}
-                    </div>
-                    <SharedPostCard quoted={record.quoted} />
-                  </div>
-                </div>
-              ),
-            },
-            {
-              title: t("columnAuthor"),
-              dataIndex: "author",
-              width: 148,
-              ellipsis: true,
-              render: (v: string | null) => (
-                <div className="flex min-w-0 items-center gap-2">
-                  <UserAvatar name={v} size={28} />
-                  <span className="cell-primary block truncate">{v || "—"}</span>
-                </div>
-              ),
-            },
-            {
-              title: t("columnEngagement"),
-              key: "engagement",
-              width: 210,
-              render: (_: unknown, record: Post) => (
-                <EngagementMetrics
-                  likes={record.like_count}
-                  replies={record.reply_count}
-                  reposts={record.repost_count}
-                />
-              ),
-            },
-            {
-              title: t("columnScraped"),
-              dataIndex: "scraped_at",
-              width: 128,
-              render: (v: string) => (
-                <span className="cell-meta">{formatRelativeTime(v, t)}</span>
-              ),
-            },
-          ]}
+          columns={columns}
         />
+        )}
       </div>
     </Modal>
   );

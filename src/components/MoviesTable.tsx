@@ -1,19 +1,22 @@
 "use client";
 
 import { BarChartOutlined, DeleteOutlined, EditOutlined, FireOutlined, PlaySquareOutlined, PlusOutlined } from "@ant-design/icons";
-import { Button, Input, Popconfirm, Table, Typography } from "antd";
+import { Button, Empty, Input, Popconfirm, Table, Typography } from "antd";
+import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
 import DashboardCard, { CardHeading } from "@/components/DashboardCard";
-import { ItemCard, ItemCardList, ItemField } from "@/components/ItemCards";
-import MovieFormModal from "@/components/MovieFormModal";
-import TopPostsModal from "@/components/platform/TopPostsModal";
+import MobileTable, { type ResponsiveColumnType } from "@/components/MobileTable";
+
 import { useMdUp } from "@/hooks/useMdUp";
 import { useGenerateReportMutation, useMovieMutations, useMovies, useReportJobStatus } from "@/hooks/useMovies";
 import { usePagedList } from "@/hooks/usePagedList";
 import { useTranslation } from "@/i18n/LocaleProvider";
+import { formatCast } from "@/lib/cast";
 import type { Movie, MovieInput } from "@/lib/types";
 
-const { Paragraph, Text } = Typography;
+const { Text } = Typography;
+const MovieFormModal = dynamic(() => import("@/components/MovieFormModal"), { ssr: false });
+const TopPostsModal = dynamic(() => import("@/components/platform/TopPostsModal"), { ssr: false });
 
 function PosterThumb({ url, title }: { url?: string | null; title: string }) {
   if (!url) {
@@ -117,6 +120,67 @@ export default function MoviesTable() {
     </div>
   );
 
+  // Every column is kept - no `ellipsis` anywhere, so the desktop table
+  // wraps long values instead of hiding them behind a "...". The same
+  // definition drives the mobile card layout (see MobileTable), so the
+  // phone shows exactly the same fields, in full.
+  const columns: ResponsiveColumnType<Movie>[] = [
+    {
+      title: t("movieColumnPoster"),
+      dataIndex: "poster_url",
+      width: 56,
+      mobileHidden: true,
+      render: (url: Movie["poster_url"], movie: Movie) => <PosterThumb url={url} title={movie.title} />,
+    },
+    {
+      title: t("movieColumnTitle"),
+      dataIndex: "title",
+      mobilePrimary: true,
+      render: (title: string, movie: Movie) => (
+        <div className="min-w-0">
+          <div className="font-medium break-words">{title}</div>
+          {movie.released_at ? (
+            <Text type="secondary" className="text-xs">
+              {movie.released_at}
+            </Text>
+          ) : null}
+        </div>
+      ),
+    },
+    {
+      title: t("movieColumnDirector"),
+      dataIndex: "director",
+      width: 120,
+      render: (value: string) => value || "—",
+    },
+    {
+      title: t("movieColumnCast"),
+      dataIndex: "cast",
+      render: (cast: string) => formatCast(cast) || "—",
+    },
+    {
+      title: t("movieColumnDistributor"),
+      dataIndex: "distributor",
+      width: 120,
+      render: (value: string) => value || "—",
+    },
+    {
+      title: t("movieColumnDescription"),
+      dataIndex: "description",
+      width: 240,
+      render: (description: Movie["description"]) => (
+        <div className="whitespace-pre-line break-words">{description || "—"}</div>
+      ),
+    },
+    {
+      title: t("actions"),
+      key: "actions",
+      width: 120,
+      align: "right",
+      render: (_: unknown, movie: Movie) => actions(movie),
+    },
+  ];
+
   return (
     <DashboardCard
       className="h-full"
@@ -144,73 +208,17 @@ export default function MoviesTable() {
           rowKey="id"
           dataSource={filtered}
           pagination={pagination}
-          columns={[
-            {
-              title: t("movieColumnPoster"),
-              dataIndex: "poster_url",
-              width: 56,
-              render: (url: Movie["poster_url"], movie: Movie) => <PosterThumb url={url} title={movie.title} />,
-            },
-            {
-              title: t("movieColumnTitle"),
-              dataIndex: "title",
-              width: 180,
-              ellipsis: true,
-              render: (title: string, movie: Movie) => (
-                <div className="min-w-0">
-                  <div className="truncate font-medium">{title}</div>
-                  {movie.released_at ? (
-                    <Text type="secondary" className="text-xs">
-                      {movie.released_at}
-                    </Text>
-                  ) : null}
-                </div>
-              ),
-            },
-            { title: t("movieColumnDirector"), dataIndex: "director", width: 120, ellipsis: true },
-            { title: t("movieColumnCast"), dataIndex: "cast", ellipsis: true },
-            { title: t("movieColumnDistributor"), dataIndex: "distributor", width: 120, ellipsis: true },
-            {
-              title: t("movieColumnDescription"),
-              dataIndex: "description",
-              width: 220,
-              render: (description: Movie["description"]) =>
-                description ? (
-                  <Paragraph ellipsis={{ rows: 2, tooltip: description }} className="!mb-0">
-                    {description}
-                  </Paragraph>
-                ) : null,
-            },
-            {
-              title: t("actions"),
-              key: "actions",
-              width: 120,
-              align: "right",
-              render: (_: unknown, movie: Movie) => actions(movie),
-            },
-          ]}
+          columns={columns}
         />
       ) : (
-        <ItemCardList items={filtered} loading={isLoading} rowKey={(movie) => movie.id} pagination={pagination}>
-          {(movie: Movie) => (
-            <ItemCard>
-              <div className="mb-2 flex items-start gap-3">
-                <PosterThumb url={movie.poster_url} title={movie.title} />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-start justify-between gap-2">
-                    <span className="font-medium">{movie.title}</span>
-                    {actions(movie)}
-                  </div>
-                  {movie.released_at ? <div className="text-xs text-[var(--muted)]">{movie.released_at}</div> : null}
-                </div>
-              </div>
-              {movie.director && <ItemField label={t("movieColumnDirector")}>{movie.director}</ItemField>}
-              {movie.cast && <ItemField label={t("movieColumnCast")}>{movie.cast}</ItemField>}
-              {movie.distributor && <ItemField label={t("movieColumnDistributor")}>{movie.distributor}</ItemField>}
-              {movie.description && <ItemField label={t("movieColumnDescription")}>{movie.description}</ItemField>}
-            </ItemCard>
-          )}
-        </ItemCardList>
+        <MobileTable
+          loading={isLoading}
+          rowKey="id"
+          dataSource={filtered}
+          columns={columns}
+          pagination={pagination}
+          empty={<Empty description={t("noMoviesYet")} />}
+        />
       )}
       <MovieFormModal
         open={modalOpen}

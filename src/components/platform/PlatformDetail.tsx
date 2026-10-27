@@ -8,6 +8,7 @@ import CrawlQueuePanel from "@/components/CrawlQueuePanel";
 import DashboardCard, { CardHeading } from "@/components/DashboardCard";
 import { ChartCardSkeleton, SkelBlock } from "@/components/PageSkeleton";
 import StatCard from "@/components/StatCard";
+import KeywordYieldCard from "@/components/platform/KeywordYieldCard";
 import PlatformActions from "@/components/platform/PlatformActions";
 import { useCrawlHealth } from "@/hooks/useCrawlHealth";
 import { useCommentCounts, useCommentTimeseries, useTimeseries, usePlatformStats } from "@/hooks/useStats";
@@ -73,7 +74,7 @@ export default function PlatformDetail({ platform }: { platform: string }) {
           title={t("platformCommentsTitle", { platform: label })}
           value={commentRow?.count ?? 0}
           icon={<CommentOutlined />}
-          color="#c2410c"
+          color="#f19542"
           loading={commentsLoading}
           delta={<CountDelta current={commentRow?.count_today ?? 0} previous={commentRow?.count_prev ?? 0} />}
         />
@@ -120,6 +121,7 @@ export default function PlatformDetail({ platform }: { platform: string }) {
       </DashboardCard>
 
       <KeywordVolumeTable platform={platform} />
+      {(platform === "facebook" || platform === "threads") && <KeywordYieldCard platform={platform} />}
     </div>
   );
 }

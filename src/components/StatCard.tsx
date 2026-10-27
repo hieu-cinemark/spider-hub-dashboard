@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import DashboardCard from "@/components/DashboardCard";
 import { SkelBlock } from "@/components/PageSkeleton";
 
-const DEFAULT_ICON_COLOR = "#0f766e";
+const DEFAULT_ICON_COLOR = "#0d6e9e";
 
 export default function StatCard({
   title,
@@ -31,35 +31,40 @@ export default function StatCard({
   href?: string;
 }) {
   const iconColor = color ?? DEFAULT_ICON_COLOR;
+  const accent = tone === "danger" ? "var(--danger)" : tone === "warning" ? "var(--warn)" : iconColor;
   const ring =
     tone === "danger"
-      ? "!border-rose-200 !shadow-[0_0_0_3px_rgba(225,29,72,0.1)] dark:!border-rose-900 dark:!shadow-[0_0_0_3px_rgba(225,29,72,0.2)]"
+      ? "!border-rose-300 dark:!border-rose-900/70"
       : tone === "warning"
-        ? "!border-amber-200 !shadow-[0_0_0_3px_rgba(194,65,12,0.12)] dark:!border-amber-900 dark:!shadow-[0_0_0_3px_rgba(251,146,60,0.2)]"
+        ? "!border-amber-300 dark:!border-amber-900/70"
         : "";
 
   const card = (
-    <DashboardCard className={`h-full w-full transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md ${ring} ${href ? "cursor-pointer" : ""}`}>
+    <DashboardCard
+      className={`h-full w-full transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-[var(--accent)] ${ring} ${href ? "cursor-pointer" : ""}`}
+    >
       <div className="relative overflow-hidden">
+        {/* A soft wash of the card's own accent in the top-right corner - the
+            same trick the reference console uses to keep flat panels alive. */}
         <span
-          className="pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full opacity-25 blur-2xl"
-          style={{ backgroundColor: iconColor }}
+          className="pointer-events-none absolute -right-8 -top-10 h-24 w-24 rounded-full opacity-20 blur-2xl"
+          style={{ backgroundColor: accent }}
           aria-hidden
         />
         <div className="relative flex items-start justify-between gap-3">
           <div
-            className="flex min-w-0 flex-1 flex-col gap-2 border-l-[3px] pl-3"
-            style={{ borderColor: tone === "danger" ? "#e11d48" : tone === "warning" ? "#c2410c" : iconColor }}
+            className="flex min-w-0 flex-1 flex-col gap-1.5 border-l-2 pl-2.5"
+            style={{ borderColor: accent }}
           >
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-soft)]">{title}</span>
+            <span className="micro-label">{title}</span>
             {loading ? (
               <>
-                <SkelBlock className="h-8 w-28" />
+                <SkelBlock className="h-7 w-28" />
                 <SkelBlock className="h-3 w-20" />
               </>
             ) : (
               <>
-                <span className="text-[28px] leading-none font-semibold tracking-tight text-[var(--ink)]">
+                <span className="text-[26px] leading-none font-semibold tracking-tight text-[var(--ink)]">
                   {typeof value === "number" ? value.toLocaleString() : value}
                   {suffix && <span className="ml-1 text-base font-medium text-[var(--muted)]">{suffix}</span>}
                 </span>
@@ -71,7 +76,7 @@ export default function StatCard({
                         ? "text-[var(--danger)]"
                         : tone === "warning"
                           ? "text-[var(--warn)]"
-                          : "text-[var(--ink-soft)]"
+                          : "text-[var(--muted)]"
                     }`}
                   >
                     {hint}
@@ -82,10 +87,10 @@ export default function StatCard({
           </div>
           {icon && (
             <span
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-lg"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[15px]"
               style={{
-                backgroundColor: `color-mix(in srgb, ${iconColor} 20%, transparent)`,
-                color: iconColor,
+                backgroundColor: `color-mix(in srgb, ${accent} 16%, transparent)`,
+                color: accent,
               }}
             >
               {icon}

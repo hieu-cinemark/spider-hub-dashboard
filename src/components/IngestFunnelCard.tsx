@@ -64,7 +64,7 @@ function FunnelRow({ row }: { row: IngestFunnel }) {
       <div className="grid grid-cols-3 gap-2">
         {segments.map((seg) => (
           <div key={seg.key} className="min-w-0">
-            <div className="flex items-center gap-1 truncate text-[11px] font-medium text-[var(--muted)]">
+            <div className="flex items-center gap-1 break-words text-[11px] font-medium text-[var(--muted)]">
               <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: SEGMENT_COLOR[seg.key] }} />
               {seg.label}
             </div>

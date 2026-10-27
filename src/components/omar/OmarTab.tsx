@@ -5,6 +5,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App, Button, Checkbox, Input, Progress, Select, Space, Table, Tag, Tooltip, TreeSelect, Typography } from "antd";
 import { useMemo, useState } from "react";
 import DashboardCard, { CardHeading } from "@/components/DashboardCard";
+import MobileTable, { type ResponsiveColumnType } from "@/components/MobileTable";
+import OmarTrendingChart from "@/components/omar/OmarTrendingChart";
+import { useIsMobile } from "@/hooks/useMediaQuery";
 import { useTranslation } from "@/i18n/LocaleProvider";
 import { useMovies } from "@/hooks/useMovies";
 import { useKeywords } from "@/hooks/useKeywords";
@@ -36,6 +39,7 @@ function fmtDuration(seconds: number | null | undefined) {
 
 export default function OmarTab() {
   const { t, locale } = useTranslation();
+  const isMobile = useIsMobile();
   const { message } = App.useApp();
   const queryClient = useQueryClient();
   const [newKey, setNewKey] = useState("");
@@ -137,6 +141,168 @@ export default function OmarTab() {
   const dayPct = day?.limit ? Math.round((day.used / day.limit) * 100) : 0;
   const comments = data?.comments;
   const job = comments?.last;
+
+  // "Video đang nổi": gộp tất cả phim lại thành một danh sách video để
+  // vẽ biểu đồ tốc độ; danh sách chi tiết theo phim vẫn hiển thị bên dưới.
+  const trendingMovies = useMemo(
+    () => (trending.data?.movies ?? []).filter((movie) => movie.videos.length).slice(0, 8),
+    [trending.data],
+  );
+  const trendingVideos = useMemo(
+    () =>
+      trendingMovies
+        .flatMap((movie) => movie.videos)
+        .sort((a, b) => b.velocity.views_per_hour - a.velocity.views_per_hour)
+        .slice(0, 12),
+    [trendingMovies],
+  );
+
+  const yieldColumns: ResponsiveColumnType<{ source: string } & Record<string, unknown>>[] = [
+    {
+      title: t("omarYieldSource"),
+      dataIndex: "source",
+      mobilePrimary: true,
+      render: (v: string) => t(`omarYieldSource_${v as "hashtag" | "search" | "channel" | "comments"}`),
+    },
+    { title: t("omarYieldRequests"), dataIndex: "requests", align: "right", render: (v: number) => fmtNumber(v) },
+    { title: t("omarYieldSent"), dataIndex: "sent", align: "right", render: (v: number) => fmtNumber(v) },
+    { title: t("omarYieldNew"), dataIndex: "new", align: "right", render: (v: number) => fmtNumber(v) },
+    {
+      title: t("omarYieldPer100"),
+      dataIndex: "new_per_100",
+      align: "right",
+      render: (v: number | null) => (v == null ? "—" : v.toLocaleString()),
+    },
+    {
+      title: t("omarYieldShare"),
+      key: "share",
+      align: "right",
+      render: (_: unknown, row: { source: string }) => {
+        const share = yieldQuery.data?.shares?.[row.source];
+        const base = yieldQuery.data?.base_shares?.[row.source];
+        if (share == null) return "—";
+        return (
+          <Tooltip title={t("omarYieldShareHint", { base: Math.round((base ?? share) * 100) })}>
+            <span>{Math.round(share * 100)}%</span>
+          </Tooltip>
+        );
+      },
+    },
+  ];
+
+  const searchRows = (search.data?.queries ?? []).filter((row) => {
+    const needle = searchFilter.trim().toLowerCase();
+    return !needle || row.query.toLowerCase().includes(needle) || row.movie.toLowerCase().includes(needle);
+  });
+
+  const searchColumns: ResponsiveColumnType<OmarSearchQuery>[] = [
+    {
+      title: t("omarSearchColQuery"),
+      dataIndex: "query",
+      mobilePrimary: true,
+      render: (v: string) => <span className="font-medium break-words">{v}</span>,
+    },
+    { title: t("omarColMovie"), dataIndex: "movie", render: (v: string) => v || "—" },
+    {
+      title: t("omarSearchColSource"),
+      dataIndex: "source",
+      render: (v: OmarSearchQuery["source"]) => (
+        <Tag color={v === "custom" ? "purple" : v === "social" ? "blue" : undefined}>{t(`omarSearchSource_${v}`)}</Tag>
+      ),
+    },
+    {
+      title: t("omarSearchColLast"),
+      key: "last",
+      render: (_: unknown, row: OmarSearchQuery) =>
+        row.last ? formatRelativeTime(row.last.at, t) : <Tag>{t("omarNotStarted")}</Tag>,
+    },
+    {
+      title: t("omarSearchColVideos"),
+      key: "videos",
+      align: "right",
+      render: (_: unknown, row: OmarSearchQuery) =>
+        row.last ? (
+          <Tooltip title={t("omarSearchVideosHint")}>
+            <span>
+              {fmtNumber(row.last.videos)} <span className="text-xs text-[var(--muted)]">({fmtNumber(row.last.published)})</span>
+            </span>
+          </Tooltip>
+        ) : (
+          "—"
+        ),
+    },
+    {
+      title: "",
+      key: "actions",
+      mobileHidden: true,
+      render: (_: unknown, row: OmarSearchQuery) =>
+        row.source === "custom" && row.id ? (
+          <Button
+            size="small"
+            type="text"
+            danger
+            icon={<DeleteOutlined />}
+            loading={deleteQuery.isPending && deleteQuery.variables === row.id}
+            onClick={() => deleteQuery.mutate(row.id!)}
+          />
+        ) : null,
+    },
+  ];
+
+  const hashtagColumns: ResponsiveColumnType<OmarHashtagProgress>[] = [
+    {
+      title: "Hashtag",
+      dataIndex: "hashtag",
+      mobilePrimary: true,
+      render: (v: string) => <span className="font-medium break-words">{v}</span>,
+    },
+    { title: t("omarColMovie"), dataIndex: "movie", render: (v: string | null) => v ?? "—" },
+    { title: t("omarColPages"), dataIndex: "pages", align: "right", render: (v: number) => fmtNumber(v) },
+    {
+      title: t("omarColVideos"),
+      key: "videos",
+      align: "right",
+      render: (_: unknown, row: OmarHashtagProgress) => (
+        <Tooltip title={t("omarColVideosHint")}>
+          <span>~{fmtNumber(row.pages * 20)}</span>
+        </Tooltip>
+      ),
+    },
+    {
+      title: t("omarColTiktokVideos"),
+      key: "tiktok",
+      align: "right",
+      render: (_: unknown, row: OmarHashtagProgress) =>
+        row.video_count ? (
+          <Tooltip title={t("omarColTiktokVideosHint")}>
+            <span>
+              {fmtNumber(row.video_count)}{" "}
+              <span className="text-xs text-[var(--muted)]">
+                ({Math.min(100, Math.round(((row.pages * 20) / row.video_count) * 100))}%)
+              </span>
+            </span>
+          </Tooltip>
+        ) : (
+          "—"
+        ),
+    },
+    {
+      title: t("omarColStatus"),
+      key: "status",
+      render: (_: unknown, row: OmarHashtagProgress) =>
+        row.missing_at ? (
+          <Tooltip title={t("omarMissingHint")}>
+            <Tag color="orange">{t("omarMissing", { time: formatRelativeTime(row.missing_at, t) })}</Tag>
+          </Tooltip>
+        ) : row.done_at ? (
+          <Tag color="green">{t("omarDone", { time: formatRelativeTime(row.done_at, t) })}</Tag>
+        ) : row.pages > 0 ? (
+          <Tag color="blue">{t("omarInProgress")}</Tag>
+        ) : (
+          <Tag>{t("omarNotStarted")}</Tag>
+        ),
+    },
+  ];
 
   return (
     <div className="flex flex-col gap-4">
@@ -274,61 +440,43 @@ export default function OmarTab() {
         loading={yieldQuery.isLoading}
         title={<CardHeading icon={<BarChartOutlined />} title={t("omarYieldTitle")} desc={t("omarYieldDesc")} />}
       >
+        {isMobile ? (
+          <MobileTable
+            rowKey="source"
+            loading={yieldQuery.isLoading}
+            dataSource={Object.entries(yieldQuery.data?.totals ?? {}).map(([source, m]) => ({ source, ...m }))}
+            columns={yieldColumns}
+          />
+        ) : (
         <Table
           size="small"
           pagination={false}
           rowKey="source"
           scroll={{ x: true }}
           dataSource={Object.entries(yieldQuery.data?.totals ?? {}).map(([source, m]) => ({ source, ...m }))}
-          columns={[
-            { title: t("omarYieldSource"), dataIndex: "source", render: (v: string) => t(`omarYieldSource_${v as "hashtag" | "search" | "channel" | "comments"}`) },
-            { title: t("omarYieldRequests"), dataIndex: "requests", align: "right", render: (v: number) => fmtNumber(v) },
-            { title: t("omarYieldSent"), dataIndex: "sent", align: "right", render: (v: number) => fmtNumber(v) },
-            { title: t("omarYieldNew"), dataIndex: "new", align: "right", render: (v: number) => fmtNumber(v) },
-            {
-              title: t("omarYieldPer100"),
-              dataIndex: "new_per_100",
-              align: "right",
-              render: (v: number | null) => (v == null ? "—" : v.toLocaleString()),
-            },
-            {
-              title: t("omarYieldShare"),
-              key: "share",
-              align: "right",
-              render: (_, row: { source: string }) => {
-                const share = yieldQuery.data?.shares?.[row.source];
-                const base = yieldQuery.data?.base_shares?.[row.source];
-                if (share == null) return "—";
-                return (
-                  <Tooltip title={t("omarYieldShareHint", { base: Math.round((base ?? share) * 100) })}>
-                    <span>{Math.round(share * 100)}%</span>
-                  </Tooltip>
-                );
-              },
-            },
-          ]}
+          columns={yieldColumns}
         />
+        )}
       </DashboardCard>
 
       <DashboardCard
         loading={trending.isLoading}
         title={<CardHeading icon={<FireOutlined />} title={t("omarTrendingTitle")} desc={t("omarTrendingDesc")} />}
       >
-        {(trending.data?.movies ?? []).filter((movie) => movie.videos.length).length === 0 ? (
+        {trendingVideos.length === 0 ? (
           <Typography.Text type="secondary">{t("omarTrendingEmpty")}</Typography.Text>
         ) : (
-          <div className="flex flex-col gap-4">
-            {(trending.data?.movies ?? [])
-              .filter((movie) => movie.videos.length)
-              .slice(0, 8)
-              .map((movie) => (
+          <div className="flex flex-col gap-5">
+            <OmarTrendingChart videos={trendingVideos} />
+            <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+              {trendingMovies.map((movie) => (
                 <div key={movie.movie_id}>
                   <Typography.Text strong>{movie.title}</Typography.Text>
                   <ul className="mt-1 flex flex-col gap-1">
                     {movie.videos.slice(0, 5).map((video) => (
                       <li key={video.video_id} className="flex flex-wrap items-center gap-2 text-sm">
                         {video.hot && <Tag color="red">{t("omarTrendingHot")}</Tag>}
-                        <a href={video.url ?? "#"} target="_blank" rel="noreferrer" className="max-w-[420px] truncate">
+                        <a href={video.url ?? "#"} target="_blank" rel="noreferrer" className="max-w-[420px] break-words">
                           {video.desc || video.video_id}
                         </a>
                         <span className="text-xs text-[var(--muted)]">
@@ -343,6 +491,7 @@ export default function OmarTab() {
                   </ul>
                 </div>
               ))}
+            </div>
           </div>
         )}
       </DashboardCard>
@@ -400,63 +549,24 @@ export default function OmarTab() {
             onChange={(e) => setSearchFilter(e.target.value)}
           />
         </div>
+        {isMobile ? (
+          <MobileTable
+            rowKey={(row) => `${row.movie_id}:${row.query}`}
+            loading={search.isLoading}
+            dataSource={searchRows}
+            columns={searchColumns}
+          />
+        ) : (
         <Table<OmarSearchQuery>
           size="small"
           rowKey={(row) => `${row.movie_id}:${row.query}`}
           loading={search.isLoading}
-          dataSource={(search.data?.queries ?? []).filter((row) => {
-            const needle = searchFilter.trim().toLowerCase();
-            return !needle || row.query.toLowerCase().includes(needle) || row.movie.toLowerCase().includes(needle);
-          })}
+          dataSource={searchRows}
           pagination={{ pageSize: 10, showSizeChanger: false }}
           scroll={{ x: true }}
-          columns={[
-            { title: t("omarSearchColQuery"), dataIndex: "query", render: (v: string) => <span className="font-medium">{v}</span> },
-            { title: t("omarColMovie"), dataIndex: "movie" },
-            {
-              title: t("omarSearchColSource"),
-              dataIndex: "source",
-              render: (v: OmarSearchQuery["source"]) => (
-                <Tag color={v === "custom" ? "purple" : v === "social" ? "blue" : undefined}>{t(`omarSearchSource_${v}`)}</Tag>
-              ),
-            },
-            {
-              title: t("omarSearchColLast"),
-              key: "last",
-              render: (_, row) => (row.last ? formatRelativeTime(row.last.at, t) : <Tag>{t("omarNotStarted")}</Tag>),
-            },
-            {
-              title: t("omarSearchColVideos"),
-              key: "videos",
-              align: "right",
-              render: (_, row) =>
-                row.last ? (
-                  <Tooltip title={t("omarSearchVideosHint")}>
-                    <span>
-                      {fmtNumber(row.last.videos)} <span className="text-xs text-[var(--muted)]">({fmtNumber(row.last.published)})</span>
-                    </span>
-                  </Tooltip>
-                ) : (
-                  "—"
-                ),
-            },
-            {
-              title: "",
-              key: "actions",
-              render: (_, row) =>
-                row.source === "custom" && row.id ? (
-                  <Button
-                    size="small"
-                    type="text"
-                    danger
-                    icon={<DeleteOutlined />}
-                    loading={deleteQuery.isPending && deleteQuery.variables === row.id}
-                    onClick={() => deleteQuery.mutate(row.id!)}
-                  />
-                ) : null,
-            },
-          ]}
+          columns={searchColumns}
         />
+        )}
       </DashboardCard>
 
       <DashboardCard
@@ -634,6 +744,14 @@ export default function OmarTab() {
           </Button>
           <Hint text={t("omarTagHint")} />
         </div>
+        {isMobile ? (
+          <MobileTable
+            rowKey="keyword_id"
+            loading={status.isLoading}
+            dataSource={data?.hashtags ?? []}
+            columns={hashtagColumns}
+          />
+        ) : (
         <Table<OmarHashtagProgress>
           size="small"
           rowKey="keyword_id"
@@ -641,56 +759,9 @@ export default function OmarTab() {
           dataSource={data?.hashtags ?? []}
           pagination={{ pageSize: 20, showSizeChanger: false }}
           scroll={{ x: true }}
-          columns={[
-            { title: "Hashtag", dataIndex: "hashtag", render: (v: string) => <span className="font-medium">{v}</span> },
-            { title: t("omarColMovie"), dataIndex: "movie", render: (v: string | null) => v ?? "—" },
-            { title: t("omarColPages"), dataIndex: "pages", align: "right", render: (v: number) => fmtNumber(v) },
-            {
-              title: t("omarColVideos"),
-              key: "videos",
-              align: "right",
-              render: (_, row) => (
-                <Tooltip title={t("omarColVideosHint")}>
-                  <span>~{fmtNumber(row.pages * 20)}</span>
-                </Tooltip>
-              ),
-            },
-            {
-              title: t("omarColTiktokVideos"),
-              key: "tiktok",
-              align: "right",
-              render: (_, row) =>
-                row.video_count ? (
-                  <Tooltip title={t("omarColTiktokVideosHint")}>
-                    <span>
-                      {fmtNumber(row.video_count)}{" "}
-                      <span className="text-xs text-[var(--muted)]">
-                        ({Math.min(100, Math.round(((row.pages * 20) / row.video_count) * 100))}%)
-                      </span>
-                    </span>
-                  </Tooltip>
-                ) : (
-                  "—"
-                ),
-            },
-            {
-              title: t("omarColStatus"),
-              key: "status",
-              render: (_, row) =>
-                row.missing_at ? (
-                  <Tooltip title={t("omarMissingHint")}>
-                    <Tag color="orange">{t("omarMissing", { time: formatRelativeTime(row.missing_at, t) })}</Tag>
-                  </Tooltip>
-                ) : row.done_at ? (
-                  <Tag color="green">{t("omarDone", { time: formatRelativeTime(row.done_at, t) })}</Tag>
-                ) : row.pages > 0 ? (
-                  <Tag color="blue">{t("omarInProgress")}</Tag>
-                ) : (
-                  <Tag>{t("omarNotStarted")}</Tag>
-                ),
-            },
-          ]}
+          columns={hashtagColumns}
         />
+        )}
       </DashboardCard>
     </div>
   );

@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { isVideoMediaType, postPreviewUrl } from "@/lib/media";
 
 const FALLBACK_PALETTE: { bg: string; fg: string }[] = [
-  { bg: "#0f766e", fg: "#ecfdf5" },
+  { bg: "#1076ae", fg: "#eaf6fd" },
   { bg: "#1d4ed8", fg: "#eff6ff" },
   { bg: "#7c3aed", fg: "#f5f3ff" },
   { bg: "#be123c", fg: "#fff1f2" },

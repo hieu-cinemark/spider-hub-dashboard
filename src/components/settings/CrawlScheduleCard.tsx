@@ -4,7 +4,7 @@ import { ClockCircleOutlined, CloseOutlined, PlusOutlined } from "@ant-design/ic
 import { Button, Switch, Table, TimePicker, Tooltip, Typography } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
 import DashboardCard, { CardHeading } from "@/components/DashboardCard";
-import { ItemCard, ItemCardList, ItemField } from "@/components/ItemCards";
+import MobileTable, { type ResponsiveColumnType } from "@/components/MobileTable";
 import PlatformBadge from "@/components/PlatformBadge";
 import { useMdUp } from "@/hooks/useMdUp";
 import { usePagedList } from "@/hooks/usePagedList";
@@ -115,6 +115,85 @@ export default function CrawlScheduleCard() {
     });
   }
 
+  const columns: ResponsiveColumnType<CrawlSchedule>[] = [
+    {
+      title: t("platform"),
+      dataIndex: "platform",
+      width: 160,
+      mobilePrimary: true,
+      render: (p: string) => <PlatformBadge platform={p} size={22} />,
+    },
+    {
+      title: t("columnRunTime"),
+      key: "run_time",
+      width: 190,
+      render: (_: unknown, record: CrawlSchedule) => (
+        <RunTimesEditor record={record} onSave={(runTimes) => persist(record, { run_times: runTimes })} />
+      ),
+    },
+    {
+      title: t("enabled"),
+      key: "enabled",
+      align: "center",
+      width: 80,
+      render: (_: unknown, record: CrawlSchedule) => (
+        <Switch
+          size="small"
+          checked={record.enabled}
+          loading={setSchedule.isPending && setSchedule.variables?.platform === record.platform}
+          onChange={(checked) => persist(record, { enabled: checked })}
+        />
+      ),
+    },
+    {
+      title: t("columnSessionWarmup"),
+      key: "warmup",
+      width: 200,
+      render: (_: unknown, record: CrawlSchedule) => {
+        const allowed = NURTURE_SCHEDULE_PLATFORMS.has(record.platform);
+        const loading = setSchedule.isPending && setSchedule.variables?.platform === record.platform;
+        return (
+          <div className="flex flex-wrap items-center gap-4">
+            <Tooltip title={allowed ? t("nurtureBeforeCrawlHint") : t("nurtureScheduleUnsupported")}>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="text-[11px] text-[var(--muted)]">{t("nurtureWarmupBeforeShort")}</span>
+                <Switch
+                  size="small"
+                  disabled={!allowed}
+                  checked={allowed && record.nurture_before}
+                  loading={loading}
+                  onChange={(checked) => persist(record, { nurture_before: checked })}
+                />
+              </span>
+            </Tooltip>
+            <Tooltip title={allowed ? t("nurtureAfterCrawlHint") : t("nurtureScheduleUnsupported")}>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="text-[11px] text-[var(--muted)]">{t("nurtureWarmupAfterShort")}</span>
+                <Switch
+                  size="small"
+                  disabled={!allowed}
+                  checked={allowed && record.nurture_after}
+                  loading={loading}
+                  onChange={(checked) => persist(record, { nurture_after: checked })}
+                />
+              </span>
+            </Tooltip>
+          </div>
+        );
+      },
+    },
+    {
+      title: t("columnLastTriggered"),
+      key: "last_triggered_date",
+      render: (_: unknown, record: CrawlSchedule) =>
+        record.last_triggered_date ? (
+          <span className="text-xs text-[var(--muted)]">{formatRelativeTime(record.last_triggered_date, t)}</span>
+        ) : (
+          <Typography.Text type="secondary">{t("crawlScheduleNotSet")}</Typography.Text>
+        ),
+    },
+  ];
+
   return (
     <DashboardCard
       title={<CardHeading icon={<ClockCircleOutlined />} title={t("crawlScheduleTitle")} desc={t("crawlScheduleDesc")} />}
@@ -126,128 +205,16 @@ export default function CrawlScheduleCard() {
         rowKey="platform"
         dataSource={rows}
         pagination={paging}
-        columns={[
-          {
-            title: t("platform"),
-            dataIndex: "platform",
-            width: 160,
-            render: (p: string) => <PlatformBadge platform={p} size={22} />,
-          },
-          {
-            title: t("columnRunTime"),
-            key: "run_time",
-            width: 190,
-            render: (_: unknown, record: CrawlSchedule) => <RunTimesEditor record={record} onSave={(runTimes) => persist(record, { run_times: runTimes })} />,
-          },
-          {
-            title: t("enabled"),
-            key: "enabled",
-            align: "center",
-            width: 80,
-            render: (_: unknown, record: CrawlSchedule) => (
-              <Switch
-                size="small"
-                checked={record.enabled}
-                loading={setSchedule.isPending && setSchedule.variables?.platform === record.platform}
-                onChange={(checked) => persist(record, { enabled: checked })}
-              />
-            ),
-          },
-          {
-            title: t("columnSessionWarmup"),
-            key: "warmup",
-            width: 200,
-            render: (_: unknown, record: CrawlSchedule) => {
-              const allowed = NURTURE_SCHEDULE_PLATFORMS.has(record.platform);
-              const loading = setSchedule.isPending && setSchedule.variables?.platform === record.platform;
-              return (
-                <div className="flex items-center gap-4">
-                  <Tooltip title={allowed ? t("nurtureBeforeCrawlHint") : t("nurtureScheduleUnsupported")}>
-                    <span className="inline-flex items-center gap-1.5">
-                      <span className="text-[11px] text-[var(--muted)]">{t("nurtureWarmupBeforeShort")}</span>
-                      <Switch
-                        size="small"
-                        disabled={!allowed}
-                        checked={allowed && record.nurture_before}
-                        loading={loading}
-                        onChange={(checked) => persist(record, { nurture_before: checked })}
-                      />
-                    </span>
-                  </Tooltip>
-                  <Tooltip title={allowed ? t("nurtureAfterCrawlHint") : t("nurtureScheduleUnsupported")}>
-                    <span className="inline-flex items-center gap-1.5">
-                      <span className="text-[11px] text-[var(--muted)]">{t("nurtureWarmupAfterShort")}</span>
-                      <Switch
-                        size="small"
-                        disabled={!allowed}
-                        checked={allowed && record.nurture_after}
-                        loading={loading}
-                        onChange={(checked) => persist(record, { nurture_after: checked })}
-                      />
-                    </span>
-                  </Tooltip>
-                </div>
-              );
-            },
-          },
-          {
-            title: t("columnLastTriggered"),
-            key: "last_triggered_date",
-            render: (_: unknown, record: CrawlSchedule) =>
-              record.last_triggered_date ? (
-                <span className="text-xs text-[var(--muted)]">{formatRelativeTime(record.last_triggered_date, t)}</span>
-              ) : (
-                <Typography.Text type="secondary">{t("crawlScheduleNotSet")}</Typography.Text>
-              ),
-          },
-        ]}
+        columns={columns}
       />
       ) : (
-        <ItemCardList items={rows} loading={isLoading} rowKey={(r) => r.platform} pagination={paging}>
-          {(record) => (
-            <ItemCard>
-              <div className="mb-2">
-                <PlatformBadge platform={record.platform} size={22} />
-              </div>
-              <ItemField label={t("columnRunTime")}>
-                <RunTimesEditor record={record} onSave={(runTimes) => persist(record, { run_times: runTimes })} />
-              </ItemField>
-              <ItemField label={t("enabled")}>
-                <Switch
-                  size="small"
-                  checked={record.enabled}
-                  loading={setSchedule.isPending && setSchedule.variables?.platform === record.platform}
-                  onChange={(checked) => persist(record, { enabled: checked })}
-                />
-              </ItemField>
-              <ItemField label={t("nurtureBeforeCrawl")}>
-                <Switch
-                  size="small"
-                  disabled={!NURTURE_SCHEDULE_PLATFORMS.has(record.platform)}
-                  checked={NURTURE_SCHEDULE_PLATFORMS.has(record.platform) && record.nurture_before}
-                  loading={setSchedule.isPending && setSchedule.variables?.platform === record.platform}
-                  onChange={(checked) => persist(record, { nurture_before: checked })}
-                />
-              </ItemField>
-              <ItemField label={t("nurtureAfterCrawl")}>
-                <Switch
-                  size="small"
-                  disabled={!NURTURE_SCHEDULE_PLATFORMS.has(record.platform)}
-                  checked={NURTURE_SCHEDULE_PLATFORMS.has(record.platform) && record.nurture_after}
-                  loading={setSchedule.isPending && setSchedule.variables?.platform === record.platform}
-                  onChange={(checked) => persist(record, { nurture_after: checked })}
-                />
-              </ItemField>
-              <ItemField label={t("columnLastTriggered")}>
-                {record.last_triggered_date ? (
-                  formatRelativeTime(record.last_triggered_date, t)
-                ) : (
-                  <Typography.Text type="secondary">{t("crawlScheduleNotSet")}</Typography.Text>
-                )}
-              </ItemField>
-            </ItemCard>
-          )}
-        </ItemCardList>
+        <MobileTable
+          loading={isLoading}
+          rowKey={(r) => r.platform}
+          dataSource={rows}
+          columns={columns}
+          pagination={paging}
+        />
       )}
     </DashboardCard>
   );

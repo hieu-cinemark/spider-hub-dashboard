@@ -38,7 +38,7 @@ export default function SettingsSummary() {
         title={t("settingsKpiTotal")}
         value={sum("total")}
         icon={<TeamOutlined />}
-        color="#4f46e5"
+        color="#1076ae"
         loading={accountsLoading}
         hint={byPlatform || undefined}
       />
@@ -46,7 +46,7 @@ export default function SettingsSummary() {
         title={t("settingsKpiReady")}
         value={`${sum("ready")} / ${sum("total")}`}
         icon={<CheckCircleOutlined />}
-        color="#047857"
+        color="#35c08a"
         loading={accountsLoading}
         hint={t("settingsKpiDisabledHint", { n: sum("disabled") })}
       />
@@ -54,7 +54,7 @@ export default function SettingsSummary() {
         title={t("settingsKpiIssues")}
         value={issues}
         icon={<WarningOutlined />}
-        color="#e11d48"
+        color="#f2545b"
         tone={issues > 0 ? "danger" : undefined}
         loading={accountsLoading}
         href={issues > 0 ? "/settings?tab=accounts-proxies&status=dead" : undefined}
@@ -64,7 +64,7 @@ export default function SettingsSummary() {
         title={t("settingsKpiProxies")}
         value={`${enabledProxies.length} / ${proxies?.length ?? 0}`}
         icon={<GlobalOutlined />}
-        color="#0891b2"
+        color="#3aa6dc"
         tone={unhealthyProxies > 0 ? "warning" : undefined}
         loading={proxiesLoading}
         hint={unhealthyProxies > 0 ? t("settingsKpiProxiesHint", { n: unhealthyProxies }) : undefined}

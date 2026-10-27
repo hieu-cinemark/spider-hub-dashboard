@@ -5,7 +5,9 @@ import { Button, Empty, Table, Tag, Tooltip } from "antd";
 import Link from "next/link";
 import { useMemo } from "react";
 import DashboardCard, { CardHeading } from "@/components/DashboardCard";
+import MobileTable, { type ResponsiveColumnType } from "@/components/MobileTable";
 import PlatformBadge from "@/components/PlatformBadge";
+import { useIsMobile } from "@/hooks/useMediaQuery";
 import { useTranslation } from "@/i18n/LocaleProvider";
 import type { TranslationKey } from "@/i18n/translations";
 import { accountBucket } from "@/lib/accountPool";
@@ -32,6 +34,7 @@ function issueOf(account: Account): Issue | null {
 
 export default function AccountIssuesCard({ accounts, loading }: { accounts: Account[]; loading: boolean }) {
   const { t } = useTranslation();
+  const isMobile = useIsMobile();
   const issues = useMemo(
     () =>
       accounts
@@ -41,6 +44,55 @@ export default function AccountIssuesCard({ accounts, loading }: { accounts: Acc
     [accounts],
   );
   const shown = issues.slice(0, MAX_ROWS);
+
+  const columns: ResponsiveColumnType<Issue>[] = [
+    {
+      title: t("platform"),
+      key: "platform",
+      width: 64,
+      mobileHidden: true,
+      render: (_: unknown, row: Issue) => (
+        <PlatformBadge platform={row.account.platform} size={20} showLabel={false} />
+      ),
+    },
+    {
+      title: t("columnAccountId"),
+      key: "account",
+      mobilePrimary: true,
+      render: (_: unknown, row: Issue) => (
+        <Link
+          href={`/settings?tab=accounts-proxies&q=${encodeURIComponent(row.account.account_id)}`}
+          className="block min-w-0 text-inherit"
+        >
+          <div className="font-medium break-words">{row.account.account_id}</div>
+          <div className="text-xs break-words text-[var(--muted)]">{row.account.email || "—"}</div>
+        </Link>
+      ),
+    },
+    {
+      title: t("columnIssue"),
+      key: "issue",
+      width: 150,
+      render: (_: unknown, row: Issue) => {
+        const tag = (
+          <Tag className="!m-0" color={row.color}>
+            {row.key === "failures"
+              ? t("accountIssueFailures", { n: row.account.consecutive_failures ?? 0 })
+              : t(row.key)}
+          </Tag>
+        );
+        return row.account.last_check_note ? <Tooltip title={row.account.last_check_note}>{tag}</Tooltip> : tag;
+      },
+    },
+    {
+      title: t("columnLastUsed"),
+      key: "used",
+      width: 120,
+      render: (_: unknown, row: Issue) => (
+        <span className="cell-meta whitespace-nowrap">{formatRelativeTime(row.account.last_used_at, t)}</span>
+      ),
+    },
+  ];
 
   return (
     <DashboardCard
@@ -65,60 +117,22 @@ export default function AccountIssuesCard({ accounts, loading }: { accounts: Acc
         <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t("accountIssuesEmpty")} />
       ) : (
         <>
-          <Table<Issue>
-            className="data-table"
-            size="small"
-            rowKey={(row) => row.account.id}
-            dataSource={shown}
-            pagination={false}
-            columns={[
-              {
-                title: t("platform"),
-                key: "platform",
-                width: 64,
-                render: (_: unknown, row: Issue) => (
-                  <PlatformBadge platform={row.account.platform} size={20} showLabel={false} />
-                ),
-              },
-              {
-                title: t("columnAccountId"),
-                key: "account",
-                ellipsis: true,
-                render: (_: unknown, row: Issue) => (
-                  <Link
-                    href={`/settings?tab=accounts-proxies&q=${encodeURIComponent(row.account.account_id)}`}
-                    className="block min-w-0 text-inherit"
-                  >
-                    <div className="truncate font-medium">{row.account.account_id}</div>
-                    <div className="truncate text-xs text-[var(--muted)]">{row.account.email || "—"}</div>
-                  </Link>
-                ),
-              },
-              {
-                title: t("columnIssue"),
-                key: "issue",
-                width: 150,
-                render: (_: unknown, row: Issue) => {
-                  const tag = (
-                    <Tag className="!m-0" color={row.color}>
-                      {row.key === "failures"
-                        ? t("accountIssueFailures", { n: row.account.consecutive_failures ?? 0 })
-                        : t(row.key)}
-                    </Tag>
-                  );
-                  return row.account.last_check_note ? <Tooltip title={row.account.last_check_note}>{tag}</Tooltip> : tag;
-                },
-              },
-              {
-                title: t("columnLastUsed"),
-                key: "used",
-                width: 120,
-                render: (_: unknown, row: Issue) => (
-                  <span className="cell-meta whitespace-nowrap">{formatRelativeTime(row.account.last_used_at, t)}</span>
-                ),
-              },
-            ]}
-          />
+          {isMobile ? (
+            <MobileTable
+              rowKey={(row) => String(row.account.id)}
+              dataSource={shown}
+              columns={columns}
+            />
+          ) : (
+            <Table<Issue>
+              className="data-table"
+              size="small"
+              rowKey={(row) => row.account.id}
+              dataSource={shown}
+              pagination={false}
+              columns={columns}
+            />
+          )}
           {issues.length > MAX_ROWS ? (
             <div className="mt-2 text-right text-xs text-[var(--muted)]">
               {t("accountIssuesMore", { n: issues.length - MAX_ROWS })}

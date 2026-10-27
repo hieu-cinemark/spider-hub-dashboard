@@ -5,6 +5,8 @@ import { Alert, Button, InputNumber, Switch, Table, TimePicker, Tooltip, Typogra
 import dayjs, { type Dayjs } from "dayjs";
 import DashboardCard, { CardHeading } from "@/components/DashboardCard";
 import { ItemCard, ItemCardList, ItemField } from "@/components/ItemCards";
+import MobileTable, { type ResponsiveColumnType } from "@/components/MobileTable";
+import { useIsMobile } from "@/hooks/useMediaQuery";
 import { useMdUp } from "@/hooks/useMdUp";
 import { usePagedList } from "@/hooks/usePagedList";
 import { useCleanupHistory, useCleanupSettings, useRunCleanup, useSetCleanupSettings } from "@/hooks/useSettings";
@@ -13,7 +15,6 @@ import { formatRelativeTime } from "@/lib/format";
 import type { CleanupRunSummary, CleanupSettings } from "@/lib/types";
 
 const TIME_FORMAT = "HH:mm";
-const HISTORY_PAGE_SIZE = 10;
 
 const GRACE_PRESETS_H = [12, 24, 48, 72, 168];
 
@@ -43,6 +44,7 @@ function durationSec(started: string, finished: string | null): string | null {
 export default function CleanupScheduleCard() {
   const { t } = useTranslation();
   const mdUp = useMdUp();
+  const isMobile = useIsMobile();
   const { data, isLoading } = useCleanupSettings();
   const setSettings = useSetCleanupSettings();
   const runNow = useRunCleanup();
@@ -63,6 +65,63 @@ export default function CleanupScheduleCard() {
   const historyRows: HistoryRow[] = history ?? [];
   const historyPaging = usePagedList(historyRows);
   const historyTablePaging = historyPaging.paging((n) => t("tableTotal", { n: n.toLocaleString() }));
+
+  const historyColumns: ResponsiveColumnType<HistoryRow>[] = [
+    {
+      title: t("cleanupHistoryStarted"),
+      dataIndex: "started_at",
+      width: 200,
+      mobilePrimary: true,
+      render: (v: string) => formatRelativeTime(v, t),
+    },
+    {
+      title: t("cleanupHistoryTrigger"),
+      dataIndex: "triggered_by",
+      width: 110,
+      render: (v: "schedule" | "manual") =>
+        v === "manual" ? t("cleanupHistoryTriggerManual") : t("cleanupHistoryTriggerSchedule"),
+    },
+    {
+      title: t("cleanupHistoryPosts"),
+      dataIndex: "posts_deleted",
+      align: "right",
+      width: 110,
+      render: shortNumber,
+    },
+    {
+      title: t("cleanupHistoryComments"),
+      dataIndex: "comments_deleted",
+      align: "right",
+      width: 110,
+      render: shortNumber,
+    },
+    {
+      title: t("cleanupHistorySnapshots"),
+      dataIndex: "snapshots_deleted",
+      align: "right",
+      width: 110,
+      render: shortNumber,
+    },
+    {
+      title: t("cleanupHistoryRemaining"),
+      dataIndex: "remaining_posts",
+      align: "right",
+      width: 130,
+      render: shortNumber,
+    },
+    {
+      title: t("cleanupHistoryDuration"),
+      key: "duration",
+      width: 110,
+      render: (_: unknown, row: HistoryRow) => {
+        if (row.error) {
+          return <Typography.Text type="danger">{t("cleanupHistoryError")}</Typography.Text>;
+        }
+        const d = durationSec(row.started_at, row.finished_at);
+        return d ?? <Typography.Text type="secondary">{t("cleanupHistoryRunning")}</Typography.Text>;
+      },
+    },
+  ];
 
   return (
     <DashboardCard
@@ -246,71 +305,28 @@ export default function CleanupScheduleCard() {
             <DeleteOutlined />
             {t("cleanupHistoryTitle")}
           </div>
-          <Table<HistoryRow>
-            size="small"
-            loading={historyLoading}
-            rowKey="id"
-            dataSource={historyRows}
-            pagination={historyTablePaging}
-            columns={[
-              {
-                title: t("cleanupHistoryStarted"),
-                dataIndex: "started_at",
-                width: 200,
-                render: (v: string) => formatRelativeTime(v, t),
-              },
-              {
-                title: t("cleanupHistoryTrigger"),
-                dataIndex: "triggered_by",
-                width: 110,
-                render: (v: "schedule" | "manual") =>
-                  v === "manual" ? t("cleanupHistoryTriggerManual") : t("cleanupHistoryTriggerSchedule"),
-              },
-              {
-                title: t("cleanupHistoryPosts"),
-                dataIndex: "posts_deleted",
-                align: "right",
-                width: 110,
-                render: shortNumber,
-              },
-              {
-                title: t("cleanupHistoryComments"),
-                dataIndex: "comments_deleted",
-                align: "right",
-                width: 110,
-                render: shortNumber,
-              },
-              {
-                title: t("cleanupHistorySnapshots"),
-                dataIndex: "snapshots_deleted",
-                align: "right",
-                width: 110,
-                render: shortNumber,
-              },
-              {
-                title: t("cleanupHistoryRemaining"),
-                dataIndex: "remaining_posts",
-                align: "right",
-                width: 130,
-                render: shortNumber,
-              },
-              {
-                title: t("cleanupHistoryDuration"),
-                key: "duration",
-                width: 110,
-                render: (_: unknown, row: HistoryRow) => {
-                  if (row.error) {
-                    return <Typography.Text type="danger">{t("cleanupHistoryError")}</Typography.Text>;
-                  }
-                  const d = durationSec(row.started_at, row.finished_at);
-                  return d ?? <Typography.Text type="secondary">{t("cleanupHistoryRunning")}</Typography.Text>;
-                },
-              },
-            ]}
-            locale={{
-              emptyText: historyLoading ? " " : t("cleanupHistoryEmpty"),
-            }}
-          />
+          {isMobile ? (
+            <MobileTable
+              loading={historyLoading}
+              rowKey="id"
+              dataSource={historyRows}
+              columns={historyColumns}
+              pagination={historyTablePaging}
+              empty={historyLoading ? " " : t("cleanupHistoryEmpty")}
+            />
+          ) : (
+            <Table<HistoryRow>
+              size="small"
+              loading={historyLoading}
+              rowKey="id"
+              dataSource={historyRows}
+              pagination={historyTablePaging}
+              columns={historyColumns}
+              locale={{
+                emptyText: historyLoading ? " " : t("cleanupHistoryEmpty"),
+              }}
+            />
+          )}
         </div>
       </div>
     </DashboardCard>

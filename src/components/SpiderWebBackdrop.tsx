@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const MAX_DPR = 1.25;
 const FRAME_MS = 1000 / 32;
@@ -30,8 +30,8 @@ function hexToRgb(hex: string): [number, number, number] {
 
 function readPalette(): Palette {
   const styles = getComputedStyle(document.documentElement);
-  const accent = styles.getPropertyValue("--accent").trim() || "#0f766e";
-  const soft = styles.getPropertyValue("--accent-soft").trim() || "#14b8a6";
+  const accent = styles.getPropertyValue("--accent").trim() || "#1076ae";
+  const soft = styles.getPropertyValue("--accent-soft").trim() || "#1e88c4";
   const dark = document.documentElement.classList.contains("dark");
   const [ar, ag, ab] = hexToRgb(accent);
   const [sr, sg, sb] = hexToRgb(soft);
@@ -62,8 +62,23 @@ function nodeBudget(w: number, h: number) {
 
 export default function SpiderWebBackdrop() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  // Canvas animation is decorative - it must never compete with the first
+  // paint. Mount it only once the browser is idle so the initial load's
+  // JS/layout budget goes to real content first.
+  const [active, setActive] = useState(false);
 
   useEffect(() => {
+    const run = () => setActive(true);
+    if (typeof window.requestIdleCallback === "function") {
+      const id = window.requestIdleCallback(run, { timeout: 2500 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const id = window.setTimeout(run, 1200);
+    return () => window.clearTimeout(id);
+  }, []);
+
+  useEffect(() => {
+    if (!active) return;
     // Gán sang biến có kiểu không-null: TypeScript không giữ việc thu hẹp kiểu bên trong các hàm lồng phía dưới.
     const canvasEl = canvasRef.current;
     if (!canvasEl) return;
@@ -258,7 +273,7 @@ export default function SpiderWebBackdrop() {
       reduced.removeEventListener("change", motionHandler);
       themeObs.disconnect();
     };
-  }, []);
+  }, [active]);
 
   return <canvas ref={canvasRef} className="spider-web-canvas pointer-events-none fixed inset-0 z-0" aria-hidden />;
 }

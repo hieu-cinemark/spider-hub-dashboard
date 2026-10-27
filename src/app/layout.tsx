@@ -20,7 +20,7 @@ const jetbrains = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: "Spider Hub",
-  description: "Crawl ops analytics for the spider-hub collection pipeline.",
+  description: "Analytics for the collection pipeline.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

@@ -2,6 +2,7 @@
 
 import { LinkOutlined, UnorderedListOutlined } from "@ant-design/icons";
 import { Button, Checkbox, Empty, Tabs, Typography } from "antd";
+import dynamic from "next/dynamic";
 import { type Key, useState } from "react";
 import DashboardCard, { CardHeading } from "@/components/DashboardCard";
 import EngagementMetrics from "@/components/EngagementMetrics";
@@ -17,7 +18,11 @@ import { useTranslation } from "@/i18n/LocaleProvider";
 import { COMMENT_SUPPORTED_PLATFORMS, TRIGGERABLE_PLATFORMS } from "@/lib/constants";
 import { formatRelativeTime } from "@/lib/format";
 import type { Post } from "@/lib/types";
-import PostDetailModal from "./PostDetailModal";
+
+
+// Modal chi tiết bài viết chỉ mở khi bấm vào một thẻ - nạp động để trang
+// /posts mở ra không phải tải sẵn code của modal.
+const PostDetailModal = dynamic(() => import("./PostDetailModal"), { ssr: false });
 
 const POSTS_QUERY = { platform: ALL_PLATFORM_QUERY, keyword: "", match: "related" };
 const MATCH_TABS = ["related", "unrelated"] as const;
@@ -56,7 +61,7 @@ function PostTile({
 
       <div className="flex min-w-0 flex-1 flex-col gap-2.5 p-3.5">
         <div className="flex items-start gap-2">
-          <p className="cell-primary mb-0 line-clamp-2 min-w-0 flex-1 text-[15px] font-semibold leading-snug">
+          <p className="cell-primary mb-0 min-w-0 flex-1 text-[15px] font-semibold leading-snug whitespace-pre-line break-words">
             {post.content || "—"}
           </p>
           {post.url ? (
@@ -78,8 +83,8 @@ function PostTile({
         <div className="mt-auto flex min-w-0 items-center gap-2">
           <UserAvatar name={post.author} size={28} />
           <div className="min-w-0 flex-1">
-            <div className="truncate text-[13px] font-medium text-[var(--ink)]">{post.author || "—"}</div>
-            <div className="truncate text-[12px] text-[var(--muted)]">
+            <div className="break-words text-[13px] font-medium text-[var(--ink)]">{post.author || "—"}</div>
+            <div className="break-words text-[12px] text-[var(--muted)]">
               {[post.movie_title, post.keyword].filter(Boolean).join(" · ") || t("columnMovieKeyword")}
             </div>
           </div>

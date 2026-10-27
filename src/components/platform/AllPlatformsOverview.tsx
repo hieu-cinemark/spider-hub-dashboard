@@ -127,7 +127,7 @@ function PlatformHealthCell({
   return (
     <Link
       href={`/?tab=${row.platform}`}
-      className="group flex h-full flex-col gap-3 rounded-2xl border border-[var(--line)] bg-[var(--card)] p-4 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md"
+      className="group flex h-full flex-col gap-3 rounded-[12px] border border-[var(--line)] bg-[var(--card)] p-3.5 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-[var(--accent)]"
       style={{
         borderColor:
           tone === "danger"
@@ -145,14 +145,14 @@ function PlatformHealthCell({
     >
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="flex min-w-0 shrink-0 items-center gap-2.5">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[var(--accent)]/15 text-[var(--accent-deep)]">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--accent)]/15 text-[var(--accent-deep)]">
             <PlatformIcon platform={row.platform} />
           </span>
           <div className="min-w-0">
-            <div className="truncate text-[13px] font-semibold tracking-wide text-[var(--ink)]">
+            <div className="break-words text-[12.5px] font-semibold tracking-wide text-[var(--ink)]">
               {platformLabel(row.platform)}
             </div>
-            <div className="truncate text-[11px] text-[var(--muted)]">
+            <div className="break-words text-[11px] text-[var(--muted)]">
               {formatRelativeTime(row.last_scraped_at, t)}
             </div>
           </div>
@@ -174,9 +174,7 @@ function PlatformHealthCell({
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <div className="text-[10px] font-semibold uppercase tracking-wide text-[var(--muted)]">
-            {t("chartPosts")}
-          </div>
+          <div className="micro-label">{t("chartPosts")}</div>
           <div className="mt-1 flex items-baseline gap-2">
             <span className="text-[20px] font-semibold tabular-nums text-[var(--ink)]">
               {row.count.toLocaleString()}
@@ -185,9 +183,7 @@ function PlatformHealthCell({
           </div>
         </div>
         <div>
-          <div className="text-[10px] font-semibold uppercase tracking-wide text-[var(--muted)]">
-            {t("chartComments")}
-          </div>
+          <div className="micro-label">{t("chartComments")}</div>
           <div className="mt-1 flex items-baseline gap-2">
             <span className="text-[20px] font-semibold tabular-nums text-[var(--ink)]">
               {(commentRow?.count ?? 0).toLocaleString()}
@@ -259,16 +255,18 @@ export default function AllPlatformsOverview() {
 
   return (
     <div className="flex flex-col gap-5 animate-fade-in-up">
+      {/* --- 1. Cảnh báo: luôn ở trên cùng, không cần cuộn mới thấy ----- */}
       <CrawlHealthBanner />
-      <CrawlQueuePanel compact />
 
+      {/* --- 2. Con số tổng quan: câu trả lời ngắn nhất cho "tình hình
+             thế nào" ---------------------------------------------- */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           title={t("totalPostsCollected")}
           value={totalPosts}
           loading={statsLoading}
           icon={<AppstoreOutlined />}
-          color="#4f46e5"
+          color="#1076ae"
           delta={<CountDelta current={postsToday} previous={postsPrev} />}
         />
         <StatCard
@@ -276,7 +274,7 @@ export default function AllPlatformsOverview() {
           value={totalComments}
           loading={commentsLoading}
           icon={<CommentOutlined />}
-          color="#c2410c"
+          color="#f19542"
           delta={<CountDelta current={commentsToday} previous={commentsPrev} />}
         />
         <StatCard
@@ -284,7 +282,7 @@ export default function AllPlatformsOverview() {
           value={success.rate === null ? "—" : `${success.rate.toFixed(1)}%`}
           loading={jobsLoading}
           icon={<CheckCircleOutlined />}
-          color="#047857"
+          color="#35c08a"
           tone={successTone}
           href="/jobs"
           hint={
@@ -298,13 +296,21 @@ export default function AllPlatformsOverview() {
           value={`${readyAccounts} / ${totalAccounts}`}
           loading={accountsLoading}
           icon={<TeamOutlined />}
-          color="#b45309"
+          color="#e0649a"
           href="/settings"
           hint={t("kpiReadyAccountsHint", { running: runningJobs })}
         />
       </div>
 
+      {/* --- 3. Đang chạy + sức khoẻ từng nền tảng -------------------
+             Hai khối này cùng trả lời "hệ thống đang thu thập được gì
+             và có nền tảng nào đang lỗi" - đặt cạnh nhau. --------------- */}
+      <div className="section-rule">{t("sectionLive")}</div>
+      <CrawlQueuePanel compact />
+
       <PlatformHealthStrip />
+
+      <div className="section-rule">{t("sectionVolume")}</div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-5">
         <DashboardCard
@@ -380,6 +386,7 @@ export default function AllPlatformsOverview() {
 
       <IngestFunnelCard hours={hourlyWindow} />
 
+      <div className="section-rule">{t("sectionTrend")}</div>
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         <DashboardCard
           className="h-full"
@@ -422,6 +429,7 @@ export default function AllPlatformsOverview() {
         </DashboardCard>
       </div>
 
+      <div className="section-rule">{t("sectionResources")}</div>
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         <DashboardCard
           className="h-full"
@@ -440,6 +448,7 @@ export default function AllPlatformsOverview() {
         </div>
       </div>
 
+      <div className="section-rule">{t("sectionInfra")}</div>
       <DashboardCard
         title={
           <CardHeading

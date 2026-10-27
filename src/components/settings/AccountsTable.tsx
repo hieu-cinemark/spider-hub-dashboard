@@ -15,16 +15,15 @@ import {
   SafetyCertificateOutlined,
   SearchOutlined,
 } from "@ant-design/icons";
-import { Alert, App, Button, Checkbox, Dropdown, Input, Modal, Select, Space, Spin, Table, Tag, Tooltip, Typography } from "antd";
+import { Alert, App, Button, Dropdown, Input, Modal, Select, Space, Spin, Table, Tag, Tooltip, Typography } from "antd";
 import { useQuery } from "@tanstack/react-query";
+import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
 import DashboardCard, { CardHeading } from "@/components/DashboardCard";
-import { ItemCard, ItemCardList, ItemField } from "@/components/ItemCards";
+import MobileTable, { type ResponsiveColumnType } from "@/components/MobileTable";
 import { TableRowsSkeleton } from "@/components/PageSkeleton";
 import PlatformBadge from "@/components/PlatformBadge";
-import AccountFormModal from "@/components/settings/AccountFormModal";
-import ImportWithAiModal from "@/components/settings/ImportWithAiModal";
-import NurtureAccountsModal from "@/components/settings/NurtureAccountsModal";
+
 import NurtureJobBanner from "@/components/settings/NurtureJobBanner";
 import PlatformFilter, { ALL_PLATFORM_QUERY } from "@/components/PlatformFilter";
 import { useMdUp } from "@/hooks/useMdUp";
@@ -164,6 +163,13 @@ function AccountPoolTag({ account }: { account: Account }) {
 
 const ACCOUNTS_QUERY = { platform: ALL_PLATFORM_QUERY, q: "", status: "all" };
 
+// Ba modal này nặng (form nhập cookie, import bằng AI, nuôi tài khoản) và
+// chỉ mở khi người dùng bấm - nạp động để trang Settings mở ra không phải
+// tải cả ba.
+const AccountFormModal = dynamic(() => import("@/components/settings/AccountFormModal"), { ssr: false });
+const ImportWithAiModal = dynamic(() => import("@/components/settings/ImportWithAiModal"), { ssr: false });
+const NurtureAccountsModal = dynamic(() => import("@/components/settings/NurtureAccountsModal"), { ssr: false });
+
 type AccountStatusFilter = "all" | "active" | "disabled" | "checkpoint" | "cooldown" | "dead";
 
 function matchesAccountStatus(account: Account, status: AccountStatusFilter): boolean {
@@ -259,6 +265,117 @@ export default function AccountsTable() {
     });
   }
 
+  const rowActions = (record: Account) => (
+    <div className="flex items-center gap-1">
+      <Tooltip title={t("checkAccountAction")}>
+        <Button
+          size="small"
+          icon={<SafetyCertificateOutlined />}
+          loading={check.isPending && check.variables === record.id}
+          onClick={() => check.mutate(record.id)}
+        />
+      </Tooltip>
+      <Dropdown
+        menu={{
+          items: [
+            ...(record.platform === "facebook" || record.platform === "threads"
+              ? [
+                  { key: "manualLogin", label: t("manualLoginAction"), icon: <LoginOutlined /> },
+                  { key: "nurture", label: t("nurtureThisAccount"), icon: <HeartOutlined /> },
+                ]
+              : []),
+            { key: "edit", label: t("edit"), icon: <EditOutlined /> },
+            { key: "delete", label: t("remove"), icon: <DeleteOutlined />, danger: true },
+          ],
+          onClick: ({ key }) => {
+            if (key === "manualLogin") void manualLogin(record);
+            if (key === "nurture") nurture.mutate({ account_id: record.id });
+            if (key === "edit") openEdit(record);
+            if (key === "delete") confirmDelete(record);
+          },
+        }}
+      >
+        <Button size="small" icon={<DownOutlined />} />
+      </Dropdown>
+    </div>
+  );
+
+  const columns: ResponsiveColumnType<Account>[] = [
+    {
+      title: t("platform"),
+      dataIndex: "platform",
+      width: 108,
+      mobileHidden: true,
+      render: (p: string) => <PlatformBadge platform={p} size={22} showLabel={false} />,
+    },
+    {
+      title: t("columnAccountId"),
+      key: "account",
+      mobilePrimary: true,
+      render: (_: unknown, record: Account) => (
+        <div className="min-w-0">
+          <div className="font-medium break-words">{record.account_id}</div>
+          <div className="text-xs break-words text-[var(--muted)]">{record.email || "—"}</div>
+        </div>
+      ),
+    },
+    {
+      title: t("columnPoolStatus"),
+      key: "health",
+      width: 156,
+      render: (_: unknown, record: Account) => <AccountPoolTag account={record} />,
+    },
+    {
+      title: t("columnSession"),
+      key: "session",
+      width: 156,
+      render: (_: unknown, record: Account) => (
+        <Tooltip
+          title={
+            record.last_checked_at
+              ? t("sessionCheckedAt", { time: new Date(record.last_checked_at).toLocaleString() })
+              : undefined
+          }
+        >
+          <div className="flex flex-col items-start gap-0.5">
+            <Tag className="!m-0" color={checkStatusTagColor(record.last_check_status)}>
+              {t(checkStatusLabelKey(record.last_check_status))}
+            </Tag>
+            {record.last_checked_at && record.last_check_status ? (
+              <span className="text-[11px] text-[var(--muted)]">{formatRelativeTime(record.last_checked_at, t)}</span>
+            ) : null}
+          </div>
+        </Tooltip>
+      ),
+    },
+    {
+      title: t("columnProxy"),
+      key: "proxy",
+      width: 200,
+      onCell: () => ({ className: "min-w-0" }),
+      render: (_: unknown, record: Account) => (
+        <ProxyPicker account={record} proxies={proxies ?? []} setProxy={setProxy} resetProxy={resetProxy} />
+      ),
+    },
+    {
+      title: t("columnCredentials"),
+      key: "credentials",
+      width: 108,
+      align: "center",
+      render: (_: unknown, record: Account) => (
+        <CredentialsModal account={record} isTikTok={record.platform === "tiktok"} />
+      ),
+    },
+    {
+      title: t("actions"),
+      key: "actions",
+      width: 108,
+      align: "right",
+      mobileHidden: true,
+      render: (_: unknown, record: Account) => rowActions(record),
+    },
+  ];
+
   return (
     <DashboardCard
       title={<CardHeading icon={<KeyOutlined />} title={t("authCredentialsTitle")} desc={t("authCredentialsDesc")} />}
@@ -318,9 +435,9 @@ export default function AccountsTable() {
         </div>
       )}
       {mdUp ? (
-      isLoading && !accounts ? (
-        <TableRowsSkeleton rows={8} />
-      ) : (
+        isLoading && !accounts ? (
+          <TableRowsSkeleton rows={8} />
+        ) : (
       <Table
         size="middle"
         rowKey="id"
@@ -330,188 +447,23 @@ export default function AccountsTable() {
           selectedRowKeys: selectedIds,
           onChange: (keys) => setSelectedIds(keys as number[]),
         }}
-        columns={[
-            {
-              title: t("platform"),
-              dataIndex: "platform",
-              width: 108,
-              render: (p: string) => <PlatformBadge platform={p} size={22} showLabel={false} />,
-            },
-          {
-            title: t("columnAccountId"),
-            key: "account",
-            ellipsis: true,
-            render: (_: unknown, record: Account) => (
-              <div className="min-w-0">
-                <div className="truncate font-medium">{record.account_id}</div>
-                <div className="truncate text-xs text-[var(--muted)]">{record.email || "—"}</div>
-              </div>
-            ),
-          },
-          {
-            title: t("columnPoolStatus"),
-            key: "health",
-            width: 156,
-            render: (_: unknown, record: Account) => <AccountPoolTag account={record} />,
-          },
-          {
-            title: t("columnSession"),
-            key: "session",
-            width: 156,
-            render: (_: unknown, record: Account) => (
-              <Tooltip
-                title={
-                  record.last_checked_at
-                    ? t("sessionCheckedAt", { time: new Date(record.last_checked_at).toLocaleString() })
-                    : undefined
-                }
-              >
-                <div className="flex flex-col items-start gap-0.5">
-                  <Tag className="!m-0" color={checkStatusTagColor(record.last_check_status)}>
-                    {t(checkStatusLabelKey(record.last_check_status))}
-                  </Tag>
-                  {record.last_checked_at && record.last_check_status ? (
-                    <span className="text-[11px] text-[var(--muted)]">{formatRelativeTime(record.last_checked_at, t)}</span>
-                  ) : null}
-                </div>
-              </Tooltip>
-            ),
-          },
-          {
-            title: t("columnProxy"),
-            key: "proxy",
-            width: 200,
-            ellipsis: true,
-            onCell: () => ({ className: "min-w-0" }),
-            render: (_: unknown, record: Account) => (
-              <ProxyPicker account={record} proxies={proxies ?? []} setProxy={setProxy} resetProxy={resetProxy} />
-            ),
-          },
-            {
-              title: t("columnCredentials"),
-              key: "credentials",
-              width: 108,
-              align: "center",
-            render: (_: unknown, record: Account) => (
-              <CredentialsModal account={record} isTikTok={record.platform === "tiktok"} />
-            ),
-          },
-          {
-            title: t("actions"),
-            key: "actions",
-            width: 108,
-            align: "right",
-            render: (_: unknown, record: Account) => (
-              <div className="flex items-center gap-1">
-                <Tooltip title={t("checkAccountAction")}>
-                  <Button
-                    size="small"
-                    icon={<SafetyCertificateOutlined />}
-                    loading={check.isPending && check.variables === record.id}
-                    onClick={() => check.mutate(record.id)}
-                  />
-                </Tooltip>
-                <Dropdown
-                  menu={{
-                    items: [
-                      ...(record.platform === "facebook" || record.platform === "threads"
-                        ? [
-                            { key: "manualLogin", label: t("manualLoginAction"), icon: <LoginOutlined /> },
-                            { key: "nurture", label: t("nurtureThisAccount"), icon: <HeartOutlined /> },
-                          ]
-                        : []),
-                      { key: "edit", label: t("edit"), icon: <EditOutlined /> },
-                      { key: "delete", label: t("remove"), icon: <DeleteOutlined />, danger: true },
-                    ],
-                    onClick: ({ key }) => {
-                      if (key === "manualLogin") void manualLogin(record);
-                      if (key === "nurture") nurture.mutate({ account_id: record.id });
-                      if (key === "edit") openEdit(record);
-                      if (key === "delete") confirmDelete(record);
-                    },
-                  }}
-                >
-                  <Button size="small" icon={<DownOutlined />} />
-                </Dropdown>
-              </div>
-            ),
-          },
-        ]}
+        columns={columns}
       />
       )
       ) : (
-        <ItemCardList
-          items={filteredAccounts}
+        <MobileTable
           loading={isLoading}
           rowKey={(a) => String(a.id)}
+          dataSource={filteredAccounts}
+          columns={columns}
           pagination={paging}
-        >
-          {(record) => {
-            const selected = selectedIds.includes(record.id);
-            return (
-              <ItemCard>
-                <div className="mb-2 flex items-start justify-between gap-2">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <Checkbox
-                      checked={selected}
-                      onChange={(e) => {
-                        setSelectedIds((ids) =>
-                          e.target.checked ? [...ids, record.id] : ids.filter((id) => id !== record.id),
-                        );
-                      }}
-                    />
-                    <PlatformBadge platform={record.platform} size={22} showLabel={false} />
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Tooltip title={t("checkAccountAction")}>
-                      <Button
-                        size="small"
-                        icon={<SafetyCertificateOutlined />}
-                        loading={check.isPending && check.variables === record.id}
-                        onClick={() => check.mutate(record.id)}
-                      />
-                    </Tooltip>
-                    <Dropdown
-                      menu={{
-                        items: [
-                          ...(record.platform === "facebook" || record.platform === "threads"
-                            ? [
-                                { key: "manualLogin", label: t("manualLoginAction"), icon: <LoginOutlined /> },
-                                { key: "nurture", label: t("nurtureThisAccount"), icon: <HeartOutlined /> },
-                              ]
-                            : []),
-                          { key: "edit", label: t("edit"), icon: <EditOutlined /> },
-                          { key: "delete", label: t("remove"), icon: <DeleteOutlined />, danger: true },
-                        ],
-                        onClick: ({ key }) => {
-                          if (key === "manualLogin") void manualLogin(record);
-                          if (key === "nurture") nurture.mutate({ account_id: record.id });
-                          if (key === "edit") openEdit(record);
-                          if (key === "delete") confirmDelete(record);
-                        },
-                      }}
-                    >
-                      <Button size="small" icon={<DownOutlined />} />
-                    </Dropdown>
-                  </div>
-                </div>
-                <ItemField label={t("columnAccountId")}>
-                  <div className="font-medium">{record.account_id}</div>
-                  <div className="text-xs text-[var(--muted)]">{record.email || "—"}</div>
-                </ItemField>
-                <ItemField label={t("columnPoolStatus")}>
-                  <AccountPoolTag account={record} />
-                </ItemField>
-                <ItemField label={t("columnProxy")}>
-                  <ProxyPicker account={record} proxies={proxies ?? []} setProxy={setProxy} resetProxy={resetProxy} />
-                </ItemField>
-                <ItemField label={t("columnCredentials")}>
-                  <CredentialsModal account={record} isTikTok={record.platform === "tiktok"} />
-                </ItemField>
-              </ItemCard>
-            );
+          rowSelection={{
+            selectedRowKeys: selectedIds,
+            onChange: (keys) => setSelectedIds(keys as number[]),
+            selectionKey: (a) => a.id,
           }}
-        </ItemCardList>
+          title={(record) => rowActions(record)}
+        />
       )}
       <AccountFormModal
         open={modalOpen}

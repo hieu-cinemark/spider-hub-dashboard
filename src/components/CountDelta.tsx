@@ -22,8 +22,8 @@ export function CountDelta({
     delta === 0
       ? "bg-[var(--paper-deep)] text-[var(--ink-soft)]"
       : delta > 0
-        ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
-        : "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300";
+        ? "bg-[color-mix(in_srgb,var(--ok)_18%,transparent)] text-[var(--ok)]"
+        : "bg-[color-mix(in_srgb,var(--danger)_18%,transparent)] text-[var(--danger)]";
 
   const body = (
     <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold tabular-nums ${color}`}>

@@ -1,15 +1,17 @@
 "use client";
 
-import { CommentOutlined, HeartOutlined, LinkOutlined, MessageOutlined } from "@ant-design/icons";
-import { Button, Empty, Table, Tabs } from "antd";
+import { ApartmentOutlined, CommentOutlined, HeartOutlined, LinkOutlined, MessageOutlined, UnorderedListOutlined } from "@ant-design/icons";
+import { Button, Empty, Segmented, Table, Tabs } from "antd";
+import { useMemo, useState } from "react";
 import DashboardCard, { CardHeading } from "@/components/DashboardCard";
-import { ItemCard, ItemCardList, ItemField } from "@/components/ItemCards";
+import MobileTable, { type ResponsiveColumnType } from "@/components/MobileTable";
+import CommentTree, { countReplies, buildCommentTree } from "@/components/platform/CommentTree";
 import KeywordFilter from "@/components/KeywordFilter";
 import PlatformBadge from "@/components/PlatformBadge";
 import { UserAvatar } from "@/components/UserAvatar";
 import PlatformFilter, { ALL_PLATFORM_QUERY } from "@/components/PlatformFilter";
 import { TableRowsSkeleton } from "@/components/PageSkeleton";
-import { useMdUp } from "@/hooks/useMdUp";
+import { useIsMobile } from "@/hooks/useMediaQuery";
 import { useQueryRecord } from "@/hooks/useQueryParam";
 import { useAllComments } from "@/hooks/useStats";
 import { useTranslation } from "@/i18n/LocaleProvider";
@@ -30,8 +32,8 @@ function OnPostQuote({ record }: { record: CommentWithPost }) {
     <div className="on-post-quote">
       <div className="on-post-quote-body">
         <span className="on-post-quote-kicker">{t("commentedOnPost")}</span>
-        {meta ? <span className="cell-secondary truncate">{meta}</span> : null}
-        <span className="cell-primary line-clamp-2">{record.post_content || "—"}</span>
+        {meta ? <span className="cell-secondary break-words">{meta}</span> : null}
+        <span className="cell-primary whitespace-pre-line break-words">{record.post_content || "—"}</span>
       </div>
       {record.post_url ? (
         <a
@@ -50,15 +52,77 @@ function OnPostQuote({ record }: { record: CommentWithPost }) {
 
 export default function CommentsReview() {
   const { t } = useTranslation();
-  const mdUp = useMdUp();
+  const isMobile = useIsMobile();
   const [query, setQuery] = useQueryRecord(COMMENTS_QUERY);
+  // "tree" nhìn bình luận có reply theo dạng cây; "list" là bảng phẳng cũ.
+  const [view, setView] = useState<"tree" | "list">("tree");
   const platform = query.platform === ALL_PLATFORM_QUERY ? undefined : query.platform;
   const keywordId = query.keyword || undefined;
   const sentiment = SENTIMENT_TABS.includes(query.sentiment as (typeof SENTIMENT_TABS)[number])
     ? query.sentiment
     : "positive";
   const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } = useAllComments(platform, keywordId, sentiment);
-  const items = data?.pages.flatMap((p) => p.items) ?? [];
+  const items = useMemo(() => data?.pages.flatMap((p) => p.items) ?? [], [data]);
+  const replyCount = useMemo(() => countReplies(buildCommentTree(items)), [items]);
+
+  const columns: ResponsiveColumnType<CommentWithPost>[] = [
+    {
+      title: t("columnContent"),
+      dataIndex: "message",
+      mobilePrimary: true,
+      render: (v: string | null, record: CommentWithPost) => (
+        <div className="flex min-w-0 items-start gap-3">
+          <UserAvatar src={record.author_profile_picture} name={record.author_name} size={36} />
+          <div className="cell-stack min-w-0 flex-1">
+            <div className="flex min-w-0 items-center gap-2">
+              <span className="cell-primary break-words">{record.author_name || "—"}</span>
+              <PlatformBadge platform={record.platform} size={20} showLabel={false} />
+            </div>
+            {record.parent_external_id && (
+              <div className="cell-secondary break-words">
+                {record.parent_author_name || record.parent_message
+                  ? t("inReplyTo", {
+                      author: record.parent_author_name || "—",
+                      text: record.parent_message || "",
+                    })
+                  : t("inReplyToUnknown")}
+              </div>
+            )}
+            <span className="cell-primary font-normal whitespace-pre-line break-words">{v || "—"}</span>
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: t("columnOnPost"),
+      key: "post",
+      width: 320,
+      render: (_: unknown, record: CommentWithPost) => <OnPostQuote record={record} />,
+    },
+    {
+      title: t("columnEngagement"),
+      key: "engagement",
+      width: 140,
+      render: (_: unknown, record: CommentWithPost) => (
+        <div className="metric-grid" style={{ gridTemplateColumns: "repeat(2, minmax(0, auto))" }}>
+          <span className="metric-item">
+            <HeartOutlined />
+            {record.reactions_count.toLocaleString()}
+          </span>
+          <span className="metric-item">
+            <MessageOutlined />
+            {record.replies_count.toLocaleString()}
+          </span>
+        </div>
+      ),
+    },
+    {
+      title: t("columnScraped"),
+      dataIndex: "scraped_at",
+      width: 120,
+      render: (v: string) => <span className="cell-meta">{formatRelativeTime(v, t)}</span>,
+    },
+  ];
 
   return (
     <DashboardCard
@@ -79,150 +143,104 @@ export default function CommentsReview() {
         </div>
       }
     >
-      <Tabs
-        className="ui-tabs"
-        activeKey={sentiment}
-        onChange={(next) => setQuery({ sentiment: next })}
-        items={[
-          { key: "positive", label: t("commentsPositive") },
-          { key: "negative", label: t("commentsNegative") },
-          { key: "neutral", label: t("commentsNeutral") },
-        ]}
-      />
-      {mdUp ? (
-      isLoading && !data ? (
-        <TableRowsSkeleton rows={8} />
-      ) : (
-      <Table<CommentWithPost>
-        className="data-table"
-        size="middle"
-        rowKey="id"
-        dataSource={items}
-        locale={{ emptyText: <Empty description={t("noCommentsYet")} /> }}
-        pagination={false}
-        footer={
-          hasNextPage
-            ? () => (
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <Tabs
+          className="ui-tabs"
+          activeKey={sentiment}
+          onChange={(next) => setQuery({ sentiment: next })}
+          items={[
+            { key: "positive", label: t("commentsPositive") },
+            { key: "negative", label: t("commentsNegative") },
+            { key: "neutral", label: t("commentsNeutral") },
+          ]}
+        />
+        <Segmented
+          size="small"
+          value={view}
+          onChange={(next) => setView(next as "tree" | "list")}
+          options={[
+            {
+              value: "tree",
+              label: (
+                <span className="inline-flex items-center gap-1.5">
+                  <ApartmentOutlined /> {t("commentsViewTree")}
+                  {replyCount > 0 ? (
+                    <span className="rounded-full bg-[var(--accent)]/15 px-1.5 text-[11px] font-semibold tabular-nums text-[var(--accent-deep)]">
+                      {replyCount}
+                    </span>
+                  ) : null}
+                </span>
+              ),
+            },
+            {
+              value: "list",
+              label: (
+                <span className="inline-flex items-center gap-1.5">
+                  <UnorderedListOutlined /> {t("commentsViewList")}
+                </span>
+              ),
+            },
+          ]}
+        />
+      </div>
+      {view === "tree" ? (
+        <div className="flex flex-col gap-3">
+          {isLoading && !data ? (
+            <TableRowsSkeleton rows={6} />
+          ) : items.length === 0 ? (
+            <Empty description={t("noCommentsYet")} />
+          ) : (
+            <>
+              <CommentTree items={items} />
+              {hasNextPage ? (
                 <div className="flex justify-center">
                   <Button loading={isFetchingNextPage} onClick={() => fetchNextPage()} size="small">
                     {t("loadMore")}
                   </Button>
                 </div>
-              )
-            : undefined
-        }
-        columns={[
-          {
-            title: t("columnContent"),
-            dataIndex: "message",
-            render: (v: string | null, record: CommentWithPost) => (
-              <div className="flex min-w-0 items-start gap-3">
-                <UserAvatar src={record.author_profile_picture} name={record.author_name} size={36} />
-                <div className="cell-stack min-w-0 flex-1">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <span className="cell-primary truncate">{record.author_name || "—"}</span>
-                    <PlatformBadge platform={record.platform} size={20} showLabel={false} />
-                  </div>
-                  {record.parent_external_id && (
-                    <div className="cell-secondary line-clamp-1">
-                      {record.parent_author_name || record.parent_message
-                        ? t("inReplyTo", {
-                            author: record.parent_author_name || "—",
-                            text: record.parent_message || "",
-                          })
-                        : t("inReplyToUnknown")}
-                    </div>
-                  )}
-                  <span className="cell-primary line-clamp-3 font-normal">{v || "—"}</span>
-                </div>
-              </div>
-            ),
-          },
-          {
-            title: t("columnOnPost"),
-            key: "post",
-            width: 320,
-            render: (_: unknown, record: CommentWithPost) => <OnPostQuote record={record} />,
-          },
-          {
-            title: t("columnEngagement"),
-            key: "engagement",
-            width: 140,
-            render: (_: unknown, record: CommentWithPost) => (
-              <div className="metric-grid" style={{ gridTemplateColumns: "repeat(2, minmax(0, auto))" }}>
-                <span className="metric-item">
-                  <HeartOutlined />
-                  {record.reactions_count.toLocaleString()}
-                </span>
-                <span className="metric-item">
-                  <MessageOutlined />
-                  {record.replies_count.toLocaleString()}
-                </span>
-              </div>
-            ),
-          },
-          {
-            title: t("columnScraped"),
-            dataIndex: "scraped_at",
-            width: 120,
-            render: (v: string) => <span className="cell-meta">{formatRelativeTime(v, t)}</span>,
-          },
-        ]}
-      />
-      )
+              ) : null}
+            </>
+          )}
+        </div>
+      ) : isMobile ? (
+        <MobileTable
+          loading={isLoading && !data}
+          rowKey={(c) => c.id}
+          dataSource={items}
+          columns={columns}
+          empty={<Empty description={t("noCommentsYet")} />}
+          loadMore={{
+            hasMore: !!hasNextPage,
+            loading: isFetchingNextPage,
+            onLoadMore: () => fetchNextPage(),
+            label: t("loadMore"),
+          }}
+        />
+      ) : isLoading && !data ? (
+        <TableRowsSkeleton rows={8} />
       ) : (
-          <ItemCardList
-            items={items}
-            loading={isLoading && !data}
-            empty={<Empty description={t("noCommentsYet")} />}
-            rowKey={(c) => c.id}
-            loadMore={{
-              hasMore: !!hasNextPage,
-              loading: isFetchingNextPage,
-              onLoadMore: () => fetchNextPage(),
-              label: t("loadMore"),
-            }}
-          >
-            {(record) => (
-              <ItemCard>
-                <OnPostQuote record={record} />
-                <div className="mt-3 flex items-start gap-3">
-                  <UserAvatar src={record.author_profile_picture} name={record.author_name} size={36} />
-                  <div className="min-w-0 flex-1">
-                    <div className="mb-1 flex items-center justify-between gap-2">
-                      <div className="flex min-w-0 items-center gap-2">
-                        <span className="cell-primary truncate">{record.author_name || "—"}</span>
-                        <PlatformBadge platform={record.platform} size={20} showLabel={false} />
-                      </div>
-                      <span className="text-xs text-[var(--muted)]">{formatRelativeTime(record.scraped_at, t)}</span>
-                    </div>
-                    {record.parent_external_id && (
-                      <p className="mb-1 line-clamp-2 text-xs text-[var(--muted)]">
-                        {record.parent_author_name || record.parent_message
-                          ? t("inReplyTo", {
-                              author: record.parent_author_name || "—",
-                              text: record.parent_message || "",
-                            })
-                          : t("inReplyToUnknown")}
-                      </p>
-                    )}
-                    <p className="mb-0 line-clamp-3 text-sm">{record.message || "—"}</p>
+        <Table<CommentWithPost>
+          className="data-table"
+          size="middle"
+          rowKey="id"
+          dataSource={items}
+          locale={{ emptyText: <Empty description={t("noCommentsYet")} /> }}
+          pagination={false}
+          footer={
+            hasNextPage
+              ? () => (
+                  <div className="flex justify-center">
+                    <Button loading={isFetchingNextPage} onClick={() => fetchNextPage()} size="small">
+                      {t("loadMore")}
+                    </Button>
                   </div>
-                </div>
-                <ItemField label={t("columnEngagement")}>
-                  <div className="flex justify-end gap-2 text-xs text-[var(--muted)]">
-                    <span>
-                      <HeartOutlined /> {record.reactions_count.toLocaleString()}
-                    </span>
-                    <span>
-                      <MessageOutlined /> {record.replies_count.toLocaleString()}
-                    </span>
-                  </div>
-                </ItemField>
-              </ItemCard>
-            )}
-          </ItemCardList>
+                )
+              : undefined
+          }
+          columns={columns}
+        />
       )}
+
     </DashboardCard>
   );
 }

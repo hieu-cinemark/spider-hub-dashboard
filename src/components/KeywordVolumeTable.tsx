@@ -2,13 +2,14 @@
 
 import { FireOutlined, SearchOutlined } from "@ant-design/icons";
 import { App, Button, Input, Popconfirm, Select, Switch, Table, Tag, Typography } from "antd";
+import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
 import { VolumeMetric } from "@/components/CountDelta";
 import DashboardCard, { CardHeading } from "@/components/DashboardCard";
 import { ItemCard, ItemCardList, ItemField } from "@/components/ItemCards";
 import PlatformBadge from "@/components/PlatformBadge";
 import { TableRowsSkeleton } from "@/components/PageSkeleton";
-import TopPostsModal from "@/components/platform/TopPostsModal";
+
 import { useMdUp } from "@/hooks/useMdUp";
 import { usePagedList } from "@/hooks/usePagedList";
 import { useKeywordVolume } from "@/hooks/useStats";
@@ -19,6 +20,10 @@ import { formatRelativeTime } from "@/lib/format";
 import type { KeywordVolume, RelatedHashtag } from "@/lib/types";
 
 type EnabledFilter = "all" | "enabled" | "disabled";
+
+// Modal "top bài viết" chỉ mở khi bấm nút - nạp động để không kéo code
+// modal vào chunk ban đầu của trang.
+const TopPostsModal = dynamic(() => import("@/components/platform/TopPostsModal"), { ssr: false });
 
 type MovieTreeRow = {
   key: string;
@@ -265,8 +270,8 @@ export default function KeywordVolumeTable({ platform }: { platform?: string }) 
                 render: (_: unknown, row: TreeRow) =>
                   row.kind === "movie" ? (
                     <div className="cell-stack min-w-0 py-0.5">
-                      <div className="cell-primary truncate font-semibold">{row.movie_title}</div>
-                      <div className="cell-secondary truncate">
+                      <div className="cell-primary font-semibold break-words">{row.movie_title}</div>
+                      <div className="cell-secondary break-words">
                         {t("keywordTreeMovieMeta", {
                           keywords: row.keyword_count,
                           enabled: row.enabled_count,
@@ -277,7 +282,7 @@ export default function KeywordVolumeTable({ platform }: { platform?: string }) 
                     <div className="cell-stack min-w-0 py-0.5 pl-1">
                       <div className="flex min-w-0 items-center gap-2">
                         <PlatformBadge platform={row.platform} size={20} showLabel={false} />
-                        <span className="cell-primary truncate">{row.keyword}</span>
+                        <span className="cell-primary break-words">{row.keyword}</span>
                       </div>
                       <RelatedHashtagChips row={row} />
                     </div>
@@ -353,7 +358,7 @@ export default function KeywordVolumeTable({ platform }: { platform?: string }) 
             <ItemCard>
               <div className="mb-2 flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <Typography.Text strong className="block truncate">
+                  <Typography.Text strong className="block break-words">
                     {movie.movie_title}
                   </Typography.Text>
                   <Typography.Text type="secondary" className="text-xs">
@@ -393,7 +398,7 @@ export default function KeywordVolumeTable({ platform }: { platform?: string }) 
                     <div className="mb-1 flex items-center justify-between gap-2">
                       <div className="flex min-w-0 items-center gap-2">
                         <PlatformBadge platform={row.platform} size={18} showLabel={false} />
-                        <Typography.Text className="min-w-0 truncate">{row.keyword}</Typography.Text>
+                        <Typography.Text className="min-w-0 break-words">{row.keyword}</Typography.Text>
                       </div>
                       <div className="flex items-center gap-1">
                         <Button

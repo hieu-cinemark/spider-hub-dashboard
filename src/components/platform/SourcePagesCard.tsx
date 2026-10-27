@@ -5,7 +5,9 @@ import { App, Button, Input, Popconfirm, Select, Switch, Table, Tag, Tooltip, Ty
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import DashboardCard, { CardHeading } from "@/components/DashboardCard";
+import MobileTable, { type ResponsiveColumnType } from "@/components/MobileTable";
 import { useMovies } from "@/hooks/useMovies";
+import { useIsMobile } from "@/hooks/useMediaQuery";
 import { useTranslation } from "@/i18n/LocaleProvider";
 import { api } from "@/lib/api";
 import type { SourcePage, SourcePageSuggestion } from "@/lib/types";
@@ -18,6 +20,7 @@ const SUGGESTIONS_KEY = ["facebook", "source-page-suggestions"];
  * bài là về phim đó; trang chung (CGV, trang review) -> hệ thống tự tìm phim theo nội dung bài. */
 export default function SourcePagesCard() {
   const { t } = useTranslation();
+  const isMobile = useIsMobile();
   const { message } = App.useApp();
   const queryClient = useQueryClient();
   const { data: movies } = useMovies();
@@ -60,6 +63,92 @@ export default function SourcePagesCard() {
   const kindTag = (movieTitle: string | null) =>
     movieTitle ? <Tag color="blue">{movieTitle}</Tag> : <Tag color="purple">{t("sourcePagesShared")}</Tag>;
 
+  const sourceColumns: ResponsiveColumnType<SourcePage>[] = [
+    {
+      title: t("sourcePagesPage"),
+      mobilePrimary: true,
+      render: (_: unknown, row: SourcePage) => (
+        <a href={row.url} target="_blank" rel="noreferrer" className="font-medium break-all">
+          {row.name || row.url.replace("https://www.facebook.com/", "")}
+        </a>
+      ),
+    },
+    { title: t("movie"), width: 220, render: (_: unknown, row: SourcePage) => kindTag(row.movie_title) },
+    {
+      title: t("sourcePagesAddedBy"),
+      width: 120,
+      render: (_: unknown, row: SourcePage) =>
+        row.added_by === "ai" ? (
+          <Tooltip title={row.ai_reason}>
+            <Tag color="geekblue">AI</Tag>
+          </Tooltip>
+        ) : (
+          <Tag>{t("sourcePagesManual")}</Tag>
+        ),
+    },
+    {
+      title: t("sourcePagesLastQueued"),
+      width: 160,
+      render: (_: unknown, row: SourcePage) => (
+        <Typography.Text type="secondary" className="text-xs break-words">
+          {row.last_queued_at ? new Date(row.last_queued_at).toLocaleString() : "—"}
+          {row.quiet_runs > 0 ? ` · ${t("sourcePagesSlowed", { n: Math.min(8, 2 ** row.quiet_runs) })}` : ""}
+        </Typography.Text>
+      ),
+    },
+    {
+      title: "",
+      width: 200,
+      mobileHidden: true,
+      render: (_: unknown, row: SourcePage) => (
+        <div className="flex items-center gap-2">
+          <Switch size="small" checked={!!row.enabled} onChange={() => toggle.mutate(row)} />
+          <Tooltip title={t("sourcePagesRun")}>
+            <Button size="small" icon={<PlayCircleOutlined />} loading={run.isPending && run.variables?.id === row.id} onClick={() => run.mutate(row)} />
+          </Tooltip>
+          <Popconfirm title={t("sourcePagesDeleteConfirm")} onConfirm={() => remove.mutate(row)}>
+            <Button size="small" danger icon={<DeleteOutlined />} />
+          </Popconfirm>
+        </div>
+      ),
+    },
+  ];
+
+  const suggestionColumns: ResponsiveColumnType<SourcePageSuggestion>[] = [
+    {
+      title: t("sourcePagesPage"),
+      mobilePrimary: true,
+      render: (_: unknown, row: SourcePageSuggestion) => (
+        <a href={row.url} target="_blank" rel="noreferrer" className="break-all">
+          {row.name}
+        </a>
+      ),
+    },
+    {
+      title: t("movie"),
+      width: 260,
+      render: (_: unknown, row: SourcePageSuggestion) =>
+        row.kind === "film" ? (
+          kindTag(row.movie_title)
+        ) : (
+          <Tooltip title={row.films.join(", ")}>
+            <Tag color="purple">{t("sourcePagesSharedFilms", { n: row.films.length })}</Tag>
+          </Tooltip>
+        ),
+    },
+    { title: t("sourcePagesPosts"), dataIndex: "posts", width: 110, align: "right" },
+    {
+      title: "",
+      width: 90,
+      mobileHidden: true,
+      render: (_: unknown, row: SourcePageSuggestion) => (
+        <Button size="small" icon={<PlusOutlined />} loading={add.isPending && add.variables?.url === row.url} onClick={() => add.mutate({ url: row.url, movieId: row.movie_id, name: row.name })}>
+          {t("sourcePagesAdd")}
+        </Button>
+      ),
+    },
+  ];
+
   return (
     <DashboardCard title={<CardHeading icon={<GlobalOutlined />} title={t("sourcePagesTitle")} desc={t("sourcePagesDesc")} />}>
       <div className="mb-4 flex flex-wrap gap-2">
@@ -82,6 +171,15 @@ export default function SourcePagesCard() {
         </Button>
       </div>
 
+      {isMobile ? (
+        <MobileTable
+          rowKey="id"
+          loading={sources.isLoading}
+          dataSource={sources.data?.items ?? []}
+          columns={sourceColumns}
+          empty={t("sourcePagesEmpty")}
+        />
+      ) : (
       <Table<SourcePage>
         size="small"
         rowKey="id"
@@ -90,60 +188,24 @@ export default function SourcePagesCard() {
         pagination={{ pageSize: 10, size: "small" }}
         scroll={{ x: 760 }}
         locale={{ emptyText: t("sourcePagesEmpty") }}
-        columns={[
-          {
-            title: t("sourcePagesPage"),
-            render: (_, row) => (
-              <a href={row.url} target="_blank" rel="noreferrer" className="font-medium">
-                {row.name || row.url.replace("https://www.facebook.com/", "")}
-              </a>
-            ),
-          },
-          { title: t("movie"), width: 220, render: (_, row) => kindTag(row.movie_title) },
-          {
-            title: t("sourcePagesAddedBy"),
-            width: 120,
-            render: (_, row) =>
-              row.added_by === "ai" ? (
-                <Tooltip title={row.ai_reason}>
-                  <Tag color="geekblue">AI</Tag>
-                </Tooltip>
-              ) : (
-                <Tag>{t("sourcePagesManual")}</Tag>
-              ),
-          },
-          {
-            title: t("sourcePagesLastQueued"),
-            width: 160,
-            render: (_, row) => (
-              <Typography.Text type="secondary" className="text-xs">
-                {row.last_queued_at ? new Date(row.last_queued_at).toLocaleString() : "—"}
-                {row.quiet_runs > 0 ? ` · ${t("sourcePagesSlowed", { n: Math.min(8, 2 ** row.quiet_runs) })}` : ""}
-              </Typography.Text>
-            ),
-          },
-          {
-            title: "",
-            width: 200,
-            render: (_, row) => (
-              <div className="flex items-center gap-2">
-                <Switch size="small" checked={!!row.enabled} onChange={() => toggle.mutate(row)} />
-                <Tooltip title={t("sourcePagesRun")}>
-                  <Button size="small" icon={<PlayCircleOutlined />} loading={run.isPending && run.variables?.id === row.id} onClick={() => run.mutate(row)} />
-                </Tooltip>
-                <Popconfirm title={t("sourcePagesDeleteConfirm")} onConfirm={() => remove.mutate(row)}>
-                  <Button size="small" danger icon={<DeleteOutlined />} />
-                </Popconfirm>
-              </div>
-            ),
-          },
-        ]}
+        columns={sourceColumns}
       />
+      )}
+
+      <Typography.Title level={5}      />
 
       <Typography.Title level={5} className="!mt-6 flex items-center gap-1.5">
         {t("sourcePagesSuggestions")}
         <Hint text={t("sourcePagesSuggestionsHint")} />
       </Typography.Title>
+      {isMobile ? (
+        <MobileTable
+          rowKey={(row) => `${row.kind}|${row.movie_id ?? ""}|${row.url}`}
+          loading={suggestions.isLoading}
+          dataSource={suggestions.data?.items ?? []}
+          columns={suggestionColumns}
+        />
+      ) : (
       <Table<SourcePageSuggestion>
         size="small"
         rowKey={(row) => `${row.kind}|${row.movie_id ?? ""}|${row.url}`}
@@ -151,39 +213,9 @@ export default function SourcePagesCard() {
         dataSource={suggestions.data?.items ?? []}
         pagination={{ pageSize: 10, size: "small" }}
         scroll={{ x: 760 }}
-        columns={[
-          {
-            title: t("sourcePagesPage"),
-            render: (_, row) => (
-              <a href={row.url} target="_blank" rel="noreferrer">
-                {row.name}
-              </a>
-            ),
-          },
-          {
-            title: t("movie"),
-            width: 260,
-            render: (_, row) =>
-              row.kind === "film" ? (
-                kindTag(row.movie_title)
-              ) : (
-                <Tooltip title={row.films.join(", ")}>
-                  <Tag color="purple">{t("sourcePagesSharedFilms", { n: row.films.length })}</Tag>
-                </Tooltip>
-              ),
-          },
-          { title: t("sourcePagesPosts"), dataIndex: "posts", width: 110, align: "right" },
-          {
-            title: "",
-            width: 90,
-            render: (_, row) => (
-              <Button size="small" icon={<PlusOutlined />} loading={add.isPending && add.variables?.url === row.url} onClick={() => add.mutate({ url: row.url, movieId: row.movie_id, name: row.name })}>
-                {t("sourcePagesAdd")}
-              </Button>
-            ),
-          },
-        ]}
+        columns={suggestionColumns}
       />
+      )}
     </DashboardCard>
   );
 }

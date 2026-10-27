@@ -9,9 +9,11 @@ import {
 import { Alert, Button, Empty, Segmented, Table, Tag, Typography } from "antd";
 import { useMemo } from "react";
 import DashboardCard, { CardHeading } from "@/components/DashboardCard";
+import MobileTable, { type ResponsiveColumnType } from "@/components/MobileTable";
 import StatCard from "@/components/StatCard";
 import { useQueryRecord } from "@/hooks/useQueryParam";
 import { useLogTail } from "@/hooks/useLogTail";
+import { useIsMobile } from "@/hooks/useMediaQuery";
 import { useTranslation } from "@/i18n/LocaleProvider";
 import { DEFAULT_LOG_LINES, LOG_LINE_OPTIONS, REFRESH_INTERVAL_MS } from "@/lib/constants";
 import {
@@ -54,6 +56,7 @@ export default function LogSummary({ kind, sourceLabel }: { kind: "spider-hub" |
     ? (query.level as IssuePreset)
     : "issues";
   const search = query.q;
+  const isMobile = useIsMobile();
 
   // Manual refresh only — no live stream polling.
   const { data, error, isFetching, dataUpdatedAt, refetch } = useLogTail(kind, lineCount, false, REFRESH_INTERVAL_MS.logs, true);
@@ -64,6 +67,49 @@ export default function LogSummary({ kind, sourceLabel }: { kind: "spider-hub" |
   const platformIssues = Object.entries(health.byPlatform).filter(
     ([, row]) => row.errors > 0 || row.warnings > 0,
   );
+
+  const logColumns: ResponsiveColumnType<ParsedLogLine>[] = [
+    {
+      title: t("logTime"),
+      key: "time",
+      width: 96,
+      mobileHidden: true,
+      render: (_: unknown, row) => (
+        <span className="cell-meta font-mono">{formatLogClock(row.timestamp) || "—"}</span>
+      ),
+    },
+    {
+      title: t("logLevel"),
+      dataIndex: "level",
+      width: 104,
+      render: (level: ParsedLogLine["level"]) => (
+        <Tag color={isFailureLevel(level) ? "error" : "warning"} className="!m-0 uppercase">
+          {level === "warning" ? "warn" : level}
+        </Tag>
+      ),
+    },
+    {
+      title: t("platform"),
+      key: "platform",
+      width: 120,
+      render: (_: unknown, row) =>
+        row.platform && row.platform !== "system"
+          ? PLATFORM_META[row.platform]
+            ? platformLabel(row.platform)
+            : row.platform
+          : "—",
+    },
+    {
+      title: t("logMessage"),
+      dataIndex: "message",
+      mobilePrimary: true,
+      render: (message: string, row) => (
+        <span className="cell-primary !font-normal leading-snug break-words" title={row.raw}>
+          {message}
+        </span>
+      ),
+    },
+  ];
 
   return (
     <div className="flex flex-col gap-4">
@@ -117,7 +163,7 @@ export default function LogSummary({ kind, sourceLabel }: { kind: "spider-hub" |
           value={health.errorCount}
           loading={isFetching && !data}
           icon={<AlertOutlined />}
-          color="#e11d48"
+          color="#f2545b"
           tone={health.errorCount > 0 ? "danger" : undefined}
         />
         <StatCard
@@ -125,7 +171,7 @@ export default function LogSummary({ kind, sourceLabel }: { kind: "spider-hub" |
           value={health.warningCount}
           loading={isFetching && !data}
           icon={<WarningOutlined />}
-          color="#d97706"
+          color="#f19542"
           tone={health.warningCount > 0 ? "warning" : undefined}
         />
         <StatCard
@@ -133,14 +179,14 @@ export default function LogSummary({ kind, sourceLabel }: { kind: "spider-hub" |
           value={parsed.length}
           loading={isFetching && !data}
           icon={<ReloadOutlined />}
-          color="#0284c7"
+          color="#3aa6dc"
         />
         <StatCard
           title={t("logSummaryPlatforms")}
           value={platformIssues.length}
           loading={isFetching && !data}
           icon={<CheckCircleOutlined />}
-          color="#0d9488"
+          color="#35c08a"
           tone={platformIssues.length > 0 ? "warning" : undefined}
           hint={
             health.errorCount === 0 && health.warningCount === 0 ? t("logSummaryHealthy") : undefined
@@ -175,61 +221,36 @@ export default function LogSummary({ kind, sourceLabel }: { kind: "spider-hub" |
           />
         }
       >
-        <Table<ParsedLogLine>
-          size="middle"
-          rowKey={(row, index) => `${row.timestamp ?? "x"}-${index}`}
-          dataSource={rows}
-          pagination={rows.length > 12 ? { pageSize: 12, showSizeChanger: false } : false}
-          locale={{
-            emptyText: (
+        {isMobile ? (
+            <MobileTable
+              rowKey={(row) => `${row.timestamp ?? "x"}-${row.message?.slice(0, 12) ?? ""}`}
+              dataSource={rows}
+            columns={logColumns}
+            empty={
               <Empty
                 image={Empty.PRESENTED_IMAGE_SIMPLE}
                 description={data?.ok ? t("logSummaryNoIssues") : t("noMatchingLines")}
               />
-            ),
-          }}
-          rowClassName={(row) => (isFailureLevel(row.level) ? "summary-error-row" : "summary-warn-row")}
-          columns={[
-            {
-              title: t("logTime"),
-              key: "time",
-              width: 96,
-              render: (_: unknown, row) => (
-                <span className="cell-meta font-mono">{formatLogClock(row.timestamp) || "—"}</span>
+            }
+          />
+        ) : (
+          <Table<ParsedLogLine>
+            size="middle"
+            rowKey={(row, index) => `${row.timestamp ?? "x"}-${index}`}
+            dataSource={rows}
+            pagination={rows.length > 12 ? { pageSize: 12, showSizeChanger: false } : false}
+            locale={{
+              emptyText: (
+                <Empty
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  description={data?.ok ? t("logSummaryNoIssues") : t("noMatchingLines")}
+                />
               ),
-            },
-            {
-              title: t("logLevel"),
-              dataIndex: "level",
-              width: 104,
-              render: (level: ParsedLogLine["level"]) => (
-                <Tag color={isFailureLevel(level) ? "error" : "warning"} className="!m-0 uppercase">
-                  {level === "warning" ? "warn" : level}
-                </Tag>
-              ),
-            },
-            {
-              title: t("platform"),
-              key: "platform",
-              width: 120,
-              render: (_: unknown, row) =>
-                row.platform && row.platform !== "system"
-                  ? PLATFORM_META[row.platform]
-                    ? platformLabel(row.platform)
-                    : row.platform
-                  : "—",
-            },
-            {
-              title: t("logMessage"),
-              dataIndex: "message",
-              render: (message: string, row) => (
-                <span className="cell-primary !font-normal leading-snug" title={row.raw}>
-                  {message}
-                </span>
-              ),
-            },
-          ]}
-        />
+            }}
+            rowClassName={(row) => (isFailureLevel(row.level) ? "summary-error-row" : "summary-warn-row")}
+            columns={logColumns}
+          />
+        )}
       </DashboardCard>
     </div>
   );

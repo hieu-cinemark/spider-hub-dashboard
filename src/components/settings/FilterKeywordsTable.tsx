@@ -4,7 +4,7 @@ import { DeleteOutlined, EditOutlined, FilterOutlined, PlusOutlined } from "@ant
 import { Button, Popconfirm, Switch, Table, Tag } from "antd";
 import { useState } from "react";
 import DashboardCard, { CardHeading } from "@/components/DashboardCard";
-import { ItemCard, ItemCardList, ItemField } from "@/components/ItemCards";
+import MobileTable, { type ResponsiveColumnType } from "@/components/MobileTable";
 import FilterKeywordFormModal from "@/components/settings/FilterKeywordFormModal";
 import { useMdUp } from "@/hooks/useMdUp";
 import { usePagedList } from "@/hooks/usePagedList";
@@ -47,6 +47,57 @@ export default function FilterKeywordsTable() {
     spam_offtopic: t("filterCategorySpamOfftopic"),
   };
 
+  const columns: ResponsiveColumnType<FilterKeyword>[] = [
+    {
+      title: t("columnKeyword"),
+      dataIndex: "keyword",
+      mobilePrimary: true,
+      render: (v: string) => <span className="font-medium break-words">{v}</span>,
+    },
+    {
+      title: t("columnCategory"),
+      dataIndex: "category",
+      width: 168,
+      render: (category: FilterKeywordCategory) => (
+        <Tag color={CATEGORY_COLOR[category]} className="!m-0">{categoryLabel[category]}</Tag>
+      ),
+    },
+    {
+      title: t("enabled"),
+      dataIndex: "enabled",
+      width: 80,
+      align: "center",
+      render: (enabled: boolean, record: FilterKeyword) => (
+        <Switch
+          size="small"
+          checked={enabled}
+          loading={update.isPending && update.variables?.id === record.id}
+          onChange={(checked) => update.mutate({ id: record.id, input: { enabled: checked } })}
+        />
+      ),
+    },
+    {
+      title: t("actions"),
+      key: "actions",
+      width: 88,
+      align: "right",
+      mobileHidden: true,
+      render: (_: unknown, record: FilterKeyword) => (
+        <div className="flex justify-end gap-1">
+          <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(record)} />
+          <Popconfirm
+            title={t("removeFilterKeywordConfirm")}
+            onConfirm={() => remove.mutate(record.id)}
+            okText={t("remove")}
+            okButtonProps={{ danger: true }}
+          >
+            <Button size="small" danger icon={<DeleteOutlined />} />
+          </Popconfirm>
+        </div>
+      ),
+    },
+  ];
+
   return (
     <DashboardCard
       title={<CardHeading icon={<FilterOutlined />} title={t("filterKeywordsTitle")} desc={t("filterKeywordsDesc")} />}
@@ -63,83 +114,29 @@ export default function FilterKeywordsTable() {
         rowKey="id"
         dataSource={keywords ?? []}
         pagination={paging}
-        columns={[
-          { title: t("columnKeyword"), dataIndex: "keyword", ellipsis: true },
-          {
-            title: t("columnCategory"),
-            dataIndex: "category",
-            width: 168,
-            render: (category: FilterKeywordCategory) => (
-              <Tag color={CATEGORY_COLOR[category]} className="!m-0">{categoryLabel[category]}</Tag>
-            ),
-          },
-          {
-            title: t("enabled"),
-            dataIndex: "enabled",
-            width: 80,
-            align: "center",
-            render: (enabled: boolean, record: FilterKeyword) => (
-              <Switch
-                size="small"
-                checked={enabled}
-                loading={update.isPending && update.variables?.id === record.id}
-                onChange={(checked) => update.mutate({ id: record.id, input: { enabled: checked } })}
-              />
-            ),
-          },
-          {
-            title: t("actions"),
-            key: "actions",
-            width: 88,
-            align: "right",
-            render: (_: unknown, record: FilterKeyword) => (
-              <div className="flex justify-end gap-1">
-                <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(record)} />
-                <Popconfirm
-                  title={t("removeFilterKeywordConfirm")}
-                  onConfirm={() => remove.mutate(record.id)}
-                  okText={t("remove")}
-                  okButtonProps={{ danger: true }}
-                >
-                  <Button size="small" danger icon={<DeleteOutlined />} />
-                </Popconfirm>
-              </div>
-            ),
-          },
-        ]}
+        columns={columns}
       />
       ) : (
-        <ItemCardList items={keywords ?? []} loading={isLoading} rowKey={(k) => String(k.id)} pagination={paging}>
-          {(record) => (
-            <ItemCard>
-              <div className="mb-2 flex items-start justify-between gap-2">
-                <span className="font-medium">{record.keyword}</span>
-                <div className="flex gap-1">
-                  <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(record)} />
-                  <Popconfirm
-                    title={t("removeFilterKeywordConfirm")}
-                    onConfirm={() => remove.mutate(record.id)}
-                    okText={t("remove")}
-                    okButtonProps={{ danger: true }}
-                  >
-                    <Button size="small" danger icon={<DeleteOutlined />} />
-                  </Popconfirm>
-                </div>
-              </div>
-              <ItemField label={t("columnCategory")}>
-                <Tag color={CATEGORY_COLOR[record.category]}>{categoryLabel[record.category]}</Tag>
-              </ItemField>
-              <ItemField label={t("enabled")}>
-                <Switch
-                  size="small"
-                  checked={record.enabled}
-                  loading={update.isPending && update.variables?.id === record.id}
-                  onChange={(checked) => update.mutate({ id: record.id, input: { enabled: checked } })}
-                />
-              </ItemField>
-            </ItemCard>
+        <MobileTable
+          loading={isLoading}
+          rowKey={(k) => String(k.id)}
+          dataSource={keywords ?? []}
+          columns={columns}
+          pagination={paging}
+          title={(record) => (
+            <div className="flex gap-1">
+              <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(record)} />
+              <Popconfirm
+                title={t("removeFilterKeywordConfirm")}
+                onConfirm={() => remove.mutate(record.id)}
+                okText={t("remove")}
+                okButtonProps={{ danger: true }}
+              >
+                <Button size="small" danger icon={<DeleteOutlined />} />
+              </Popconfirm>
+            </div>
           )}
-        </ItemCardList>
+        />
       )}
       <FilterKeywordFormModal
         open={modalOpen}

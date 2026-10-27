@@ -17,8 +17,8 @@ export default function SharedPostCard({ quoted }: { quoted?: QuotedPost | null 
       ) : null}
       <div className="on-post-quote-body">
         <span className="on-post-quote-kicker">{t("sharedPostKicker")}</span>
-        {quoted.author ? <span className="cell-secondary truncate">{quoted.author}</span> : null}
-        <span className="cell-primary line-clamp-2">{quoted.content || "—"}</span>
+        {quoted.author ? <span className="cell-secondary break-words">{quoted.author}</span> : null}
+        <span className="cell-primary whitespace-pre-line break-words">{quoted.content || "—"}</span>
       </div>
       {quoted.url ? (
         <a

@@ -6,16 +6,16 @@ import Hint, { SHORT_DESC_MAX } from "./Hint";
 export function CardHeading({ icon, title, desc }: { icon: ReactNode; title: string; desc?: string }) {
   return (
     <div className="flex items-center gap-2.5 py-0.5">
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[var(--accent)]/22 text-[var(--accent-deep)]">
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--accent)]/16 text-[13px] text-[var(--accent-deep)]">
         {icon}
       </span>
       <div className="flex min-w-0 flex-col">
-        <span className="flex items-center gap-1.5 text-sm font-semibold leading-snug text-[var(--ink)]">
+        <span className="flex items-center gap-1.5 text-[13px] font-semibold leading-snug text-[var(--ink)]">
           {title}
           {desc && desc.length > SHORT_DESC_MAX ? <Hint text={desc} /> : null}
         </span>
         {desc && desc.length <= SHORT_DESC_MAX ? (
-          <span className="whitespace-normal text-xs font-medium leading-snug text-[var(--ink-soft)]">{desc}</span>
+          <span className="whitespace-normal text-[11.5px] leading-snug text-[var(--muted)]">{desc}</span>
         ) : null}
       </div>
     </div>
@@ -25,7 +25,7 @@ export function CardHeading({ icon, title, desc }: { icon: ReactNode; title: str
 export default function DashboardCard({ className, ...props }: CardProps) {
   return (
     <Card
-      className={`dash-card !rounded-[20px] !border-[var(--line)] !shadow-[0_1px_2px_rgba(22,19,16,0.05),0_16px_36px_-20px_rgba(22,19,16,0.28)] ${className ?? ""}`}
+      className={`dash-card !rounded-[14px] !border-[var(--line)] ${className ?? ""}`}
       {...props}
     />
   );

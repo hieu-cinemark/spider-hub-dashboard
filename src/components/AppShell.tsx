@@ -30,7 +30,7 @@ import { logout } from "@/lib/auth";
 
 const { Header, Sider, Content } = Layout;
 
-const SIDER_WIDTH = 244;
+const SIDER_WIDTH = 232;
 
 type NavItem = {
   key: string;
@@ -55,9 +55,67 @@ function pathToKey(pathname: string): string {
   return match?.key ?? "/";
 }
 
+/**
+ * Chip trạng thái của header: lỗi/cảnh báo thu thập + hàng đợi đang chạy.
+ *
+ * Tách riêng thành component vì nó xuất hiện ở hai chỗ: cạnh tiêu đề
+ * (desktop) và ở hàng riêng có cuộn ngang (mobile).
+ */
+function StatusChips({
+  errorCount,
+  warningCount,
+  liveCount,
+  runningLabel,
+}: {
+  errorCount: number;
+  warningCount: number;
+  liveCount: number;
+  runningLabel: string;
+}) {
+  const { t } = useTranslation();
+  const router = useRouter();
+
+  return (
+    <>
+      {errorCount > 0 && (
+        <Tag
+          color="error"
+          className="status-chip !mr-0 shrink-0 cursor-pointer"
+          onClick={() => router.push("/logs?log=spider-hub&level=error")}
+        >
+          {t("crawlIssueErrors", { n: errorCount })}
+        </Tag>
+      )}
+      {errorCount === 0 && warningCount > 0 && (
+        <Tag
+          color="warning"
+          className="status-chip !mr-0 shrink-0 cursor-pointer"
+          onClick={() => router.push("/logs?log=spider-hub")}
+        >
+          {t("crawlIssueWarnings", { n: warningCount })}
+        </Tag>
+      )}
+      {liveCount > 0 && (
+        <button type="button" className="queue-live-chip shrink-0" onClick={() => router.push("/jobs")}>
+          <span className="queue-live-dot" aria-hidden />
+          <span className="queue-live-count">{liveCount}</span>
+          <span className="queue-live-status">{t("crawlQueueLive")}</span>
+          {runningLabel ? (
+            <>
+              <span className="queue-live-sep" aria-hidden />
+              <span className="queue-live-job" title={runningLabel}>
+                {runningLabel}
+              </span>
+            </>
+          ) : null}
+        </button>
+      )}
+    </>
+  );
+}
+
 export default function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const router = useRouter();
   const { t } = useTranslation();
   const selected = pathToKey(pathname);
 
@@ -161,16 +219,18 @@ export default function AppShell({ children }: { children: ReactNode }) {
         }}
       >
         <div className="flex h-full flex-col">
-          <div className="relative overflow-hidden px-5 pb-6 pt-6">
+          <div className="relative overflow-hidden px-4 pb-5 pt-5">
             <div
-              className="pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full bg-teal-400/25 blur-2xl animate-glow-pulse"
+              className="pointer-events-none absolute -right-10 -top-12 h-32 w-32 rounded-full bg-[var(--accent)]/25 blur-3xl animate-glow-pulse"
               aria-hidden
             />
-            <div className="relative flex items-center gap-3">
-              <Logo size={38} animate />
+            <div className="relative flex items-center gap-2.5">
+              <Logo size={34} animate />
               <div className="min-w-0 leading-tight">
-                <div className="truncate text-[15px] font-semibold tracking-tight text-white">Spider Hub</div>
-                <div className="truncate text-[11px] tracking-wide text-white/70 uppercase">{t("appTagline")}</div>
+                <div className="truncate text-[14px] font-semibold tracking-tight text-white">Spider Hub</div>
+                <div className="truncate text-[10px] font-semibold tracking-[0.12em] text-white/45 uppercase">
+                  {t("appTagline")}
+                </div>
               </div>
             </div>
           </div>
@@ -181,7 +241,9 @@ export default function AppShell({ children }: { children: ReactNode }) {
             className="!flex-1 !border-none !bg-transparent"
             items={menuItems}
           />
-          <div className="px-5 py-4 text-[11px] tracking-wide text-white/50">Cinemark · crawl ops</div>
+          <div className="px-4 py-3 text-[10px] font-semibold tracking-[0.12em] text-white/30 uppercase">
+            Cinemark · {t("appTagline")}
+          </div>
         </div>
       </Sider>
       <Layout
@@ -190,73 +252,70 @@ export default function AppShell({ children }: { children: ReactNode }) {
           transition: "margin-inline-start 0.2s",
         }}
       >
-        <Header className="app-header sticky top-0 z-20 flex items-center justify-between !px-4 sm:!px-7">
-          <div className="flex min-w-0 items-center gap-3">
-            {collapsed && (
-              <Button
-                type="text"
-                icon={<MenuOutlined />}
-                onClick={() => setMobileOpen(true)}
-                className="!-ml-2 shrink-0"
-                aria-label={t("openNavigation")}
-              />
-            )}
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--accent)]/22 text-lg text-[var(--accent-deep)]">
-              {activeNavItem.icon}
-            </span>
-            <div className="min-w-0">
-              <Typography.Title level={4} className="!mb-0 truncate !font-semibold !tracking-tight">
-                {t(activeNavItem.labelKey)}
-              </Typography.Title>
-              <p className="m-0 hidden max-w-xl truncate text-[13px] text-[var(--ink-soft)] sm:block">
-                {t(activeNavItem.descKey)}
-              </p>
+        <Header className="app-header sticky top-0 z-20 !px-3 sm:!px-7">
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2">
+              <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+                {collapsed && (
+                  <Button
+                    type="text"
+                    icon={<MenuOutlined />}
+                    onClick={() => setMobileOpen(true)}
+                    className="!-ml-2 shrink-0"
+                    aria-label={t("openNavigation")}
+                  />
+                )}
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--accent)]/16 text-[16px] text-[var(--accent-deep)]">
+                  {activeNavItem.icon}
+                </span>
+                <div className="min-w-0">
+                  <Typography.Title level={4} className="!mb-0 truncate !font-semibold !tracking-tight">
+                    {t(activeNavItem.labelKey)}
+                  </Typography.Title>
+                  <p className="m-0 hidden max-w-xl truncate text-[12px] text-[var(--muted)] sm:block">
+                    {t(activeNavItem.descKey)}
+                  </p>
+                </div>
+              </div>
+              {/* Chip trạng thái. Trên desktop nó nằm cùng hàng với tiêu đề;
+                  trên mobile nó xuống hàng riêng có cuộn ngang - nếu để
+                  chung hàng, chip hàng đợi sống bị đẩy ra ngoài màn hình
+                  và nhãn của nó bị cắt. */}
+              <div className="hidden min-w-0 shrink-0 items-center gap-2 lg:flex">
+                <StatusChips
+                  errorCount={health.errorCount}
+                  warningCount={health.warningCount}
+                  liveCount={liveCount}
+                  runningLabel={runningLabel}
+                />
+              </div>
+              <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+                <AlertsBell />
+                <ThemeToggle />
+                <LocaleSwitcher variant="light" />
+                <Button icon={<LogoutOutlined />} onClick={logout} className="!hidden sm:!inline-flex">
+                  {t("navLogout")}
+                </Button>
+                <Button
+                  icon={<LogoutOutlined />}
+                  onClick={logout}
+                  aria-label={t("navLogout")}
+                  className="!px-2 sm:!hidden"
+                />
+              </div>
             </div>
-            {health.errorCount > 0 && (
-              <Tag
-                color="error"
-                className="status-chip !mr-0 cursor-pointer"
-                onClick={() => router.push("/logs?log=spider-hub&level=error")}
-              >
-                {t("crawlIssueErrors", { n: health.errorCount })}
-              </Tag>
-            )}
-            {health.errorCount === 0 && health.warningCount > 0 && (
-              <Tag
-                color="warning"
-                className="status-chip !mr-0 cursor-pointer"
-                onClick={() => router.push("/logs?log=spider-hub")}
-              >
-                {t("crawlIssueWarnings", { n: health.warningCount })}
-              </Tag>
-            )}
-            {liveCount > 0 && (
-              <button type="button" className="queue-live-chip" onClick={() => router.push("/jobs")}>
-                <span className="queue-live-dot" aria-hidden />
-                <span className="queue-live-count">{liveCount}</span>
-                <span className="queue-live-status">{t("crawlQueueLive")}</span>
-                {runningLabel ? (
-                  <>
-                    <span className="queue-live-sep" aria-hidden />
-                    <span className="queue-live-job" title={runningLabel}>
-                      {runningLabel}
-                    </span>
-                  </>
-                ) : null}
-              </button>
-            )}
-          </div>
-          <div className="flex items-center gap-1 sm:gap-2">
-            <AlertsBell />
-            <ThemeToggle />
-            <LocaleSwitcher variant="light" />
-            <Button icon={<LogoutOutlined />} onClick={logout}>
-              {t("navLogout")}
-            </Button>
+            <div className="status-scroll mt-1.5 flex min-w-0 items-center gap-2 overflow-x-auto pb-1 lg:hidden">
+              <StatusChips
+                errorCount={health.errorCount}
+                warningCount={health.warningCount}
+                liveCount={liveCount}
+                runningLabel={runningLabel}
+              />
+            </div>
           </div>
         </Header>
-        <Content className="page-canvas p-4 sm:p-8">
-          <div key={pathname} className="relative z-[1] mx-auto max-w-[1520px] animate-fade-in-up">
+        <Content className="page-canvas p-3 sm:p-5">
+          <div key={pathname} className="relative z-[1] mx-auto max-w-[1600px] animate-fade-in-up">
             {children}
           </div>
         </Content>
