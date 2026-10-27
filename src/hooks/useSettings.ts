@@ -555,6 +555,10 @@ export function useManualLogin() {
       .trim()
       .toLowerCase();
     const msgKey = `manual-login-${account.id}`;
+    // Dashboard trên VPS: trình duyệt đăng nhập chạy trên màn hình ảo, xem qua noVNC - mở tab ngay trong lúc bấm (mở
+    // sau await thì trình duyệt chặn popup). Chạy trên Mac thì không có viewer: cửa sổ Chromium hiện thẳng trên máy.
+    const viewerUrl = process.env.NEXT_PUBLIC_MANUAL_LOGIN_VIEWER_URL;
+    if (viewerUrl) window.open(viewerUrl, "spider-hub-manual-login");
     message.loading({ key: msgKey, content: t("manualLoginStarting"), duration: 0 });
     const res = await fetch("/api/manual-login", {
       method: "POST",

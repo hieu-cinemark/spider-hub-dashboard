@@ -1,7 +1,11 @@
-// "Đăng nhập tay" (27/10/2026): chạy spider-hub `scripts/manual_login.py` NGAY TRÊN MÁY đang chạy dashboard (cần màn
-// hình - Mac của người vận hành), mở Chromium có cửa sổ qua proxy đã ghim của tài khoản. Script nối Redis của server
-// crawl qua SSH tunnel (MANUAL_LOGIN_REDIS_PORT, mặc định 16379) để tôn trọng "mỗi IP một tài khoản" và lưu phiên thẳng
-// cho crawler - xem docstring của script. Chỉ nhận request từ localhost: route này khởi chạy tiến trình trên máy.
+// "Đăng nhập tay" (27/10/2026): chạy spider-hub `scripts/manual_login.py` trên máy đang chạy dashboard, mở Chromium có
+// cửa sổ qua proxy đã ghim của tài khoản - xem docstring của script. Hai cách chạy:
+//  - Trên VPS (deploy/spider-hub-dashboard.service): MANUAL_LOGIN_DISPLAY=:99 (màn hình ảo, xem qua noVNC
+//    NEXT_PUBLIC_MANUAL_LOGIN_VIEWER_URL), MANUAL_LOGIN_REDIS_PORT=6379, MANUAL_LOGIN_ALLOW_REMOTE=1 - dashboard chỉ nghe
+//    127.0.0.1, vào từ ngoài qua nginx :8443 (TLS + Basic Auth, spider-hub deploy/login-display); nginx luôn ghi đè
+//    X-Spider-Auth-User bằng người đã qua Basic Auth, nên request từ xa phải mang header đó.
+//  - Trên Mac: Redis của server qua SSH tunnel (cổng 16379 mặc định), chỉ nhận request từ localhost.
+// Route này khởi chạy tiến trình trên máy - không bao giờ mở cho request chưa qua lớp mật khẩu của nginx.
 import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, openSync, readFileSync, rmSync } from "node:fs";
 import path from "node:path";
@@ -12,6 +16,8 @@ export const runtime = "nodejs";
 const PLATFORMS = new Set(["facebook", "threads"]);
 const SPIDER_HUB_DIR = process.env.SPIDER_HUB_DIR || path.resolve(process.cwd(), "..", "spider-hub");
 const REDIS_PORT = process.env.MANUAL_LOGIN_REDIS_PORT || "16379";
+const DISPLAY = process.env.MANUAL_LOGIN_DISPLAY || process.env.DISPLAY || "";
+const ALLOW_REMOTE = process.env.MANUAL_LOGIN_ALLOW_REMOTE === "1";
 
 /** Cùng quy tắc với scripts/manual_login.py: status_path() / _safe(). */
 function statusFile(platform: string, accountKey: string): string {
@@ -19,9 +25,11 @@ function statusFile(platform: string, accountKey: string): string {
   return path.join(SPIDER_HUB_DIR, "logs", "manual_login", `${platform}_${safe}.json`);
 }
 
-function isLocal(req: NextRequest): boolean {
+function allowed(req: NextRequest): boolean {
   const host = (req.headers.get("host") || "").split(":")[0];
-  return host === "localhost" || host === "127.0.0.1" || host === "[::1]";
+  if (host === "localhost" || host === "127.0.0.1" || host === "[::1]") return true;
+  // Qua nginx Basic Auth: nginx ghi đè header này bằng $remote_user (người dùng tự gửi cũng bị thay).
+  return ALLOW_REMOTE && Boolean(req.headers.get("x-spider-auth-user"));
 }
 
 function parse(platform: unknown, account: unknown): { platform: string; account: string } | null {
@@ -31,8 +39,11 @@ function parse(platform: unknown, account: unknown): { platform: string; account
 }
 
 export async function POST(req: NextRequest) {
-  if (!isLocal(req)) {
-    return NextResponse.json({ error: "Chỉ mở được khi dashboard chạy trên chính máy này (localhost)." }, { status: 403 });
+  if (!allowed(req)) {
+    return NextResponse.json(
+      { error: "Không có quyền mở trình duyệt đăng nhập (cần chạy trên localhost, hoặc qua cổng có mật khẩu của nginx)." },
+      { status: 403 },
+    );
   }
   const body = await req.json().catch(() => ({}));
   const input = parse(body.platform, body.account);
@@ -53,7 +64,14 @@ export async function POST(req: NextRequest) {
       detached: true,
       stdio: ["ignore", out, out],
       // Chạy trên máy cá nhân: không gửi cảnh báo Telegram thật (spider-hub .env có token).
-      env: { ...process.env, REDIS_HOST: "127.0.0.1", REDIS_PORT, TELEGRAM_BOT_TOKEN: "", TELEGRAM_CHAT_ID: "" },
+      env: {
+        ...process.env,
+        REDIS_HOST: "127.0.0.1",
+        REDIS_PORT,
+        ...(DISPLAY ? { DISPLAY } : {}),
+        TELEGRAM_BOT_TOKEN: "",
+        TELEGRAM_CHAT_ID: "",
+      },
     },
   );
   child.unref();
@@ -61,7 +79,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
-  if (!isLocal(req)) return NextResponse.json({ error: "localhost only" }, { status: 403 });
+  if (!allowed(req)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
   const input = parse(req.nextUrl.searchParams.get("platform"), req.nextUrl.searchParams.get("account"));
   if (!input) return NextResponse.json({ error: "Thiếu hoặc sai nền tảng / tài khoản." }, { status: 400 });
   const file = statusFile(input.platform, input.account);
