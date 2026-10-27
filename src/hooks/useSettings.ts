@@ -3,6 +3,7 @@ import { App } from "antd";
 import { useTranslation } from "@/i18n/LocaleProvider";
 import { checkStatusLabelKey } from "@/lib/accountHealth";
 import { api } from "@/lib/api";
+import { currentAuthKey } from "@/lib/auth";
 import { translateApiError } from "@/lib/apiError";
 import { REFRESH_INTERVAL_MS, QUERY_KEYS } from "@/lib/constants";
 import type {
@@ -557,24 +558,28 @@ export function useManualLogin() {
     const msgKey = `manual-login-${account.id}`;
     // Dashboard trên VPS: trình duyệt đăng nhập chạy trên màn hình ảo, xem qua noVNC - mở tab ngay trong lúc bấm (mở
     // sau await thì trình duyệt chặn popup). Chạy trên Mac thì không có viewer: cửa sổ Chromium hiện thẳng trên máy.
+    // Mở tab trống ngay lúc bấm (mở sau await thì bị chặn popup), chỉ chuyển sang noVNC khi route đã cấp vé vào /novnc.
     const viewerUrl = process.env.NEXT_PUBLIC_MANUAL_LOGIN_VIEWER_URL;
-    if (viewerUrl) window.open(viewerUrl, "spider-hub-manual-login");
+    const viewer = viewerUrl ? window.open("about:blank", "spider-hub-manual-login") : null;
+    const headers = { "Content-Type": "application/json", "X-API-Key": currentAuthKey() };
     message.loading({ key: msgKey, content: t("manualLoginStarting"), duration: 0 });
     const res = await fetch("/dash-api/manual-login", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify({ platform: account.platform, account: key }),
     }).catch(() => null);
     if (!res?.ok) {
+      viewer?.close();
       const body = res ? await res.json().catch(() => ({})) : {};
       message.error({ key: msgKey, content: t("manualLoginFailed", { message: body.error || "network" }), duration: 10 });
       return;
     }
+    if (viewer && viewerUrl) viewer.location.href = viewerUrl;
     const started = Date.now();
     const poll = async () => {
       if (Date.now() - started > 20 * 60_000) return message.destroy(msgKey);
       const query = new URLSearchParams({ platform: account.platform, account: key });
-      const status = await fetch(`/dash-api/manual-login?${query}`)
+      const status = await fetch(`/dash-api/manual-login?${query}`, { headers })
         .then((r) => r.json())
         .catch(() => ({ state: "pending" }));
       if (status.state === "done") {

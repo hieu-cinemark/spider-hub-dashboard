@@ -2,10 +2,12 @@
 
 Everything listens on 127.0.0.1 except nginx, which serves **https://spider-hub.id.vn** (Let's Encrypt, via
 spider-hub `deploy/login-display/install-domain.sh`) - or **:8443** with a self-signed certificate when there is no
-domain. Basic Auth guards every path either way.
+domain. Access = the dashboard's own API-key login (cinemark-api enforces the key - make sure API_AUTH_KEY is set
+in cinemark-api's .env). The manual-login viewer /novnc only opens with a ticket cookie the dashboard issues to a
+browser holding the right key.
 
 ```
-browser --HTTPS + password--> nginx (spider-hub.id.vn:443)
+browser --HTTPS--> nginx (spider-hub.id.vn:443)
                                 /        -> this dashboard (next start 127.0.0.1:3001)
                                 /api/    -> cinemark-api 127.0.0.1:8000 (prefix stripped, websockets)
                                 /novnc/  -> noVNC 127.0.0.1:6080 -> x11vnc -> Xvfb :99 (manual-login browser)
@@ -14,7 +16,7 @@ browser --HTTPS + password--> nginx (spider-hub.id.vn:443)
 1. **Login display + nginx** (spider-hub repo, as root):
    ```bash
    cd /opt/spider-hub && sudo -u app git pull
-   bash deploy/login-display/install.sh admin      # asks for the password of user "admin"
+   bash deploy/login-display/install.sh
    bash deploy/login-display/install-domain.sh spider-hub.id.vn   # domain with its certbot certificate
    ```
 2. **Dashboard** (as root):
@@ -30,8 +32,7 @@ browser --HTTPS + password--> nginx (spider-hub.id.vn:443)
    systemctl enable --now spider-hub-dashboard
    ```
    `NEXT_PUBLIC_*` values are baked in at build time - rebuild after changing them.
-3. Open **https://spider-hub.id.vn**, enter the Basic Auth password, then the dashboard's own API key as before.
+3. Open **https://spider-hub.id.vn** and log in with the dashboard's API key.
    (Without a domain: https://<VPS-IP>:8443 and accept the self-signed certificate warning once.)
 
-Add another person: `htpasswd /etc/nginx/spider-hub.htpasswd <name>`.
 Update later: `cd /opt/spider-hub-dashboard && sudo -u app git pull && sudo -u app npm ci && sudo -u app npm run build && systemctl restart spider-hub-dashboard`.

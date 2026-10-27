@@ -1,5 +1,5 @@
 [Unit]
-Description=spider-hub-dashboard (next start on 127.0.0.1:3001, reached only through nginx :8443 TLS + Basic Auth)
+Description=spider-hub-dashboard (next start on 127.0.0.1:3001, reached only through nginx)
 After=network-online.target cinemark-api-web.service
 Wants=network-online.target
 
@@ -10,7 +10,7 @@ WorkingDirectory=/opt/spider-hub-dashboard
 Environment=NODE_ENV=production
 # "Đăng nhập tay" (src/app/api/manual-login/route.ts): run spider-hub's scripts/manual_login.py on the virtual display
 # :99 (spider-hub deploy/login-display), with spider-hub's own .env Redis (do NOT set MANUAL_LOGIN_REDIS_PORT here);
-# remote requests must have passed nginx Basic Auth.
+# remote requests must carry the dashboard's API key (checked with cinemark-api /auth/check).
 Environment=SPIDER_HUB_DIR=/opt/spider-hub
 Environment=MANUAL_LOGIN_DISPLAY=:99
 Environment=MANUAL_LOGIN_ALLOW_REMOTE=1
