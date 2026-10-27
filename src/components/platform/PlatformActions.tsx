@@ -94,6 +94,10 @@ export default function PlatformActions({ platform }: { platform: string }) {
   const accountLabel = tokenStatus?.account
     ? t("accountLabel", { account: tokenStatus.account })
     : undefined;
+  // While a refresh runs, name the account THAT job is for (job status), not the platform's current active-session
+  // pointer - those differ when restoring another account, and the old label read like "it kept the old session".
+  const refreshingAccount = (canCancelRefresh && jobStatus?.account) || tokenStatus?.account;
+  const refreshingLabel = refreshingAccount ? t("accountLabel", { account: refreshingAccount }) : undefined;
   const validAccount =
     tokenStatus?.account != null
       ? `${t("accountLabel", { account: tokenStatus.account })}${
@@ -129,7 +133,7 @@ export default function PlatformActions({ platform }: { platform: string }) {
         icon={<LoadingOutlined spin />}
         className="!mb-0"
         message={t("refreshingEllipsis")}
-        description={accountLabel}
+        description={refreshingLabel}
         action={
           canCancelRefresh ? (
             <Button size="small" danger icon={<StopOutlined />} onClick={() => stopCrawl.mutate()}>
