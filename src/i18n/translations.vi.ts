@@ -473,6 +473,11 @@ export const vi: Record<TranslationKey, string> = {
 
   tabCrawlSchedule: "Lịch thu thập",
   crawlScheduleTitle: "Lịch thu thập hằng ngày",
+  discoveryToggleTitle: "AI tự thêm nguồn cào",
+  discoveryToggleDesc:
+    "Mỗi sáng AI tự chọn thêm hashtag TikTok, câu tìm kiếm Facebook/Threads và trang nguồn Facebook. Tắt = chỉ cào các từ khoá và trang đang có.",
+  toastDiscoveryEnabled: "AI sẽ tiếp tục tự thêm nguồn cào",
+  toastDiscoveryDisabled: "Chỉ cào các từ khoá hiện tại",
   crawlScheduleDesc:
     "Giờ thu thập mỗi ngày cho từng nền tảng. Facebook và Threads có thể nuôi phiên trước và/hoặc sau lần chạy đó — cùng một hàng đợi, nên nuôi xong mới thu thập (hoặc nuôi sau khi thu thập xong).",
   columnRunTime: "Giờ chạy",

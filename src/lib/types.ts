@@ -403,6 +403,12 @@ export interface CleanupRunSummary {
   error: string | null;
 }
 
+// Công tắc "AI tự thêm nguồn cào" (cinemark-api /settings/discovery): tắt = chỉ cào từ khoá / trang nguồn đang có.
+export interface DiscoverySettings {
+  enabled: boolean;
+  updated_at: string | null;
+}
+
 export interface CleanupSettingsResponse {
   values: CleanupSettings;
   defaults: CleanupSettings;

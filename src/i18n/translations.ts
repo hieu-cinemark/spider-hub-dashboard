@@ -506,6 +506,11 @@ const en = {
   // CrawlScheduleCard
   tabCrawlSchedule: "Crawl schedule",
   crawlScheduleTitle: "Daily crawl schedule",
+  discoveryToggleTitle: "AI adds new crawl sources",
+  discoveryToggleDesc:
+    "AI picks new TikTok hashtags, Facebook/Threads search phrases and Facebook source pages every morning. Off = crawl only the keywords and pages you already have.",
+  toastDiscoveryEnabled: "AI will keep adding new crawl sources",
+  toastDiscoveryDisabled: "Crawling only the current keywords",
   crawlScheduleDesc:
     "Daily collection time per platform. Facebook and Threads can also warm up login sessions before and/or after that run — they share the same queue, so warm-up finishes before collection starts (or runs after it drains).",
   columnRunTime: "Run time",

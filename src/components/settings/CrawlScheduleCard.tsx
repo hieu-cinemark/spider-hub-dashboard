@@ -8,7 +8,12 @@ import MobileTable, { type ResponsiveColumnType } from "@/components/MobileTable
 import PlatformBadge from "@/components/PlatformBadge";
 import { useMdUp } from "@/hooks/useMdUp";
 import { usePagedList } from "@/hooks/usePagedList";
-import { useCrawlSchedule, useSetCrawlSchedule } from "@/hooks/useSettings";
+import {
+  useCrawlSchedule,
+  useDiscoverySettings,
+  useSetCrawlSchedule,
+  useSetDiscoveryEnabled,
+} from "@/hooks/useSettings";
 import { useTranslation } from "@/i18n/LocaleProvider";
 import { TRIGGERABLE_PLATFORMS } from "@/lib/constants";
 import { formatRelativeTime } from "@/lib/format";
@@ -198,6 +203,7 @@ export default function CrawlScheduleCard() {
     <DashboardCard
       title={<CardHeading icon={<ClockCircleOutlined />} title={t("crawlScheduleTitle")} desc={t("crawlScheduleDesc")} />}
     >
+      <DiscoveryToggle />
       {mdUp ? (
       <Table
         size="middle"
@@ -217,5 +223,26 @@ export default function CrawlScheduleCard() {
         />
       )}
     </DashboardCard>
+  );
+}
+
+// Công tắc "AI tự thêm nguồn cào": tắt thì scheduler không chạy hashtag/query discovery và duyệt trang nguồn gợi ý -
+// chỉ cào các từ khoá / trang đang có (cinemark-api scheduler._discovery_enabled).
+function DiscoveryToggle() {
+  const { t } = useTranslation();
+  const { data, isLoading } = useDiscoverySettings();
+  const setEnabled = useSetDiscoveryEnabled();
+  return (
+    <div className="mb-3 flex items-start justify-between gap-3 rounded-xl border border-[var(--line)] bg-[var(--paper-deep)] px-3 py-2">
+      <div>
+        <div className="text-sm font-medium">{t("discoveryToggleTitle")}</div>
+        <div className="text-xs text-[var(--muted)]">{t("discoveryToggleDesc")}</div>
+      </div>
+      <Switch
+        checked={data?.enabled ?? true}
+        loading={isLoading || setEnabled.isPending}
+        onChange={(checked) => setEnabled.mutate(checked)}
+      />
+    </div>
   );
 }

@@ -28,6 +28,7 @@ const ACCOUNTS_KEY = QUERY_KEYS.settingsAccounts;
 const CRAWL_SCHEDULE_KEY = ["settings", "crawl-schedule"];
 const COMMENT_SCHEDULE_KEY = ["settings", "comment-schedule"];
 const CLEANUP_SETTINGS_KEY = ["settings", "cleanup"];
+const DISCOVERY_SETTINGS_KEY = ["settings", "discovery"];
 const CLEANUP_HISTORY_KEY = ["settings", "cleanup-history"];
 
 // Auto-login settings + history - same key shape as the cleanup pair
@@ -442,6 +443,25 @@ export function useSetCommentSchedule() {
 // finishes - the in-process purge takes seconds to a couple of minutes
 // depending on backlog.
 const CLEANUP_HISTORY_REFRESH_MS = 15_000;
+
+export function useDiscoverySettings() {
+  return useQuery({ queryKey: DISCOVERY_SETTINGS_KEY, queryFn: api.discoverySettings });
+}
+
+export function useSetDiscoveryEnabled() {
+  const { message } = App.useApp();
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (enabled: boolean) => api.setDiscoveryEnabled(enabled),
+    onSuccess: (data) => {
+      message.success(t(data.enabled ? "toastDiscoveryEnabled" : "toastDiscoveryDisabled"));
+      queryClient.setQueryData(DISCOVERY_SETTINGS_KEY, data);
+    },
+    onError: (err: unknown) => message.error(translateApiError(err, t)),
+  });
+}
 
 export function useCleanupSettings() {
   return useQuery({

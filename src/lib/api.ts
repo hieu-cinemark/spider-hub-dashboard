@@ -20,6 +20,7 @@ import type {
   ApiErrorBody,
   CleanupSettingsInput,
   CleanupSettingsResponse,
+  DiscoverySettings,
   CleanupRunSummary,
   Comment,
   CommentPage,
@@ -291,6 +292,9 @@ export const api = {
   // flight + the most recent run's summary; PUT is partial-update like
   // /settings/proxy above; POST /run triggers a manual purge and returns
   // immediately (the actual purge runs in the background).
+  discoverySettings: () => request<DiscoverySettings>("/settings/discovery"),
+  setDiscoveryEnabled: (enabled: boolean) =>
+    request<DiscoverySettings>("/settings/discovery", { method: "PUT", body: JSON.stringify({ enabled }) }),
   cleanupSettings: () => request<CleanupSettingsResponse>("/settings/cleanup"),
   setCleanupSettings: (input: CleanupSettingsInput) =>
     request<CleanupSettingsResponse>("/settings/cleanup", { method: "PUT", body: JSON.stringify(input) }),
