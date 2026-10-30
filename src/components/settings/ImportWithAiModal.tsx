@@ -16,6 +16,7 @@ const ACCOUNT_FIELD_LABELS: Record<string, string> = {
   email: "Email",
   email_password: "Email password",
   cookie: "Cookie",
+  user_agent: "User-Agent",
   token: "Token",
 };
 

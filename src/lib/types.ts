@@ -240,6 +240,7 @@ export interface AccountCredentials {
   cookie: string;
   token: string;
   email_password: string;
+  user_agent: string;
 }
 
 export interface IngestFunnel {
@@ -272,7 +273,11 @@ export type AccountInput = Partial<
     | "last_used_at"
     | "assigned_proxy_id"
   >
->;
+> & {
+  // Facebook/Threads: UA of the browser that produced the cookie. cinemark-api
+  // stores it inside the cookie as useragent=<base64>; empty = keep as is.
+  user_agent?: string;
+};
 
 export interface Proxy {
   id: number;

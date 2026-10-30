@@ -284,6 +284,9 @@ export const vi: Record<TranslationKey, string> = {
   tiktokAccountIdLabel: "Tên tài khoản (username hoặc tên gợi nhớ)",
   cookieHeaderTikTok: "Dòng Cookie từ trình duyệt đã đăng nhập (cần sessionid và ttwid)",
   cookieHeaderGeneric: "Thông tin cookie (nếu có sẽ bỏ qua bước đăng nhập)",
+  userAgentLabel: "User-Agent của trình duyệt tạo cookie",
+  userAgentHelp: "Dán User-Agent của trình duyệt đã đăng nhập và lấy cookie này (người bán thường gửi kèm). Giữ nguyên hệ điều hành; Chrome bản khác được nâng lên bản spider-hub đang chạy. Để trống = giữ UA đang lưu.",
+  userAgentInvalid: "Phải là User-Agent đầy đủ, bắt đầu bằng \"Mozilla/5.0\"",
   odinId: "Odin ID",
   tokenReserved: "Mã truy cập (chưa dùng)",
 

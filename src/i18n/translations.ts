@@ -301,6 +301,9 @@ const en = {
   tiktokAccountIdLabel: "Account name (username or a short label)",
   cookieHeaderTikTok: "Cookie header from a real, logged-in browser (must include sessionid and ttwid)",
   cookieHeaderGeneric: "Cookie info (if set, skips the login step)",
+  userAgentLabel: "User-Agent of the browser the cookie came from",
+  userAgentHelp: "Paste the User-Agent of the browser that logged in and produced this cookie (sellers often include it). Keeps the same operating system; another Chrome version is upgraded to the one spider-hub runs. Leave empty to keep the current one.",
+  userAgentInvalid: "Must be a full browser User-Agent starting with \"Mozilla/5.0\"",
   odinId: "Odin ID",
   tokenReserved: "Token (not used yet)",
 

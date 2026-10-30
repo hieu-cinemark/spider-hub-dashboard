@@ -55,6 +55,7 @@ export default function AccountFormModal({
           password: "",
           totp_secret: "",
           cookie: "",
+          user_agent: "",
           token: "",
           email: "",
           email_password: "",
@@ -78,6 +79,7 @@ export default function AccountFormModal({
             totp_secret: values.totp_secret ?? "",
             email: values.email ?? "",
             email_password: values.email_password ?? "",
+            user_agent: (values.user_agent ?? "").trim(),
           };
           // TikTok form hides token/password; do not send empty token on
           // edit or a save would wipe the captured odin_id.
@@ -88,6 +90,7 @@ export default function AccountFormModal({
             delete payload.email;
             delete payload.email_password;
           }
+          if (isTikTok) delete payload.user_agent;
           onSubmit(payload);
         })
       }
@@ -136,6 +139,20 @@ export default function AccountFormModal({
         >
           <Input.TextArea rows={isTikTok ? 4 : 2} placeholder={keepHint("cookie")} />
         </Form.Item>
+        {!isTikTok && (
+          <Form.Item
+            name="user_agent"
+            label={t("userAgentLabel")}
+            extra={t("userAgentHelp")}
+            rules={[{ pattern: /^(|Mozilla\/5\.0 .+)$/, message: t("userAgentInvalid") }]}
+          >
+            <Input.TextArea
+              rows={2}
+              autoComplete="off"
+              placeholder="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/… Safari/537.36"
+            />
+          </Form.Item>
+        )}
         {!isTikTok && (
           <Form.Item name="token" label={t("tokenReserved")}>
             <Input placeholder={keepHint("token")} autoComplete="off" />
