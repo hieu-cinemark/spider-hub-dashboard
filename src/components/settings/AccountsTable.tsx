@@ -530,12 +530,29 @@ function ProxyPicker({
 }) {
   const { t } = useTranslation();
   const options = useMemo(() => {
-    const matching = proxies.filter((p) => p.platform === account.platform || p.platform === "all");
+    // Facebook and Threads accounts may share Meta ports (spider-hub rotates
+    // the IP on account switch), and a proxy pinned from elsewhere must still
+    // show its address instead of a bare id - so list both Meta platforms and
+    // always the currently assigned proxy, tagging the other platforms.
+    const meta = ["facebook", "threads"];
+    const matching = proxies.filter(
+      (p) =>
+        p.platform === account.platform ||
+        p.platform === "all" ||
+        p.id === account.assigned_proxy_id ||
+        (meta.includes(account.platform) && meta.includes(p.platform)),
+    );
     return [
       { value: 0, label: t("autoAssignProxyOption") },
-      ...matching.map((p) => ({ value: p.id, label: p.proxy_url })),
+      ...matching.map((p) => ({
+        value: p.id,
+        label:
+          p.platform === account.platform || p.platform === "all"
+            ? p.proxy_url
+            : `${p.proxy_url} (${p.platform})`,
+      })),
     ];
-  }, [proxies, account.platform, t]);
+  }, [proxies, account.platform, account.assigned_proxy_id, t]);
 
   const pending =
     (setProxy.isPending && setProxy.variables?.id === account.id) ||
