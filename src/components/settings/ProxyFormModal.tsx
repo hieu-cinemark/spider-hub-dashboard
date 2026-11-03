@@ -24,6 +24,7 @@ export default function ProxyFormModal({
 
   const platformOptions = [
     { value: "all", label: t("allPlatformsShared") },
+    { value: "public", label: t("publicOnlyProxy") },
     ...Object.keys(PLATFORM_META)
       .filter((p) => p === "facebook" || p === "threads" || p === "tiktok")
       .map((p) => ({ value: p, label: PLATFORM_META[p].label })),
@@ -32,7 +33,7 @@ export default function ProxyFormModal({
   useEffect(() => {
     if (open) {
       form.setFieldsValue(
-        proxy ?? { platform: "all", proxy_url: "", username: "", password: "", login_use_proxy: false, enabled: true },
+        proxy ?? { platform: "all", proxy_url: "", username: "", password: "", login_use_proxy: false, ip_type: "unknown", enabled: true },
       );
     }
   }, [open, proxy, form]);
@@ -55,6 +56,15 @@ export default function ProxyFormModal({
         </Form.Item>
         <Form.Item name="proxy_url" label={t("proxyHostPort")} rules={[{ required: true }]}>
           <Input placeholder="1.2.3.4:8080" />
+        </Form.Item>
+        <Form.Item name="ip_type" label={t("columnIpType")} tooltip={t("ipTypeTooltip")}>
+          <Select
+            options={[
+              { value: "unknown", label: t("ipTypeUnknown") },
+              { value: "static", label: t("ipTypeStatic") },
+              { value: "rotating", label: t("ipTypeRotating") },
+            ]}
+          />
         </Form.Item>
         <Form.Item name="username" label={t("username")}>
           <Input />

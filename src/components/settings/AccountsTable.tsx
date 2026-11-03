@@ -51,7 +51,7 @@ import { api } from "@/lib/api";
 import { poolStatusInfo } from "@/lib/poolStatus";
 import { checkStatusLabelKey, checkStatusTagColor } from "@/lib/accountHealth";
 import { formatRelativeTime } from "@/lib/format";
-import type { Account, AccountInput } from "@/lib/types";
+import type { Account, AccountInput, ProxyIpType } from "@/lib/types";
 
 // Label stacked above value (not side-by-side) so a long value - a raw
 // cookie header can run past 300 characters - wraps as a normal paragraph
@@ -526,7 +526,7 @@ function ProxyPicker({
   resetProxy,
 }: {
   account: Account;
-  proxies: { id: number; platform: string; proxy_url: string }[];
+  proxies: { id: number; platform: string; proxy_url: string; ip_type?: ProxyIpType }[];
   setProxy: ReturnType<typeof useAccountMutations>["setProxy"];
   resetProxy: ReturnType<typeof useAccountMutations>["resetProxy"];
 }) {
@@ -546,13 +546,18 @@ function ProxyPicker({
     );
     return [
       { value: 0, label: t("autoAssignProxyOption") },
-      ...matching.map((p) => ({
-        value: p.id,
-        label:
+      ...matching.map((p) => {
+        const address =
           p.platform === account.platform || p.platform === "all"
             ? p.proxy_url
-            : `${p.proxy_url} (${p.platform})`,
-      })),
+            : `${p.proxy_url} (${p.platform})`;
+        return {
+          value: p.id,
+          label: p.ip_type === "static" || p.ip_type === "rotating"
+            ? `${address} · ${t(p.ip_type === "static" ? "ipTypeStatic" : "ipTypeRotating")}`
+            : address,
+        };
+      }),
     ];
   }, [proxies, account.platform, account.assigned_proxy_id, t]);
 

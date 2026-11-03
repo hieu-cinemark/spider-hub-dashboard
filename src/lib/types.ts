@@ -279,6 +279,8 @@ export type AccountInput = Partial<
   user_agent?: string;
 };
 
+export type ProxyIpType = "unknown" | "static" | "rotating";
+
 export interface Proxy {
   id: number;
   platform: string;
@@ -286,6 +288,8 @@ export interface Proxy {
   username: string;
   password: string;
   login_use_proxy: boolean;
+  // Set by hand to tell static and rotating IPs apart; the pool never reads it.
+  ip_type: ProxyIpType;
   enabled: boolean;
   created_at: string;
   updated_at: string;

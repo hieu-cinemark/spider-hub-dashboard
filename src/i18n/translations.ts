@@ -70,6 +70,7 @@ const en = {
   password: "Password",
   unknown: "unknown",
   allPlatformsShared: "Used for every platform",
+  publicOnlyProxy: "Logged-out crawling only",
   allPlatformsFilter: "All platforms",
   filterByKeyword: "Filter by keyword",
   tableTotal: "{n} rows",
@@ -441,6 +442,11 @@ const en = {
   resetProxyConfirm: "Clear this account's pinned proxy? It will be re-pinned to the least-loaded proxy on its next run.",
   toastProxyResetRequested: "Proxy pinning updated",
   columnProxyLoad: "Pinned",
+  columnIpType: "IP type",
+  ipTypeStatic: "Static",
+  ipTypeRotating: "Rotating",
+  ipTypeUnknown: "Unknown",
+  ipTypeTooltip: "A label set by hand to tell proxies apart. It does not change how accounts are assigned.",
   autoAssignProxyOption: "Auto (least loaded)",
 
   // AccountsTable - decluttered layout: credentials collapsed into one

@@ -20,8 +20,15 @@ import { useMdUp } from "@/hooks/useMdUp";
 import { usePagedList } from "@/hooks/usePagedList";
 import { useProxies, useProxyMutations } from "@/hooks/useSettings";
 import { useTranslation } from "@/i18n/LocaleProvider";
+import type { TranslationKey } from "@/i18n/translations";
 import { poolStatusInfo } from "@/lib/poolStatus";
-import type { Proxy, ProxyInput } from "@/lib/types";
+import type { Proxy, ProxyInput, ProxyIpType } from "@/lib/types";
+
+const IP_TYPE_INFO = {
+  static: { labelKey: "ipTypeStatic", tagColor: "green" },
+  rotating: { labelKey: "ipTypeRotating", tagColor: "orange" },
+  unknown: { labelKey: "ipTypeUnknown", tagColor: "default" },
+} as const satisfies Record<ProxyIpType, { labelKey: TranslationKey; tagColor: string }>;
 
 function MaskedText({ value }: { value: string }) {
   const [visible, setVisible] = useState(false);
@@ -75,7 +82,7 @@ export default function ProxiesTable() {
       render: (p: string) => (
         <PlatformBadge
           platform={p}
-          label={p === "all" ? t("allPlatformsShared") : undefined}
+          label={p === "all" ? t("allPlatformsShared") : p === "public" ? t("publicOnlyProxy") : undefined}
           size={22}
           showLabel={false}
         />
@@ -86,6 +93,15 @@ export default function ProxiesTable() {
       dataIndex: "proxy_url",
       mobilePrimary: true,
       render: (v: string) => <span className="font-mono text-xs break-all">{v}</span>,
+    },
+    {
+      title: t("columnIpType"),
+      dataIndex: "ip_type",
+      width: 96,
+      render: (v: ProxyIpType) => {
+        const info = IP_TYPE_INFO[v] ?? IP_TYPE_INFO.unknown;
+        return <Tag color={info.tagColor} className="!m-0">{t(info.labelKey)}</Tag>;
+      },
     },
     {
       title: t("columnAuth"),
