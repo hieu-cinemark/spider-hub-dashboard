@@ -188,6 +188,7 @@ export const vi: Record<TranslationKey, string> = {
   jobColumnTime: "Thời gian",
   jobTypeSearch: "Thu thập bài viết",
   jobTypeComments: "Thu thập bình luận",
+  jobTypePublicPage: "Cào page (không tài khoản)",
   jobTypeChannelVideos: "Thu thập video kênh",
   jobTypeNurture: "Làm ấm tài khoản",
   jobTypeRefresh: "Làm mới đăng nhập",

@@ -201,6 +201,7 @@ const en = {
   jobColumnTime: "Time",
   jobTypeSearch: "Collect posts",
   jobTypeComments: "Collect comments",
+  jobTypePublicPage: "Page crawl (no account)",
   jobTypeChannelVideos: "Collect channel videos",
   jobTypeNurture: "Warm up account",
   jobTypeRefresh: "Refresh login",

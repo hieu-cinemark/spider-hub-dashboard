@@ -37,6 +37,7 @@ const JobResultsChart = dynamic(() => import("@/components/JobResultsChart"), {
 const TYPE_KEY: Record<string, TranslationKey> = {
   search: "jobTypeSearch",
   comments: "jobTypeComments",
+  public_page: "jobTypePublicPage",
   channel_videos: "jobTypeChannelVideos",
   nurture: "jobTypeNurture",
   refresh_token: "jobTypeRefresh",
