@@ -318,7 +318,9 @@ export default function AccountsTable() {
           items: [
             ...(record.platform === "facebook" || record.platform === "threads"
               ? [
-                  { key: "manualLogin", label: t("manualLoginAction"), icon: <LoginOutlined /> },
+                  ...(process.env.NEXT_PUBLIC_MANUAL_LOGIN_ENABLED === "1"
+                    ? [{ key: "manualLogin", label: t("manualLoginAction"), icon: <LoginOutlined /> }]
+                    : []),
                   { key: "nurture", label: t("nurtureThisAccount"), icon: <HeartOutlined /> },
                 ]
               : []),

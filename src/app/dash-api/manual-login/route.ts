@@ -35,6 +35,13 @@ function parse(platform: unknown, account: unknown): { platform: string; account
 }
 
 export async function POST(req: NextRequest) {
+  // Tắt từ 02/11/2026 (xem scripts/manual_login.py): chỉ mở lại khi đặt MANUAL_LOGIN_ENABLED=1.
+  if (process.env.MANUAL_LOGIN_ENABLED !== "1") {
+    return NextResponse.json(
+      { error: "Đăng nhập tay đang tắt - đăng nhập trên trình duyệt thật rồi nạp cookie." },
+      { status: 403 },
+    );
+  }
   if (!(await allowed(req))) {
     return NextResponse.json(
       { error: "Không có quyền mở trình duyệt đăng nhập (API key không đúng, hoặc server chưa đặt API key)." },
