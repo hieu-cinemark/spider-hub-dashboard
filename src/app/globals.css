@@ -437,9 +437,11 @@ html.dark .dash-card.ant-card {
   width: 100% !important;
 }
 
+/* anywhere, không phải break-word: chuỗi dài không dấu cách (link page, host proxy) mới được tính là ngắt được khi trình duyệt
+   chia độ rộng cột, nên không đẩy bảng rộng hơn khung và sinh thanh cuộn ngang. */
 .dash-card .ant-table-cell,
 .ant-modal .ant-table-cell {
-  overflow-wrap: break-word;
+  overflow-wrap: anywhere;
 }
 
 .dash-card .ant-table .ant-select {
