@@ -3,17 +3,15 @@
 Everything listens on 127.0.0.1 except nginx, which serves **https://spider-hub.id.vn** (Let's Encrypt, via
 spider-hub `deploy/login-display/install-domain.sh`) - or **:8443** with a self-signed certificate when there is no
 domain. Access = the dashboard's own API-key login (cinemark-api enforces the key - make sure API_AUTH_KEY is set
-in cinemark-api's .env). The manual-login viewer /novnc only opens with a ticket cookie the dashboard issues to a
-browser holding the right key.
+in cinemark-api's .env).
 
 ```
 browser --HTTPS--> nginx (spider-hub.id.vn:443)
                                 /        -> this dashboard (next start 127.0.0.1:3001)
                                 /api/    -> cinemark-api 127.0.0.1:8000 (prefix stripped, websockets)
-                                /novnc/  -> noVNC 127.0.0.1:6080 -> x11vnc -> Xvfb :99 (manual-login browser)
 ```
 
-1. **Login display + nginx** (spider-hub repo, as root):
+1. **nginx** (spider-hub repo, as root):
    ```bash
    cd /opt/spider-hub && sudo -u app git pull
    bash deploy/login-display/install.sh
@@ -25,7 +23,6 @@ browser --HTTPS--> nginx (spider-hub.id.vn:443)
    cd /opt/spider-hub-dashboard
    sudo -u app tee .env.production <<'ENV'
    NEXT_PUBLIC_API_BASE_URL=https://spider-hub.id.vn/api
-   NEXT_PUBLIC_MANUAL_LOGIN_VIEWER_URL=/novnc/vnc.html?path=novnc/websockify&autoconnect=1&resize=scale&reconnect=1
    ENV
    sudo -u app npm ci && sudo -u app npm run build
    cp deploy/spider-hub-dashboard.service /etc/systemd/system/ && systemctl daemon-reload

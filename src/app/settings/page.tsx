@@ -39,10 +39,6 @@ const CleanupScheduleCard = dynamic(() => import("@/components/settings/CleanupS
   ssr: false,
   loading: () => <TabSkeleton />,
 });
-const AutoLoginCard = dynamic(() => import("@/components/settings/AutoLoginCard"), {
-  ssr: false,
-  loading: () => <TabSkeleton />,
-});
 const FilterKeywordsTable = dynamic(() => import("@/components/settings/FilterKeywordsTable"), {
   ssr: false,
   loading: () => <TabSkeleton />,
@@ -107,7 +103,6 @@ export default function SettingsPage() {
                 <CrawlScheduleCard />
                 <CommentScheduleCard />
                 <CleanupScheduleCard />
-                <AutoLoginCard />
               </div>
             ),
           },

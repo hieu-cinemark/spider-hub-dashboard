@@ -3,15 +3,12 @@ import { App } from "antd";
 import { useTranslation } from "@/i18n/LocaleProvider";
 import { checkStatusLabelKey } from "@/lib/accountHealth";
 import { api } from "@/lib/api";
-import { currentAuthKey } from "@/lib/auth";
 import { translateApiError } from "@/lib/apiError";
 import { REFRESH_INTERVAL_MS, QUERY_KEYS } from "@/lib/constants";
 import type {
-  Account,
   AccountInput,
   AiProviderInput,
   AiSettingsInput,
-  AutoLoginSettingsInput,
   CleanupSettingsInput,
   CommentScheduleInput,
   CrawlScheduleInput,
@@ -22,6 +19,7 @@ import type {
   ProxyInput,
   ProxyProviderInput,
   ProxySettings,
+  SessionClient,
 } from "@/lib/types";
 
 const ACCOUNTS_KEY = QUERY_KEYS.settingsAccounts;
@@ -34,8 +32,6 @@ const CLEANUP_HISTORY_KEY = ["settings", "cleanup-history"];
 // Auto-login settings + history - same key shape as the cleanup pair
 // (["settings", "<feature>"]) so query invalidation patterns from
 // other features work without new wiring.
-const AUTO_LOGIN_SETTINGS_KEY = ["settings", "auto-login"];
-const AUTO_LOGIN_HISTORY_KEY = ["settings", "auto-login-history"];
 const PROXIES_KEY = ["settings", "proxies"];
 const FILTER_KEYWORDS_KEY = ["settings", "filter-keywords"];
 const AI_SETTINGS_KEY = ["settings", "ai"];
@@ -164,6 +160,13 @@ export function useAccountMutations() {
     onError,
   });
 
+  const setSessionClient = useMutation({
+    mutationFn: ({ id, client }: { id: number; client: SessionClient | null }) =>
+      api.setAccountSessionClient(id, client),
+    onSuccess: invalidate,
+    onError,
+  });
+
   // Bật/tắt từng tài khoản (27/10/2026). Pool của spider-hub vẫn tự tắt khi
   // checkpoint / tự bật khi khôi phục phiên; bật tay ở đây cũng gỡ status
   // checkpoint + cooldown (backend), nếu không pool vẫn bỏ qua tài khoản.
@@ -191,7 +194,7 @@ export function useAccountMutations() {
     onError,
   });
 
-  return { create, update, remove, check, nurture, totpCode, resetCookies, resetProxy, setProxy, setEnabled, bulkRemove };
+  return { create, update, remove, check, nurture, totpCode, resetCookies, resetProxy, setProxy, setSessionClient, setEnabled, bulkRemove };
 }
 
 export function useProxies() {
@@ -511,120 +514,4 @@ export function useCleanupHistory(limit = 20) {
     queryFn: () => api.cleanupHistory(limit),
     refetchInterval: CLEANUP_HISTORY_REFRESH_MS,
   });
-}
-
-// Auto-login hooks - same shape as the cleanup pair:
-//  * useAutoLoginSettings() refetches every 10s so the "running" flag
-//    and "last_run_at" surface the scheduler state without a manual
-//    refresh (10s is shorter than the cleanup 15s because the
-//    auto-login tick can be a few seconds and the operator wants to
-//    see "running" flip back to false fast).
-//  * useSetAutoLoginSettings() invalidates the settings + history
-//    keys on success so the next pull shows the post-write values.
-//  * useRunAutoLogin() invalidates both keys so the new history row
-//    and the "running" flag land without a manual refresh.
-//  * useAutoLoginHistory() reuses the same 10s polling cadence so the
-//    table updates shortly after the scheduler or manual button
-//    kicks a tick.
-const AUTO_LOGIN_REFRESH_MS = 10_000;
-
-export function useAutoLoginSettings() {
-  return useQuery({
-    queryKey: AUTO_LOGIN_SETTINGS_KEY,
-    queryFn: api.autoLoginSettings,
-    refetchInterval: AUTO_LOGIN_REFRESH_MS,
-  });
-}
-
-export function useSetAutoLoginSettings() {
-  const { message } = App.useApp();
-  const { t } = useTranslation();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (input: AutoLoginSettingsInput) => api.setAutoLoginSettings(input),
-    onSuccess: (data) => {
-      message.success(t("toastAutoLoginSettingsUpdated"));
-      queryClient.setQueryData(AUTO_LOGIN_SETTINGS_KEY, data);
-    },
-    onError: (err: unknown) => message.error(translateApiError(err, t)),
-  });
-}
-
-export function useRunAutoLogin() {
-  const { message } = App.useApp();
-  const { t } = useTranslation();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: () => api.runAutoLogin(),
-    onSuccess: (res) => {
-      if (res.started) message.success(t("toastAutoLoginStarted"));
-      else message.warning(t("toastAutoLoginAlreadyRunning"));
-      queryClient.invalidateQueries({ queryKey: AUTO_LOGIN_SETTINGS_KEY });
-      queryClient.invalidateQueries({ queryKey: AUTO_LOGIN_HISTORY_KEY });
-    },
-    onError: (err: unknown) => message.error(translateApiError(err, t)),
-  });
-}
-
-export function useAutoLoginHistory(limit = 20) {
-  return useQuery({
-    queryKey: [...AUTO_LOGIN_HISTORY_KEY, limit],
-    queryFn: () => api.autoLoginHistory(limit),
-    refetchInterval: AUTO_LOGIN_REFRESH_MS,
-  });
-}
-
-// "Đăng nhập tay": mở Chromium có cửa sổ trên máy đang chạy dashboard, qua proxy đã ghim của tài khoản
-// (src/app/dash-api/manual-login/route.ts -> spider-hub scripts/manual_login.py), rồi theo dõi tới khi lưu xong phiên.
-export function useManualLogin() {
-  const { message } = App.useApp();
-  const { t } = useTranslation();
-  const queryClient = useQueryClient();
-  return async (account: Account) => {
-    const key = (account.platform === "facebook" ? account.email || account.account_id : account.account_id)
-      .trim()
-      .toLowerCase();
-    const msgKey = `manual-login-${account.id}`;
-    // Dashboard trên VPS: trình duyệt đăng nhập chạy trên màn hình ảo, xem qua noVNC - mở tab ngay trong lúc bấm (mở
-    // sau await thì trình duyệt chặn popup). Chạy trên Mac thì không có viewer: cửa sổ Chromium hiện thẳng trên máy.
-    // Mở tab trống ngay lúc bấm (mở sau await thì bị chặn popup), chỉ chuyển sang noVNC khi route đã cấp vé vào /novnc.
-    const viewerUrl = process.env.NEXT_PUBLIC_MANUAL_LOGIN_VIEWER_URL;
-    const viewer = viewerUrl ? window.open("about:blank", "spider-hub-manual-login") : null;
-    const headers = { "Content-Type": "application/json", "X-API-Key": currentAuthKey() };
-    message.loading({ key: msgKey, content: t("manualLoginStarting"), duration: 0 });
-    const res = await fetch("/dash-api/manual-login", {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ platform: account.platform, account: key }),
-    }).catch(() => null);
-    if (!res?.ok) {
-      viewer?.close();
-      const body = res ? await res.json().catch(() => ({})) : {};
-      message.error({ key: msgKey, content: t("manualLoginFailed", { message: body.error || "network" }), duration: 10 });
-      return;
-    }
-    if (viewer && viewerUrl) viewer.location.href = viewerUrl;
-    const started = Date.now();
-    const poll = async () => {
-      if (Date.now() - started > 20 * 60_000) return message.destroy(msgKey);
-      const query = new URLSearchParams({ platform: account.platform, account: key });
-      const status = await fetch(`/dash-api/manual-login?${query}`, { headers })
-        .then((r) => r.json())
-        .catch(() => ({ state: "pending" }));
-      if (status.state === "done") {
-        message.success({ key: msgKey, content: t("manualLoginDone"), duration: 6 });
-        queryClient.invalidateQueries({ queryKey: ACCOUNTS_KEY });
-        return;
-      }
-      if (status.state === "failed") {
-        message.error({ key: msgKey, content: t("manualLoginFailed", { message: status.message }), duration: 12 });
-        return;
-      }
-      if (status.state === "waiting_login") message.loading({ key: msgKey, content: t("manualLoginWaiting"), duration: 0 });
-      setTimeout(poll, 3000);
-    };
-    setTimeout(poll, 2000);
-  };
 }

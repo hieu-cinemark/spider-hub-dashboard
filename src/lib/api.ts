@@ -9,10 +9,6 @@ import type {
   AiProviderInput,
   AiSettings,
   AiSettingsInput,
-  AutoLoginRunHistoryEntry,
-  AutoLoginSettings,
-  AutoLoginSettingsResponse,
-  AutoLoginSettingsInput,
   ProxyProvider,
   ProxyProviderInput,
   ProxySettings,
@@ -70,6 +66,7 @@ import type {
   KeywordYield,
   SourcePage,
   SourcePageSuggestion,
+  SessionClient,
 } from "./types";
 
 // cinemark-api (FastAPI). Every request carries the access key typed at the
@@ -257,6 +254,8 @@ export const api = {
   resetTiktokCookies: (id: number) => request<{ ok: boolean }>(`/settings/accounts/${id}/reset-cookies`, { method: "POST" }),
   setAccountEnabled: (id: number, enabled: boolean) =>
     request<Account>(`/settings/accounts/${id}/enabled`, { method: "POST", body: JSON.stringify({ enabled }) }),
+  setAccountSessionClient: (id: number, client: SessionClient | null) =>
+    request<Account>(`/settings/accounts/${id}/session-client`, { method: "POST", body: JSON.stringify({ client }) }),
   resetAccountProxy: (id: number) => request<Account>(`/settings/accounts/${id}/reset-proxy`, { method: "POST" }),
   setAccountProxy: (id: number, proxyId: number) =>
     request<Account>(`/settings/accounts/${id}/set-proxy`, { method: "POST", body: JSON.stringify({ proxy_id: proxyId }) }),
@@ -301,20 +300,6 @@ export const api = {
   runCleanup: () => request<{ started: boolean }>("/settings/cleanup/run", { method: "POST" }),
   cleanupHistory: (limit = 20) =>
     request<CleanupRunSummary[]>(`/settings/cleanup/history?limit=${limit}`),
-
-  // Auto-login scheduler (cinemark-api's app/services/auto_login.py).
-  // GET returns effective knobs + whether a tick is in flight + last_run_at.
-  // PUT is partial-update - just send `{enabled: true}` to flip the toggle.
-  // POST /run triggers one tick and returns whether it actually started.
-  autoLoginSettings: () => request<AutoLoginSettingsResponse>("/settings/auto-login"),
-  setAutoLoginSettings: (input: AutoLoginSettingsInput) =>
-    request<AutoLoginSettingsResponse>("/settings/auto-login", {
-      method: "PUT",
-      body: JSON.stringify(input),
-    }),
-  runAutoLogin: () => request<{ started: boolean }>("/settings/auto-login/run", { method: "POST" }),
-  autoLoginHistory: (limit = 20) =>
-    request<AutoLoginRunHistoryEntry[]>(`/settings/auto-login/history?limit=${limit}`),
 
   omarStatus: () => request<OmarStatus>("/omar/status"),
   omarRun: () => request<{ started: boolean }>("/omar/run", { method: "POST" }),

@@ -16,15 +16,11 @@ export default function NurtureAccountsModal({
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [platform, setPlatform] = useState<NurturePlatform>("all");
-  const [like, setLike] = useState(true);
-  const [comment, setComment] = useState(false);
   const [browse, setBrowse] = useState(true);
 
   async function handleOk() {
     await onSubmit({
       platform,
-      like,
-      comment,
       visits: browse ? 3 : 0,
     });
     setOpen(false);
@@ -61,12 +57,6 @@ export default function NurtureAccountsModal({
               ]}
             />
           </div>
-          <Checkbox checked={like} onChange={(e) => setLike(e.target.checked)}>
-            {t("nurtureLikeOption")}
-          </Checkbox>
-          <Checkbox checked={comment} onChange={(e) => setComment(e.target.checked)}>
-            {t("nurtureCommentOption")}
-          </Checkbox>
           <Checkbox checked={browse} onChange={(e) => setBrowse(e.target.checked)}>
             {t("nurtureBrowseOption")}
           </Checkbox>

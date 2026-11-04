@@ -27,9 +27,7 @@ function lagPercent(lag: number): number {
 }
 
 function kafkaLagPlatform(label: string): string | null {
-  if (KAFKA_LAG_PLATFORMS.has(label)) return label;
-  const m = /^auto_login_(\w+)$/.exec(label);
-  return m ? m[1] : null;
+  return KAFKA_LAG_PLATFORMS.has(label) ? label : null;
 }
 
 export function kafkaLagLabel(t: ReturnType<typeof useTranslation>["t"], label: string): string {
@@ -38,8 +36,6 @@ export function kafkaLagLabel(t: ReturnType<typeof useTranslation>["t"], label: 
   if (label === "lake_posts") return t("kafkaLagLakePosts");
   if (label === "lake_comments") return t("kafkaLagLakeComments");
   if (KAFKA_LAG_PLATFORMS.has(label)) return t("kafkaLagCrawl", { platform: platformLabel(label) });
-  const autoLogin = /^auto_login_(\w+)$/.exec(label);
-  if (autoLogin) return t("kafkaLagAutoLogin", { platform: platformLabel(autoLogin[1]) });
   return label;
 }
 

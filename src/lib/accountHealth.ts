@@ -6,7 +6,7 @@ import type { TranslationKey } from "@/i18n/translations";
 // platform yet, e.g. instagram), distinct from `null` (never checked at
 // all, see checkStatusLabelKey below).
 // "alive"/"dead" are what spider-hub's cookie checks actually write
-// (nurture_accounts.record_cookie_check, auto_login) - the older
+// (nurture_accounts.record_cookie_check) - the older
 // ok/warning set is kept for account_health.py's own checks.
 const KNOWN_STATUSES = ["ok", "alive", "warning", "dead", "disabled", "unknown"] as const;
 type CheckStatus = (typeof KNOWN_STATUSES)[number];

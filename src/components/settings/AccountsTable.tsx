@@ -10,7 +10,6 @@ import {
   InfoCircleOutlined,
   KeyOutlined,
   LockOutlined,
-  LoginOutlined,
   PlusOutlined,
   SafetyCertificateOutlined,
   SearchOutlined,
@@ -44,14 +43,14 @@ import PlatformFilter, { ALL_PLATFORM_QUERY } from "@/components/PlatformFilter"
 import { useMdUp } from "@/hooks/useMdUp";
 import { usePagedList } from "@/hooks/usePagedList";
 import { useQueryRecord } from "@/hooks/useQueryParam";
-import { useAccountMutations, useAccounts, useManualLogin, useProxies } from "@/hooks/useSettings";
+import { useAccountMutations, useAccounts, useProxies } from "@/hooks/useSettings";
 import { useTranslation } from "@/i18n/LocaleProvider";
 import { TRIGGERABLE_PLATFORMS } from "@/lib/constants";
 import { api } from "@/lib/api";
 import { poolStatusInfo } from "@/lib/poolStatus";
 import { checkStatusLabelKey, checkStatusTagColor } from "@/lib/accountHealth";
 import { formatRelativeTime } from "@/lib/format";
-import type { Account, AccountInput, ProxyIpType } from "@/lib/types";
+import type { Account, AccountInput, ProxyIpType, SessionClient } from "@/lib/types";
 
 // Label stacked above value (not side-by-side) so a long value - a raw
 // cookie header can run past 300 characters - wraps as a normal paragraph
@@ -207,8 +206,7 @@ export default function AccountsTable() {
   const { modal } = App.useApp();
   const { data: accounts, isLoading } = useAccounts();
   const { data: proxies } = useProxies();
-  const { create, update, remove, check, nurture, resetProxy, setProxy, setEnabled, bulkRemove } = useAccountMutations();
-  const manualLogin = useManualLogin();
+  const { create, update, remove, check, nurture, resetProxy, setProxy, setSessionClient, setEnabled, bulkRemove } = useAccountMutations();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Account | null>(null);
   const [query, setQuery] = useQueryRecord(ACCOUNTS_QUERY);
@@ -318,9 +316,6 @@ export default function AccountsTable() {
           items: [
             ...(record.platform === "facebook" || record.platform === "threads"
               ? [
-                  ...(process.env.NEXT_PUBLIC_MANUAL_LOGIN_ENABLED === "1"
-                    ? [{ key: "manualLogin", label: t("manualLoginAction"), icon: <LoginOutlined /> }]
-                    : []),
                   { key: "nurture", label: t("nurtureThisAccount"), icon: <HeartOutlined /> },
                 ]
               : []),
@@ -328,7 +323,6 @@ export default function AccountsTable() {
             { key: "delete", label: t("remove"), icon: <DeleteOutlined />, danger: true },
           ],
           onClick: ({ key }) => {
-            if (key === "manualLogin") void manualLogin(record);
             if (key === "nurture") nurture.mutate({ account_id: record.id });
             if (key === "edit") openEdit(record);
             if (key === "delete") confirmDelete(record);
@@ -396,6 +390,32 @@ export default function AccountsTable() {
       render: (_: unknown, record: Account) => (
         <ProxyPicker account={record} proxies={proxies ?? []} setProxy={setProxy} resetProxy={resetProxy} />
       ),
+    },
+    {
+      title: t("columnSessionClient"),
+      key: "session_client",
+      width: 130,
+      render: (_: unknown, record: Account) =>
+        record.platform === "facebook" ? (
+          <Tooltip title={t("sessionClientTooltip")}>
+            <Select
+              size="small"
+              className="w-full text-xs"
+              popupMatchSelectWidth={false}
+              value={record.session_client ?? ""}
+              disabled={setSessionClient.isPending && setSessionClient.variables?.id === record.id}
+              options={[
+                { value: "", label: t("sessionClientUndeclared") },
+                { value: "manual", label: t("sessionClientManual") },
+                { value: "browser", label: t("sessionClientBrowser") },
+                { value: "http", label: t("sessionClientHttp") },
+              ]}
+              onChange={(value: SessionClient | "") =>
+                setSessionClient.mutate({ id: record.id, client: value || null })
+              }
+            />
+          </Tooltip>
+        ) : null,
     },
     {
       title: t("columnCredentials"),
@@ -532,10 +552,9 @@ function ProxyPicker({
 }) {
   const { t } = useTranslation();
   const options = useMemo(() => {
-    // Facebook and Threads accounts may share Meta ports (spider-hub rotates
-    // the IP on account switch), and a proxy pinned from elsewhere must still
-    // show its address instead of a bare id - so list both Meta platforms and
-    // always the currently assigned proxy, tagging the other platforms.
+    // Meta links Facebook and Threads by IP, so a port of either platform can
+    // be offered; the API refuses a pin that breaks the IP policy. A proxy
+    // pinned from elsewhere must still show its address instead of a bare id.
     const meta = ["facebook", "threads"];
     const matching = proxies.filter(
       (p) =>

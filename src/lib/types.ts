@@ -193,6 +193,8 @@ export interface RunScraperParams {
   bfs_depth?: number;
 }
 
+export type SessionClient = "manual" | "browser" | "http";
+
 export interface Account {
   id: number;
   platform: string;
@@ -227,6 +229,9 @@ export interface Account {
   consecutive_failures: number;
   last_used_at: string | null;
   assigned_proxy_id: number | null;
+  // The one client allowed to use this Facebook session (spider-hub's
+  // accounts/session_client.py); null = undeclared, nothing is sent.
+  session_client?: SessionClient | null;
   // The secret fields above always come back "" from the list/update
   // endpoints - this names which ones actually hold a value. Real values:
   // api.accountCredentials (GET /settings/accounts/{id}/credentials).
@@ -429,63 +434,6 @@ export interface CleanupSettingsResponse {
 
 export type CleanupSettingsInput = Partial<CleanupSettings>;
 
-// --- Auto-login scheduler (cinemark-api's app/services/auto_login.py +
-// app/services/scheduler.py + spider-hub's auto_login_consumer.py) ---
-// Mirrors cinemark-api/app/schemas/settings.py:AutoLoginSettings +
-// AutoLoginSettingsOut + AutoLoginRunHistoryEntry. The dashboard's
-// "Auto-login" card talks to these via /settings/auto-login (GET/PUT)
-// and /settings/auto-login/run (POST).
-export type AutoLoginPlatform = "facebook" | "threads";
-
-export interface AutoLoginSettings {
-  enabled: boolean;
-  // Hour interval in seconds - kept as `number` (not "HH:MM" string)
-  // because the operator who picks the interval cares about minutes, not
-  // wall-clock alignment with any other daily cron. The Cleanup
-  // schedule uses "HH:MM" because it's once-a-day and benefits from
-  // "fires alongside the crawl at 03:00"; auto-login runs hourly+
-  // and a fixed-minute-of-hour clock would just be noise.
-  interval_seconds: number;
-  platforms: AutoLoginPlatform[];
-  // dry_run=true publishes the Kafka message with dry_run=true;
-  // spider-hub's auto_login_consumer.py reads that flag and skips
-  // the actual Playwright launch (logs "would have relogged_in
-  // this account" instead). Lets an operator sanity-check the
-  // candidate list without a single real login firing.
-  dry_run: boolean;
-  min_age_seconds: number;
-  telegram_alert: boolean;
-}
-
-export interface AutoLoginRunHistoryEntry {
-  started_at: string;
-  finished_at: string | null;
-  triggered_by: "schedule" | "manual";
-  dry_run: boolean;
-  interval_seconds: number;
-  platforms: string[];
-  // { "<platform>": { "attempted": N, "relogged_in": N, ... } }
-  per_platform: Record<string, Record<string, number>>;
-  total_attempted: number;
-  total_relogged_in: number;
-  total_needs_human: number;
-  total_failed: number;
-  total_error: number;
-  kafka_published: number;
-  kafka_publish_failed: number;
-  error: string | null;
-}
-
-export interface AutoLoginSettingsResponse {
-  values: AutoLoginSettings;
-  defaults: AutoLoginSettings;
-  running: boolean;
-  last_run_at: string | null;
-  updated_at: string | null;
-}
-
-export type AutoLoginSettingsInput = Partial<AutoLoginSettings>;
-
 export interface AiPrompt {
   task: string;
   system_prompt: string;
@@ -600,8 +548,6 @@ export type NurturePlatform = "facebook" | "threads" | "all";
 export interface NurtureInput {
   platform?: NurturePlatform;
   account_id?: number;
-  like?: boolean;
-  comment?: boolean;
   visits?: number;
 }
 
