@@ -193,7 +193,6 @@ export interface RunScraperParams {
   bfs_depth?: number;
 }
 
-export type SessionClient = "manual" | "browser" | "http";
 
 export interface Account {
   id: number;
@@ -229,9 +228,6 @@ export interface Account {
   consecutive_failures: number;
   last_used_at: string | null;
   assigned_proxy_id: number | null;
-  // The one client allowed to use this Facebook session (spider-hub's
-  // accounts/session_client.py); null = undeclared, nothing is sent.
-  session_client?: SessionClient | null;
   // The secret fields above always come back "" from the list/update
   // endpoints - this names which ones actually hold a value. Real values:
   // api.accountCredentials (GET /settings/accounts/{id}/credentials).
@@ -543,7 +539,7 @@ export interface ProxyProviderInput {
   ip_allowlist: boolean;
 }
 
-export type NurturePlatform = "facebook" | "threads" | "all";
+export type NurturePlatform = "threads" | "all";
 
 export interface NurtureInput {
   platform?: NurturePlatform;

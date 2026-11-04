@@ -66,7 +66,6 @@ import type {
   KeywordYield,
   SourcePage,
   SourcePageSuggestion,
-  SessionClient,
 } from "./types";
 
 // cinemark-api (FastAPI). Every request carries the access key typed at the
@@ -254,8 +253,6 @@ export const api = {
   resetTiktokCookies: (id: number) => request<{ ok: boolean }>(`/settings/accounts/${id}/reset-cookies`, { method: "POST" }),
   setAccountEnabled: (id: number, enabled: boolean) =>
     request<Account>(`/settings/accounts/${id}/enabled`, { method: "POST", body: JSON.stringify({ enabled }) }),
-  setAccountSessionClient: (id: number, client: SessionClient | null) =>
-    request<Account>(`/settings/accounts/${id}/session-client`, { method: "POST", body: JSON.stringify({ client }) }),
   resetAccountProxy: (id: number) => request<Account>(`/settings/accounts/${id}/reset-proxy`, { method: "POST" }),
   setAccountProxy: (id: number, proxyId: number) =>
     request<Account>(`/settings/accounts/${id}/set-proxy`, { method: "POST", body: JSON.stringify({ proxy_id: proxyId }) }),

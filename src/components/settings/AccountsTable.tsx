@@ -50,7 +50,7 @@ import { api } from "@/lib/api";
 import { poolStatusInfo } from "@/lib/poolStatus";
 import { checkStatusLabelKey, checkStatusTagColor } from "@/lib/accountHealth";
 import { formatRelativeTime } from "@/lib/format";
-import type { Account, AccountInput, ProxyIpType, SessionClient } from "@/lib/types";
+import type { Account, AccountInput, ProxyIpType } from "@/lib/types";
 
 // Label stacked above value (not side-by-side) so a long value - a raw
 // cookie header can run past 300 characters - wraps as a normal paragraph
@@ -206,7 +206,7 @@ export default function AccountsTable() {
   const { modal } = App.useApp();
   const { data: accounts, isLoading } = useAccounts();
   const { data: proxies } = useProxies();
-  const { create, update, remove, check, nurture, resetProxy, setProxy, setSessionClient, setEnabled, bulkRemove } = useAccountMutations();
+  const { create, update, remove, check, nurture, resetProxy, setProxy, setEnabled, bulkRemove } = useAccountMutations();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Account | null>(null);
   const [query, setQuery] = useQueryRecord(ACCOUNTS_QUERY);
@@ -314,7 +314,7 @@ export default function AccountsTable() {
       <Dropdown
         menu={{
           items: [
-            ...(record.platform === "facebook" || record.platform === "threads"
+            ...(record.platform === "threads"
               ? [
                   { key: "nurture", label: t("nurtureThisAccount"), icon: <HeartOutlined /> },
                 ]
@@ -392,32 +392,6 @@ export default function AccountsTable() {
       ),
     },
     {
-      title: t("columnSessionClient"),
-      key: "session_client",
-      width: 130,
-      render: (_: unknown, record: Account) =>
-        record.platform === "facebook" ? (
-          <Tooltip title={t("sessionClientTooltip")}>
-            <Select
-              size="small"
-              className="w-full text-xs"
-              popupMatchSelectWidth={false}
-              value={record.session_client ?? ""}
-              disabled={setSessionClient.isPending && setSessionClient.variables?.id === record.id}
-              options={[
-                { value: "", label: t("sessionClientUndeclared") },
-                { value: "manual", label: t("sessionClientManual") },
-                { value: "browser", label: t("sessionClientBrowser") },
-                { value: "http", label: t("sessionClientHttp") },
-              ]}
-              onChange={(value: SessionClient | "") =>
-                setSessionClient.mutate({ id: record.id, client: value || null })
-              }
-            />
-          </Tooltip>
-        ) : null,
-    },
-    {
       title: t("columnCredentials"),
       key: "credentials",
       width: 108,
@@ -441,10 +415,12 @@ export default function AccountsTable() {
       title={<CardHeading icon={<KeyOutlined />} title={t("authCredentialsTitle")} desc={t("authCredentialsDesc")} />}
       extra={
         <Space>
-          <NurtureAccountsModal
-            loading={nurture.isPending && nurture.variables?.account_id == null}
-            onSubmit={(input) => nurture.mutateAsync(input)}
-          />
+          {(!platformFilter || platformFilter === "threads") && (
+            <NurtureAccountsModal
+              loading={nurture.isPending && nurture.variables?.account_id == null}
+              onSubmit={(input) => nurture.mutateAsync(input)}
+            />
+          )}
           <ImportWithAiModal defaultTarget="accounts" />
           <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
             {t("addAccount")}

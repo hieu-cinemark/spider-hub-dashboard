@@ -1,10 +1,10 @@
 "use client";
 
 import { HeartOutlined } from "@ant-design/icons";
-import { Button, Checkbox, Modal, Select, Space } from "antd";
+import { Button, Checkbox, Modal, Space } from "antd";
 import { useState } from "react";
 import { useTranslation } from "@/i18n/LocaleProvider";
-import type { NurtureInput, NurturePlatform } from "@/lib/types";
+import type { NurtureInput } from "@/lib/types";
 
 export default function NurtureAccountsModal({
   loading,
@@ -15,12 +15,11 @@ export default function NurtureAccountsModal({
 }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
-  const [platform, setPlatform] = useState<NurturePlatform>("all");
   const [browse, setBrowse] = useState(true);
 
   async function handleOk() {
     await onSubmit({
-      platform,
+      platform: "threads",
       visits: browse ? 3 : 0,
     });
     setOpen(false);
@@ -44,19 +43,6 @@ export default function NurtureAccountsModal({
       >
         <p className="mb-4 text-sm text-[var(--muted)]">{t("nurtureAccountsDesc")}</p>
         <Space orientation="vertical" size="middle" className="w-full">
-          <div>
-            <div className="mb-1 text-xs text-[var(--muted)]">{t("platform")}</div>
-            <Select
-              className="w-full"
-              value={platform}
-              onChange={setPlatform}
-              options={[
-                { value: "all", label: t("nurturePlatformAll") },
-                { value: "facebook", label: "Facebook" },
-                { value: "threads", label: "Threads" },
-              ]}
-            />
-          </div>
           <Checkbox checked={browse} onChange={(e) => setBrowse(e.target.checked)}>
             {t("nurtureBrowseOption")}
           </Checkbox>

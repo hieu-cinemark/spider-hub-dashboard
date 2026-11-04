@@ -8,7 +8,7 @@ import { useTriggerCrawl } from "@/hooks/useTriggerCrawl";
 import { useTranslation } from "@/i18n/LocaleProvider";
 import { platformLabel } from "@/lib/platform";
 
-const NURTURE_PLATFORMS = ["facebook", "threads"] as const;
+const NURTURE_PLATFORMS = ["threads"] as const;
 
 export default function NurtureJobBanner() {
   const { t } = useTranslation();

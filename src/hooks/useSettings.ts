@@ -19,7 +19,6 @@ import type {
   ProxyInput,
   ProxyProviderInput,
   ProxySettings,
-  SessionClient,
 } from "@/lib/types";
 
 const ACCOUNTS_KEY = QUERY_KEYS.settingsAccounts;
@@ -160,13 +159,6 @@ export function useAccountMutations() {
     onError,
   });
 
-  const setSessionClient = useMutation({
-    mutationFn: ({ id, client }: { id: number; client: SessionClient | null }) =>
-      api.setAccountSessionClient(id, client),
-    onSuccess: invalidate,
-    onError,
-  });
-
   // Bật/tắt từng tài khoản (27/10/2026). Pool của spider-hub vẫn tự tắt khi
   // checkpoint / tự bật khi khôi phục phiên; bật tay ở đây cũng gỡ status
   // checkpoint + cooldown (backend), nếu không pool vẫn bỏ qua tài khoản.
@@ -194,7 +186,7 @@ export function useAccountMutations() {
     onError,
   });
 
-  return { create, update, remove, check, nurture, totpCode, resetCookies, resetProxy, setProxy, setSessionClient, setEnabled, bulkRemove };
+  return { create, update, remove, check, nurture, totpCode, resetCookies, resetProxy, setProxy, setEnabled, bulkRemove };
 }
 
 export function useProxies() {

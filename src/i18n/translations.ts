@@ -334,12 +334,12 @@ const en = {
   enableCheckpointAccountConfirm: "Re-enable an account Facebook/Threads put on checkpoint?",
   enableCheckpointAccountHint:
     "This clears its checkpoint and cooldown so the crawler uses it again. Only do this after clearing the checkpoint in a real browser - otherwise the next crawl hits the same wall.",
-  nurtureAccountsAction: "Warm up sessions",
-  nurtureAccountsTitle: "Warm up Facebook & Threads sessions",
+  nurtureAccountsAction: "Warm up Threads",
+  nurtureAccountsTitle: "Warm up Threads sessions",
   nurtureAccountsDesc:
-    "Each click warms at most two enabled Facebook/Threads accounts per platform, preferring ones not warmed yet today. They open the home feed, scroll, then open a couple of posts and go back, without liking or commenting. Facebook only warms accounts declared with the Automated browser client. There is a short random wait before the first account and several minutes between accounts. Accounts without a saved login are skipped — they are not signed in automatically. TikTok is not included.",
+    "Each click warms at most two enabled Threads accounts, preferring ones not warmed yet today. They browse the feed and open a few posts without liking or commenting. Accounts without a saved login are skipped.",
   nurtureThisAccount: "Warm up this account",
-  nurturePlatformAll: "Facebook and Threads",
+  nurturePlatformAll: "Threads",
   nurtureBrowseOption: "Open a few posts, then go back",
   toastNurtureQueued: "Warm-up queued ({n}). At most 2 accounts per platform; already-warmed today are skipped.",
   toastNurtureFailed: "Could not queue the warm-up",
@@ -452,12 +452,6 @@ const en = {
   cookieProblemMissingUa: "User-Agent is missing",
   cookieProblemImpossibleChrome: "User-Agent has a Chrome build that does not exist",
   cookieProblemUnreadable: "the cookie format cannot be read",
-  columnSessionClient: "Client",
-  sessionClientTooltip: "The only client allowed to use this session. Undeclared: nothing is sent. Changing it away from Manual counts the manual days toward warm-up; close Chrome first.",
-  sessionClientUndeclared: "Undeclared",
-  sessionClientManual: "Manual (real browser)",
-  sessionClientBrowser: "Automated browser",
-  sessionClientHttp: "HTTP",
   ipTypeUnknown: "Unknown",
   ipTypeTooltip: "Facebook only runs on proxies labelled static; rotating proxies cannot be pinned to Facebook or Threads. Measure with scripts.measure_proxy_ip before labelling by hand.",
   autoAssignProxyOption: "Auto (a free eligible proxy)",
@@ -534,7 +528,7 @@ const en = {
   toastDiscoveryEnabled: "AI will keep adding new crawl sources",
   toastDiscoveryDisabled: "Crawling only the current keywords",
   crawlScheduleDesc:
-    "Daily collection time per platform. Facebook and Threads can also warm up login sessions before and/or after that run — they share the same queue, so warm-up finishes before collection starts (or runs after it drains).",
+    "Daily collection time per platform. Threads can also warm up login sessions before and/or after that run — they share the same queue, so warm-up finishes before collection starts (or runs after it drains).",
   columnRunTime: "Run time",
   addRunTime: "Add run time",
   removeRunTime: "Remove this run time",
@@ -548,7 +542,7 @@ const en = {
   nurtureAfterCrawl: "Warm up after",
   nurtureBeforeCrawlHint: "Warm up accounts (browse, or visit hashtag pages on TikTok), then collect posts for this platform.",
   nurtureAfterCrawlHint: "After today's collection jobs finish, warm up sessions again.",
-  nurtureScheduleUnsupported: "Session warm-up is only available for Facebook, Threads and TikTok.",
+  nurtureScheduleUnsupported: "Session warm-up is only available for Threads and TikTok.",
   toastCrawlScheduleUpdated: "Crawl schedule updated",
 
   // Settings page

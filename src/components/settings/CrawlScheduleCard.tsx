@@ -19,7 +19,7 @@ import { TRIGGERABLE_PLATFORMS } from "@/lib/constants";
 import { formatRelativeTime } from "@/lib/format";
 import type { CrawlSchedule } from "@/lib/types";
 
-const NURTURE_SCHEDULE_PLATFORMS = new Set(["facebook", "threads", "tiktok"]);
+const NURTURE_SCHEDULE_PLATFORMS = new Set(["threads", "tiktok"]);
 const TIME_FORMAT = "HH:mm";
 const DEFAULT_RUN_TIME = "07:00";
 const MAX_RUNS_PER_DAY = 8;
@@ -155,6 +155,7 @@ export default function CrawlScheduleCard() {
       key: "warmup",
       width: 200,
       render: (_: unknown, record: CrawlSchedule) => {
+        if (record.platform === "facebook") return null;
         const allowed = NURTURE_SCHEDULE_PLATFORMS.has(record.platform);
         const loading = setSchedule.isPending && setSchedule.variables?.platform === record.platform;
         return (
