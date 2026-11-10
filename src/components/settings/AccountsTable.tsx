@@ -30,7 +30,7 @@ import {
   Tooltip,
   Typography,
 } from "antd";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
 import DashboardCard, { CardHeading } from "@/components/DashboardCard";
@@ -51,6 +51,11 @@ import { poolStatusInfo } from "@/lib/poolStatus";
 import { checkStatusLabelKey, checkStatusTagColor } from "@/lib/accountHealth";
 import { formatRelativeTime } from "@/lib/format";
 import type { Account, AccountInput, ProxyIpType } from "@/lib/types";
+
+// Credentials are cached under a per-account key so that closing the modal
+// for one account cannot leave another account's secrets behind, and so the
+// cache entry can be removed by key on close/logout.
+const credentialsQueryKey = (accountId: number) => ["settings", "account-credentials", accountId] as const;
 
 // Label stacked above value (not side-by-side) so a long value - a raw
 // cookie header can run past 300 characters - wraps as a normal paragraph
@@ -92,53 +97,78 @@ function MaskedRow({ label, value }: { label: string; value: string }) {
 // popup), which looked exactly like visual corruption. A Modal is a
 // singleton by construction (one open at a time, centered, its own
 // backdrop) so that class of bug can't happen.
+//
 // Secrets are no longer part of the accounts list (cinemark-api masks them)
 // - fetched one account at a time, only while this modal is open, and
-// dropped from the cache as soon as it closes (gcTime: 0).
+// dropped from the cache as soon as it closes.
+//
+// The credentials query lives in <CredentialsPanel>, which is rendered ONLY
+// while the modal is open. Putting the useQuery in the outer component (as
+// it used to be) left the observer mounted in every account row even after
+// the modal closed - `enabled: false` stops the *fetch*, it does not release
+// the cached data, and `gcTime: 0` only fires once the last observer
+// unmounts. Unmounting the panel is what actually frees the cache.
+//
+// The query also takes the React Query signal and passes it to fetch, so a
+// response that lands after the modal closed (or after the operator picked a
+// different account) is aborted instead of being written into the cache.
 function CredentialsModal({ account, isTikTok }: { account: Account; isTikTok: boolean }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
-  const { data: creds, isLoading, error } = useQuery({
-    queryKey: ["settings", "account-credentials", account.id],
-    queryFn: () => api.accountCredentials(account.id),
-    enabled: open,
-    gcTime: 0,
-    staleTime: 0,
-  });
+  const queryClient = useQueryClient();
+
+  function close() {
+    // Drop the secrets from the cache the moment the modal closes rather
+    // than waiting for the panel to unmount and the GC timer to fire.
+    queryClient.removeQueries({ queryKey: credentialsQueryKey(account.id) });
+    setOpen(false);
+  }
+
   return (
     <>
       <Tooltip title={t("viewCredentialsAction")}>
-        <Button size="small" icon={<LockOutlined />} onClick={() => setOpen(true)} />
+        <Button size="small" icon={<LockOutlined />} aria-label={t("viewCredentialsAction")} onClick={() => setOpen(true)} />
       </Tooltip>
-      <Modal
-        open={open}
-        onCancel={() => setOpen(false)}
-        footer={null}
-        title={t("columnCredentials")}
-        width={440}
-        centered
-        destroyOnHidden
-      >
-        {error ? (
-          <Alert type="error" showIcon title={t("credentialsLoadFailed")} />
-        ) : isLoading || !creds ? (
-          <div className="flex justify-center py-8">
-            <Spin />
-          </div>
-        ) : (
-          <div className="flex flex-col gap-1">
-            {!isTikTok && (
-              <>
-                <MaskedRow label={t("columnPassword")} value={creds.password} />
-                <MaskedRow label={t("column2fa")} value={creds.totp_secret} />
-                <MaskedRow label={t("columnEmailPassword")} value={creds.email_password} />
-              </>
-            )}
-            <MaskedRow label={t("columnCookie")} value={creds.cookie} />
-            <MaskedRow label={isTikTok ? t("odinId") : t("tokenReserved")} value={creds.token} />
-          </div>
-        )}
+      <Modal open={open} onCancel={close} footer={null} title={t("columnCredentials")} width={440} centered destroyOnHidden>
+        {open ? <CredentialsPanel account={account} isTikTok={isTikTok} /> : null}
       </Modal>
+    </>
+  );
+}
+
+function CredentialsPanel({ account, isTikTok }: { account: Account; isTikTok: boolean }) {
+  const { t } = useTranslation();
+  const { data: creds, isLoading, error } = useQuery({
+    queryKey: credentialsQueryKey(account.id),
+    queryFn: ({ signal }) => api.accountCredentials(account.id, signal),
+    gcTime: 0,
+    staleTime: 0,
+    // A credentials response that arrives after this panel went away must
+    // not be written into the cache - the signal aborts the request, and
+    // React Query discards a query whose signal fired.
+    retry: false,
+  });
+  return (
+    <>
+      {error ? (
+        <Alert type="error" showIcon title={t("credentialsLoadFailed")} />
+      ) : isLoading || !creds ? (
+        <div className="flex justify-center py-8">
+          <Spin />
+        </div>
+      ) : (
+        <div className="flex flex-col gap-1">
+          {!isTikTok && (
+            <>
+              <MaskedRow label={t("columnPassword")} value={creds.password} />
+              <MaskedRow label={t("column2fa")} value={creds.totp_secret} />
+              <MaskedRow label={t("columnEmailPassword")} value={creds.email_password} />
+            </>
+          )}
+          <MaskedRow label={t("columnCookie")} value={creds.cookie} />
+          <MaskedRow label={isTikTok ? t("odinId") : t("tokenReserved")} value={creds.token} />
+        </div>
+      )}
     </>
   );
 }

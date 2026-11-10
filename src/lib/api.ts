@@ -101,7 +101,13 @@ type RequestOptions = RequestInit & { timeoutMs?: number };
 
 async function request<T>(path: string, init?: RequestOptions): Promise<T> {
   const timeoutMs = init?.timeoutMs ?? REQUEST_TIMEOUT_MS;
-  const { timeoutMs: _timeoutMs, signal: callerSignal, ...rest } = init ?? {};
+  // timeoutMs/signal are our own options, not fetch options - they must not
+  // be forwarded to fetch(). Copy-and-delete avoids both the unused-var lint
+  // and passing them through in `rest`.
+  const rest: RequestInit = { ...init };
+  delete (rest as RequestOptions).timeoutMs;
+  const callerSignal = rest.signal;
+  delete rest.signal;
   const timeoutSignal = AbortSignal.timeout(timeoutMs);
   const signal = callerSignal ? AbortSignal.any([callerSignal, timeoutSignal]) : timeoutSignal;
   let res: Response;
@@ -113,9 +119,14 @@ async function request<T>(path: string, init?: RequestOptions): Promise<T> {
       signal,
     });
   } catch (err) {
-    if (err instanceof DOMException && (err.name === "TimeoutError" || err.name === "AbortError")) {
+    if (err instanceof DOMException && err.name === "TimeoutError") {
       throw new ApiError(`Request timed out after ${timeoutMs / 1000}s`, 0, "upstream_error");
     }
+    // An AbortError here is the *caller* cancelling (React Query drops a
+    // query whose key changed, the credentials modal closing, ...). It must
+    // stay an AbortError - React Query recognises it as a cancellation and
+    // keeps the previous data instead of flipping the panel into an error
+    // state.
     throw err;
   }
   if (res.status === 401) {
@@ -237,7 +248,8 @@ export const api = {
 
   // Settings: platform_accounts / platform_proxies (Supabase, see
   // cinemark-api/app/services/platform_config_db.py)
-  accountCredentials: (id: number) => request<AccountCredentials>(`/settings/accounts/${id}/credentials`),
+  accountCredentials: (id: number, signal?: AbortSignal) =>
+    request<AccountCredentials>(`/settings/accounts/${id}/credentials`, { signal }),
   hourly: (hours = 24) => request<HourlyPoint[]>(`/stats/hourly?hours=${hours}`),
   ingestFunnel: (hours = 24) => request<IngestFunnel[]>(`/stats/ingest-funnel?hours=${hours}`),
   accounts: (platform?: string) => request<Account[]>(`/settings/accounts${platform ? `?platform=${platform}` : ""}`),

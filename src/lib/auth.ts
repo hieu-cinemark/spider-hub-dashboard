@@ -4,7 +4,8 @@ import { API_BASE_URL, AUTH_STORAGE_KEY } from "./constants";
 // then sent on every request (X-API-Key). When the API has no key
 // configured (API_AUTH_KEY unset, auth_required=false) this falls back to
 // the old client-side gate against NEXT_PUBLIC_AUTH_KEY - which ships in the
-// bundle, so it only keeps the UI out of casual reach.
+// bundle, so it only keeps the UI out of casual reach. It is NOT a
+// server-side secret and must never be treated as one.
 export const REQUIRED_AUTH_KEY = process.env.NEXT_PUBLIC_AUTH_KEY;
 
 // Sentinel the server (and the very first client render, before hydration
@@ -28,8 +29,14 @@ export function subscribeAuth(callback: () => void): () => void {
   return () => listeners.delete(callback);
 }
 
+// localStorage can throw (Safari private mode, disabled storage, quota
+// errors) - reading it unguarded used to crash the whole app shell.
 export function getAuthSnapshot(): string {
-  return window.localStorage.getItem(AUTH_STORAGE_KEY) ?? "";
+  try {
+    return window.localStorage.getItem(AUTH_STORAGE_KEY) ?? "";
+  } catch {
+    return "";
+  }
 }
 
 export function getAuthServerSnapshot(): string {
@@ -57,29 +64,96 @@ export function currentAuthKey(): string {
   }
 }
 
-async function keyAccepted(key: string): Promise<boolean> {
+// /auth/check has no timeout of its own on the client, so a hung API left
+// the login screen spinning forever with no way to tell "wrong key" from
+// "server unreachable". 10s is generous for a local metadata call and
+// short enough to be worth retrying.
+const AUTH_CHECK_TIMEOUT_MS = 10_000;
+
+export type AuthCheckOutcome =
+  /** The API confirmed the key is good. */
+  | { kind: "accepted" }
+  /** The API confirmed the key is wrong. */
+  | { kind: "rejected" }
+  /**
+   * The API confirmed it does not require a key at all (auth_required=false),
+   * so anonymous/local mode is legitimate. Only this - never a network
+   * error - may unlock the dashboard.
+   */
+  | { kind: "not-required" }
+  /** The API could not be reached / answered unusably. */
+  | { kind: "unreachable"; detail: string };
+
+async function checkAuth(key: string, signal?: AbortSignal): Promise<AuthCheckOutcome> {
+  const timeoutSignal = AbortSignal.timeout(AUTH_CHECK_TIMEOUT_MS);
+  const combined = signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal;
+  let res: Response;
   try {
-    const res = await fetch(`${API_BASE_URL}/auth/check`, { headers: { "X-API-Key": key }, cache: "no-store" });
-    const body: { auth_required: boolean; valid: boolean } = await res.json();
-    if (body.auth_required) return body.valid;
-  } catch {
-    // API unreachable - fall through to the client-side check so the
-    // dashboard still opens (and shows its own "could not reach API").
+    res = await fetch(`${API_BASE_URL}/auth/check`, {
+      headers: { "X-API-Key": key },
+      cache: "no-store",
+      signal: combined,
+    });
+  } catch (err) {
+    return {
+      kind: "unreachable",
+      detail: err instanceof DOMException && err.name === "TimeoutError" ? "timeout" : "network",
+    };
   }
-  // Neither side configures a key: nothing to check against.
-  if (!REQUIRED_AUTH_KEY) return true;
-  return key === REQUIRED_AUTH_KEY;
+  if (!res.ok) {
+    // 401/403 mean the key is simply wrong - that's a real answer, not a
+    // connectivity problem, and the user should be told to retype it.
+    if (res.status === 401 || res.status === 403) return { kind: "rejected" };
+    return { kind: "unreachable", detail: `status ${res.status}` };
+  }
+  let body: unknown;
+  try {
+    body = await res.json();
+  } catch {
+    return { kind: "unreachable", detail: "malformed" };
+  }
+  if (!body || typeof body !== "object") return { kind: "unreachable", detail: "malformed" };
+  const parsed = body as { auth_required?: unknown; valid?: unknown };
+  if (typeof parsed.auth_required !== "boolean" || typeof parsed.valid !== "boolean") {
+    return { kind: "unreachable", detail: "malformed" };
+  }
+  if (!parsed.auth_required) return { kind: "not-required" };
+  return parsed.valid ? { kind: "accepted" } : { kind: "rejected" };
 }
 
 export async function login(key: string): Promise<boolean> {
-  if (!(await keyAccepted(key))) return false;
-  window.localStorage.setItem(AUTH_STORAGE_KEY, key);
-  notify();
-  return true;
+  const trimmed = key.trim();
+  if (!trimmed) return false;
+  const outcome = await checkAuth(trimmed);
+  if (outcome.kind === "accepted" || outcome.kind === "not-required") {
+    try {
+      window.localStorage.setItem(AUTH_STORAGE_KEY, trimmed);
+    } catch {
+      return false;
+    }
+    notify();
+    return true;
+  }
+  return false;
+}
+
+// Logout must also drop whatever was cached for the session that just
+// ended. The QueryClient lives outside AuthGate (see app/providers.tsx), so
+// nothing cleared it automatically - a second login in the same page
+// lifetime could otherwise be served the previous session's cached
+// credentials. Registered by providers.tsx, which owns the QueryClient.
+let onSessionEnded: (() => void) | null = null;
+
+export function registerSessionEndHandler(handler: (() => void) | null): void {
+  onSessionEnded = handler;
 }
 
 export function logout(): void {
-  if (!window.localStorage.getItem(AUTH_STORAGE_KEY)) return;
-  window.localStorage.removeItem(AUTH_STORAGE_KEY);
+  try {
+    window.localStorage.removeItem(AUTH_STORAGE_KEY);
+  } catch {
+    // Storage unavailable - the in-memory session still has to end.
+  }
+  onSessionEnded?.();
   notify();
 }

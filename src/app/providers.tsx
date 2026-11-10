@@ -2,9 +2,10 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { App as AntApp, ConfigProvider, theme as antdTheme } from "antd";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import SpiderWebBackdrop from "@/components/SpiderWebBackdrop";
 import { LocaleProvider } from "@/i18n/LocaleProvider";
+import { registerSessionEndHandler } from "@/lib/auth";
 import { ThemeProvider, useColorTheme } from "@/theme/ThemeProvider";
 
 const { defaultAlgorithm, darkAlgorithm } = antdTheme;
@@ -141,6 +142,20 @@ export default function Providers({ children }: { children: ReactNode }) {
         },
       }),
   );
+
+  // The QueryClient lives above AuthGate, so nothing cleared it when the
+  // session ended. Logging out has to drop the whole cache: it holds the
+  // account credentials the modal fetched, plus every other panel's data
+  // for a session that no longer exists - a second login in the same page
+  // lifetime would otherwise be served the previous session's values from
+  // cache (and React Query's normal `staleTime` would keep them "fresh").
+  useEffect(() => {
+    registerSessionEndHandler(() => {
+      queryClient.cancelQueries();
+      queryClient.clear();
+    });
+    return () => registerSessionEndHandler(null);
+  }, [queryClient]);
 
   return (
     <QueryClientProvider client={queryClient}>
