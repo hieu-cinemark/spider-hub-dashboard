@@ -334,6 +334,12 @@ export const api = {
     request<{ queued: number; pending: number; started: boolean }>("/omar/comments/run", { method: "POST" }),
   setOmarApiKey: (apiKey: string) =>
     request<{ api_key_set: boolean }>("/settings/omar-api", { method: "PUT", body: JSON.stringify({ api_key: apiKey }) }),
+  /** Trần request/phút cho mọi lời gọi Omar; 0 = theo giới hạn của gói. */
+  setOmarRequestsPerMinute: (perMinute: number) =>
+    request<{ requests_per_minute: number }>("/settings/omar-api", {
+      method: "PUT",
+      body: JSON.stringify({ requests_per_minute: perMinute }),
+    }),
 
   aiSettings: () => request<AiSettings>("/settings/ai"),
   setAiSettings: (input: AiSettingsInput) =>

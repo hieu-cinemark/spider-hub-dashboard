@@ -2,7 +2,7 @@
 
 import { ApiOutlined, BarChartOutlined, CommentOutlined, DeleteOutlined, FireOutlined, PauseCircleOutlined, PlayCircleOutlined, SearchOutlined, TagsOutlined, UserOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { App, Button, Checkbox, Input, Progress, Select, Space, Table, Tag, Tooltip, TreeSelect, Typography } from "antd";
+import { App, Button, Checkbox, Input, InputNumber, Progress, Select, Space, Table, Tag, Tooltip, TreeSelect, Typography } from "antd";
 import { useMemo, useState } from "react";
 import DashboardCard, { CardHeading } from "@/components/DashboardCard";
 import MobileTable, { type ResponsiveColumnType } from "@/components/MobileTable";
@@ -43,6 +43,8 @@ export default function OmarTab() {
   const { message } = App.useApp();
   const queryClient = useQueryClient();
   const [newKey, setNewKey] = useState("");
+  // null = chưa sửa, hiện giá trị đang lưu.
+  const [rateCap, setRateCap] = useState<number | null>(null);
   const movies = useMovies();
   const [tagMovie, setTagMovie] = useState<string | undefined>();
   const [newTag, setNewTag] = useState("");
@@ -134,8 +136,20 @@ export default function OmarTab() {
     onError: (err: Error) => message.error(err.message),
   });
 
+  const saveRateCap = useMutation({
+    mutationFn: (perMinute: number) => api.setOmarRequestsPerMinute(perMinute),
+    onSuccess: () => {
+      setRateCap(null);
+      message.success(t("omarRateCapSaved"));
+      refresh();
+    },
+    onError: (err: Error) => message.error(err.message),
+  });
+
   const data = status.data;
   const usage = data?.usage;
+  const savedRateCap = data?.requests_per_minute ?? 0;
+  const planPerMinute = usage?.minute?.limit ?? 0;
   const round = data?.round;
   const day = usage?.day;
   const dayPct = day?.limit ? Math.round((day.used / day.limit) * 100) : 0;
@@ -354,6 +368,36 @@ export default function OmarTab() {
             ) : (
               <Typography.Text type="secondary">{t("omarQuotaUnknown")}</Typography.Text>
             )}
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <Typography.Text strong>{t("omarRateCap")}</Typography.Text>
+              <Hint text={t("omarRateCapHint", { plan: fmtNumber(usage?.minute?.limit) })} />
+            </div>
+            <Space.Compact>
+              <InputNumber
+                min={0}
+                max={10000}
+                precision={0}
+                style={{ width: 140 }}
+                value={rateCap ?? savedRateCap}
+                onChange={(value) => setRateCap(value ?? 0)}
+              />
+              <Button
+                type="primary"
+                disabled={rateCap === null || rateCap === savedRateCap}
+                loading={saveRateCap.isPending}
+                onClick={() => rateCap !== null && saveRateCap.mutate(rateCap)}
+              >
+                {t("save")}
+              </Button>
+            </Space.Compact>
+            <Typography.Text type="secondary" className="text-xs">
+              {t("omarRateCapActive", {
+                value:
+                  savedRateCap > 0 && (!planPerMinute || savedRateCap < planPerMinute)
+                    ? fmtNumber(savedRateCap)
+                    : `${fmtNumber(planPerMinute)} (${t("omarRateCapPlan")})`,
+              })}
+            </Typography.Text>
           </div>
         </div>
 

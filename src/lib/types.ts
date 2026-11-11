@@ -747,6 +747,8 @@ export interface OmarTrendingResponse {
 
 export interface OmarStatus {
   key_set: boolean;
+  /** Trần request/phút đặt ở tab Omar; 0 = theo gói. */
+  requests_per_minute?: number;
   usage: {
     plan: string | null;
     status: string | null;
