@@ -132,6 +132,22 @@ export default function ProxiesTable() {
       },
     },
     {
+      title: t("proxyProviderSource"),
+      key: "provider",
+      width: 160,
+      render: (_: unknown, record: Proxy) =>
+        record.provider_key ? (
+          <div className="min-w-0 leading-tight">
+            <div className="text-xs break-all">{record.provider_key}</div>
+            {record.provider_ref ? (
+              <div className="text-xs text-[var(--muted)] break-all">{record.provider_ref}</div>
+            ) : null}
+          </div>
+        ) : (
+          <Typography.Text type="secondary">—</Typography.Text>
+        ),
+    },
+    {
       title: t("columnProxyLoad"),
       dataIndex: "assigned_account_count",
       width: 72,

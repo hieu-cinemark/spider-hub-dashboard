@@ -760,7 +760,7 @@ export const vi: Record<TranslationKey, string> = {
   proxyFbLoggedOut: "Tự chạy không đăng nhập",
   proxyFbLoggedOutHint: "Bật: like/bình luận/chia sẻ của bài đang theo dõi được đọc không cần tài khoản, chạy lúc bộ thu thập rảnh (kể cả giờ nghỉ Meta ban đêm). Tắt: các bài đó quay về thu thập bảng tin page có đăng nhập.",
   proxyProvidersTitle: "Nhà cung cấp proxy",
-  proxyProvidersDesc: "Các gói proxy xoay của nhà cung cấp, mỗi gói có một loại API riêng. Mã truy cập lưu trong database và không hiển thị lại sau khi lưu.",
+  proxyProvidersDesc: "Mỗi nguồn là một link đổi IP cộng một mã truy cập - bộ thu thập gọi link để cổng có IP mới, rồi kiểm tra IP mới qua chính cổng đó. Mã truy cập lưu trong database và không hiển thị lại sau khi lưu.",
   addProxyProvider: "Thêm nhà cung cấp",
   editProxyProvider: "Sửa nhà cung cấp",
   proxyProviderKey: "Mã nhà cung cấp",

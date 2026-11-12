@@ -794,7 +794,7 @@ const en = {
   proxyFbLoggedOut: "Auto-refresh without login",
   proxyFbLoggedOutHint: "On: likes/comments/shares of tracked posts are read without an account whenever the crawler is idle (also during Meta quiet hours). Off: those posts go back to the logged-in page feed crawl.",
   proxyProvidersTitle: "Proxy providers",
-  proxyProvidersDesc: "Rotating-proxy plans that hand out a fresh IP on request. Tokens are stored in the database and never shown again after saving.",
+  proxyProvidersDesc: "Each source is one reset link plus one key - the crawler calls the link to give a port a new IP, then checks the new IP through that port. The key is stored in the database and never shown again after saving.",
   addProxyProvider: "Add provider",
   editProxyProvider: "Edit provider",
   proxyProviderKey: "Provider key",
