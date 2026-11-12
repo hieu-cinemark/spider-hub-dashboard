@@ -400,7 +400,10 @@ Hai câu hỏi cần người vận hành quyết:
 
 ---
 
-## 6. Kết luận & đề xuất Giai đoạn 1
+## 6. Kết luận & đề xuất Giai đoạn 1 (lịch sử — đã thay bằng §0)
+
+> Phần này mô tả **lộ trình cũ** (registry adapter theo `kind`). Nó đã được thay bằng
+> kiến trúc đơn giản ở §0: bỏ hẳn `kind`, mọi nguồn là một link reset + một key.
 
 ### 6.1 Vấn đề gốc
 
@@ -448,3 +451,15 @@ Migration DB chạy **trên VPS** (Supabase, cùng DB cả 3 repo dùng):
 - `cinemark-api` / `spider-hub`: `TELEGRAM_BOT_TOKEN= TELEGRAM_CHAT_ID= .venv/bin/python -m pytest -q`,
   `ruff check` trên file đã sửa.
 - `spider-hub-dashboard`: `npm run lint`, `npx tsc --noEmit`, `npx vitest run`, `npm run build`.
+
+---
+
+## 7. Việc còn lại sau khi đơn giản hoá
+
+| Việc | Trạng thái |
+| --- | --- |
+| Xoá cột `proxy_providers.kind` + `ip_allowlist` khỏi DB | Chạy `python scripts/migrate_proxy_providers.py --apply --drop-ip-allowlist` trên VPS (cả hai cột nằm chung lúc xoá) |
+| Điền `platform_proxies.provider_ref` cho các cổng có link reset cần `{ref}` | Làm tay trên dashboard (cột "Mã cổng") — mỗi cổng một mã của nhà cung cấp |
+| Đảm bảo mỗi nguồn có link reset đúng cú pháp | Ví dụ `https://example.com/reset?token={token}&port={ref}` |
+| Kiểm tra tài khoản nào đang dùng chung một IP | Bảng proxy hiện cột "Tài khoản ghim" — giá trị khác 0 là vi phạm quy tắc 1 proxy = 1 acc |
+| Deploy | `cinemark-api` → `spider-hub` → dashboard |
