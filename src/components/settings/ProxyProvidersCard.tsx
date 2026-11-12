@@ -44,7 +44,7 @@ export default function ProxyProvidersCard() {
       <Tag color="orange">{t("proxyProviderTokenMissing")}</Tag>
     );
 
-  const kindTag = (r: ProxyProvider) => <Tag>{r.kind || "—"}</Tag>;
+  const proxyCount = (r: ProxyProvider) => <Tag>{r.proxy_count ?? 0}</Tag>;
 
   const usage = (r: ProxyProvider) =>
     r.last_used_at ? (
@@ -77,7 +77,7 @@ export default function ProxyProvidersCard() {
       dataIndex: "api_url",
       render: (v: string) => <span className="break-all">{v || "—"}</span>,
     },
-    { title: t("proxyProviderKind"), key: "kind", width: 140, render: (_: unknown, r: ProxyProvider) => kindTag(r) },
+    { title: t("proxyProviderProxies"), key: "proxy_count", width: 140, render: (_: unknown, r: ProxyProvider) => proxyCount(r) },
     { title: t("proxyProviderToken"), key: "token", width: 260, render: (_: unknown, r: ProxyProvider) => tokenTag(r) },
     {
       title: t("columnLastTriggered"),

@@ -3,6 +3,7 @@
 import { Form, Input, Modal, Select, Switch } from "antd";
 import { useEffect } from "react";
 import { useTranslation } from "@/i18n/LocaleProvider";
+import { useProxyProviders } from "@/hooks/useSettings";
 import { PLATFORM_META } from "@/lib/platform";
 import type { Proxy, ProxyInput } from "@/lib/types";
 
@@ -21,6 +22,7 @@ export default function ProxyFormModal({
 }) {
   const { t } = useTranslation();
   const [form] = Form.useForm<ProxyInput>();
+  const { data: providers } = useProxyProviders();
 
   const platformOptions = [
     { value: "all", label: t("allPlatformsShared") },
@@ -30,10 +32,25 @@ export default function ProxyFormModal({
       .map((p) => ({ value: p, label: PLATFORM_META[p].label })),
   ];
 
+  const providerOptions = [
+    { value: "", label: t("proxyProviderNone") },
+    ...(providers ?? []).map((p) => ({ value: p.key, label: p.key })),
+  ];
+
   useEffect(() => {
     if (open) {
       form.setFieldsValue(
-        proxy ?? { platform: "all", proxy_url: "", username: "", password: "", login_use_proxy: false, ip_type: "unknown", enabled: true },
+        proxy ?? {
+          platform: "all",
+          proxy_url: "",
+          username: "",
+          password: "",
+          login_use_proxy: false,
+          ip_type: "unknown",
+          enabled: true,
+          provider_key: null,
+          provider_ref: null,
+        },
       );
     }
   }, [open, proxy, form]);
@@ -56,6 +73,20 @@ export default function ProxyFormModal({
         </Form.Item>
         <Form.Item name="proxy_url" label={t("proxyHostPort")} rules={[{ required: true }]}>
           <Input placeholder="1.2.3.4:8080" />
+        </Form.Item>
+        <Form.Item
+          name="provider_key"
+          label={t("proxyProviderSource")}
+          tooltip={t("proxyProviderSourceHint")}
+        >
+          <Select options={providerOptions} allowClear />
+        </Form.Item>
+        <Form.Item
+          name="provider_ref"
+          label={t("proxyProviderRef")}
+          tooltip={t("proxyProviderRefHint")}
+        >
+          <Input placeholder="proxy_id / port id" />
         </Form.Item>
         <Form.Item name="ip_type" label={t("columnIpType")} tooltip={t("ipTypeTooltip")}>
           <Select

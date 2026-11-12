@@ -1,53 +1,95 @@
-# Thiết kế lại proxy nhiều nguồn — khảo sát (Giai đoạn 0) + kết quả Giai đoạn 1
+# Thiết kế lại proxy nhiều nguồn — kiến trúc đơn giản (đã làm, 2026-11-12)
 
-Tài liệu này bắt đầu là **khảo sát, chưa sửa gì**. Mục tiêu: vẽ toàn bộ đường đi của proxy qua
-3 repo (`spider-hub-dashboard`, `cinemark-api`, `spider-hub`), ghi rõ loại nguồn proxy
-đang có, cột nào còn dùng / không dùng, và mọi chỗ đang dính `proxiestrust`.
+Tài liệu này mô tả **kiến trúc hiện hành** của toàn bộ đường đi proxy qua 3 repo
+(`spider-hub-dashboard`, `cinemark-api`, `spider-hub`).
 
 > Các repo đều PUBLIC: tài liệu này không chứa IP proxy thật, user/mật khẩu, token,
 > link reset, email hay UID. Mọi ví dụ đều là dạng giả.
 
 ---
 
-## 0. Giai đoạn 1 — ĐÃ LÀM (2026-11-12)
+## 0. Kiến trúc sau khi đơn giản hoá
 
-Phần còn lại của tài liệu là khảo sát **trước** Giai đoạn 1, giữ lại để thấy bối cảnh.
-Những gì đã thay đổi:
+Hai quyết định định hình toàn bộ:
+
+1. **Mọi nguồn proxy giống nhau**: một *link reset* + một *key*. Không phân loại nhà
+   cung cấp nữa (`static` / `rotate_url` / `webtui` / `zingproxy` → bỏ hết), không còn
+   registry adapter, không còn module riêng cho từng nhà cung cấp.
+2. **Một proxy thuộc đúng một tài khoản**: ghim cố định và riêng. Không có pool dùng
+   chung, không có "ít tài khoản hơn thì được xếp vào".
+
+### 0.1 Nguồn proxy (một dòng = một link reset + một key)
+
+Bảng `proxy_providers`:
+
+| Cột | Ý nghĩa |
+| --- | --- |
+| `key` | khoá, ví dụ `tiktok_us` — `tiktok_synthetic_provider` trỏ vào đây |
+| `api_url` | **link reset** của nhà cung cấp (có thể chứa placeholder) |
+| `token` | **key** của nhà cung cấp |
+| `last_used_at` / `last_status` | lần spider-hub gọi gần nhất + kết quả |
+
+Placeholder trong `api_url` (thay trước khi gọi):
+
+| Placeholder | Lấy từ |
+| --- | --- |
+| `{token}` | `proxy_providers.token` (URL-encode) |
+| `{proxy}` | `platform_proxies.proxy_url` (`host:port`) |
+| `{username}` / `{password}` | cột của dòng proxy |
+| `{ref}` | `platform_proxies.provider_ref` — mã cổng trong hệ thống nhà cung cấp |
+
+Cơ chế xoay được xác minh **bằng thực tế**: sau khi `GET api_url`, đo IP thoát qua
+chính proxy đó (`https://api.ipify.org`) cho tới khi khác IP cũ (tối đa 120 s). Không
+cần biết nhà cung cấp là ai.
+
+### 0.2 Ghim riêng (1 proxy = 1 tài khoản)
+
+- `pin_account_to_free_proxy(platform, account_row_id)` — chỉ chọn proxy có **tải = 0**
+  (không tài khoản nào khác đang ghim), tính theo **địa chỉ** chứ không theo id dòng.
+- Không có proxy trống → tài khoản **không crawl được** (`ProxyPoolExhaustedError`),
+  phải ghim tay trên dashboard.
+- `shared_proxy_violation()` — chặn khi cổng đang bị tài khoản khác giữ, **mọi nền
+  tảng** (Meta nối Facebook với Threads qua IP; một proxy của TikTok cũng là một IP).
+- `meta_proxy_violation()` — quy tắc riêng của Meta, chỉ nhìn **nhãn** của proxy
+  (`static` / `rotating` / `public`) nên không cần đọc DB.
+- `max_accounts_per_ip` bị bỏ: một proxy không bao giờ mang hai tài khoản nên cảnh báo
+  "quá tải" không còn ý nghĩa.
+
+### 0.3 Phần AI — giữ nguyên
+
+Kiến trúc AI **không đổi** (provider + key + model, có `upsert_ai_provider` riêng).
+
+### 0.4 Thay đổi so với bản "registry adapter" (đã bị thay)
 
 | Việc | Kết quả | Commit |
 | --- | --- | --- |
-| `proxy_providers.kind` | Cột `text NOT NULL DEFAULT ''` — `static` / `rotate_url` / `webtui` / `zingproxy`. Spider-hub tra adapter theo cột này, **không đoán theo URL nữa** | `spider-hub` `6b22a82` |
-| `platform_proxies.provider_key` | Cột `text` — gói nào sở hữu dòng proxy này (`NULL` = nhập tay/tĩnh) | `spider-hub` `6b22a82` |
-| Registry adapter | `spider-hub/social_crawler/clients/proxy_provider.py` → `ADAPTERS[kind]`, giao diện chung: `rotate()` / `reset_ip()` / `lease()` / `static_port()`. Adapter zingproxy nằm ở `clients/zingproxy.py` | `spider-hub` `744033e` |
-| **Bỏ proxiestrust** | Xoá API lease cũ (`get_new_proxy`), chế độ "cấp quyền theo IP nguồn" (`ip_allowlist`), setting `provider_min_get_new_interval_seconds` → `provider_min_call_interval_seconds` | `spider-hub` `744033e` |
-| Đổi tên gói | `proxiestrust_default` → `default`, `proxiestrust_tiktok_us` → `tiktok_us` (tên trung tính, không dính một nhà cung cấp). Script migration cập nhật mọi tham chiếu: `platform_proxies.provider_key` + setting `tiktok_synthetic_provider` | `spider-hub/scripts/migrate_proxy_providers.py` |
-| Phía ghi API | `ProxyProviderUpdate` = Pydantic **discriminated union** theo `kind`; thêm `DELETE /settings/proxy/providers/{key}`; `/settings/proxies` trả `provider_key`, `provider_kind`, `provider_last_used_at`, `provider_last_status` | `cinemark-api` `e5a974b` |
-| Dashboard | Form chọn `kind`, bỏ trường `ip_allowlist`, thêm nút xoá gói, hiện loại gói + gói sở hữu mỗi proxy | `spider-hub-dashboard` `022bbcd` |
+| `proxy_providers.kind` | **Bỏ** — mọi nguồn dùng chung một cơ chế | `spider-hub` `8335f31` |
+| `platform_proxies.provider_ref` | Thêm — mã cổng của nhà cung cấp, điền vào `{ref}` | `spider-hub` `8335f31` |
+| Registry adapter | `clients/proxy_provider.py` viết lại: `_build_reset_url` / `_egress_ip` / `_wait_new_ip` / `reset_proxy` / `lease_proxy` / `static_port` | `spider-hub` `8335f31` |
+| `clients/zingproxy.py` | **Xoá** | `spider-hub` `8335f31` |
+| Ghim tài khoản | `pin_account_to_least_loaded_proxy` → `pin_account_to_free_proxy` (tải = 0) | `spider-hub` `8335f31` |
+| Quy tắc chung IP | `shared_proxy_violation()` tách khỏi `meta_proxy_violation()`, áp cho mọi nền tảng | `spider-hub` `065e951` |
+| API ghi | `ProxyProviderUpdate` đơn giản (`api_url` + `token`), `ProxyProviderOut` có `proxy_count`; `ProxyOut`/`ProxyCreate`/`ProxyUpdate` có `provider_ref` | `cinemark-api` `9a7a97b` |
+| Setting | Bỏ `max_accounts_per_ip` | `cinemark-api` `9a7a97b` |
+| Dashboard | Form nguồn chỉ còn key + link reset + key; form proxy có chọn nguồn + mã cổng; bảng nguồn hiện số proxy | `spider-hub-dashboard` (commit mới) |
 
-**Quan trọng — hành vi được giữ nguyên:** hai gói `proxiestrust_*` trên DB thực ra là gói
-*cổng xoay cố định* (token = `host:port:user:pass`, `api_url` = link đổi IP), không phải
-API lease. Chúng vẫn chạy y như cũ qua adapter `rotate_url` — chỉ là tên và cách gọi đã
-đổi. TikTok vẫn lấy IP Mỹ từ đúng gói đó, qua `lease_proxy()`.
+### 0.5 Thứ tự deploy (VPS)
 
-Cột `proxy_providers.ip_allowlist` **chưa xoá khỏi DB** (còn tồn tại, không còn code nào
-đọc/ghi). Xoá bằng `scripts/migrate_proxy_providers.py --apply --drop-ip-allowlist` sau khi
-đã deploy cả hai phía.
+1. Deploy `cinemark-api` (ghi `provider_ref`, `proxy_count`; bỏ `kind`).
+2. Deploy `spider-hub` (đọc `provider_ref`, không đọc `kind`).
+3. Deploy dashboard.
 
-**Thứ tự deploy (VPS):**
-
-1. `python scripts/migrate_proxy_providers.py` (dry-run) → xem kế hoạch đổi tên + kind + provider_key.
-2. `python scripts/migrate_proxy_providers.py --apply` → ghi vào DB (có `--revert` để hoàn tác).
-3. Deploy `cinemark-api` (ghi `kind`, `provider_key`).
-4. Deploy `spider-hub` (đọc `kind`, `provider_key`).
-5. Deploy dashboard.
-
-Bước 2 phải xong **trước** bước 4: code mới mặc định tìm gói `tiktok_us`, còn code cũ
-tìm `proxiestrust_tiktok_us`. Nếu deploy spider-hub trước mà migration chưa chạy,
-`lease_proxy("tiktok_us")` không tìm thấy gói → TikTok rơi về pool proxy thường.
+Cột `proxy_providers.kind` **còn nằm trong DB** (không còn code nào đọc/ghi). Cột
+`proxy_providers.ip_allowlist` cũng vậy. Xoá bằng
+`python scripts/migrate_proxy_providers.py --apply --drop-ip-allowlist` sau khi đã
+deploy cả hai phía.
 
 ---
 
-## 1. Sơ đồ dữ liệu
+## 1. Sơ đồ dữ liệu (phần khảo sát trước đây)
+
+Phần còn lại của tài liệu là khảo sát **trước** khi đơn giản hoá, giữ lại để thấy bối
+cảnh và vì sao cần đổi.
 
 ```
                      ┌──────────────────────────────┐
@@ -210,6 +252,11 @@ chỉ còn ý nghĩa với nhánh `api-tra-ve-proxy-moi` vốn không có dòng 
 thiếu ở `cinemark-api` (`app/schemas/settings.py`) → dashboard không sửa được key này.
 Hai bên còn phải giữ đồng bộ khi thêm/bớt key (spider-hub đọc trong `db/proxy_settings.DEFAULTS`,
 cinemark-api đọc trong `app/schemas/settings.ProxySettings`).
+
+> **Cập nhật sau khi đơn giản hoá:** `max_accounts_per_ip` đã bị **xoá khỏi cả hai repo**
+> (và khỏi `proxy_settings.DEFAULTS`) — một proxy không bao giờ mang hai tài khoản nên
+> ngưỡng "nhiều tài khoản trên một IP" không còn tác dụng. Mọi key còn lại vẫn phải giữ
+> đồng bộ giữa `db/proxy_settings.DEFAULTS` và `app/schemas/settings.ProxySettings`.
 
 ---
 

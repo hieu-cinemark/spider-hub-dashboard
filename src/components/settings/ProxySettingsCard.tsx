@@ -36,7 +36,6 @@ const SECTIONS: SectionMeta[] = [
     desc: "proxySectionPinningDesc",
     fields: [
       { name: "repin_after_consecutive_failures", kind: "int", label: "proxyRepinAfter", hint: "proxyRepinAfterHint", unit: "unitTimes", min: 1, max: 100 },
-      { name: "max_accounts_per_ip", kind: "int", label: "proxyMaxAccountsPerIp", hint: "proxyMaxAccountsPerIpHint", unit: "unitTimes", min: 1, max: 100 },
       { name: "cooldown_base_minutes", kind: "float", label: "proxyCooldownBase", hint: "proxyCooldownBaseHint", unit: "unitMinutes", min: 0.1, max: 240 },
       { name: "cooldown_max_minutes", kind: "float", label: "proxyCooldownMax", hint: "proxyCooldownMaxHint", unit: "unitMinutes", min: 0.1, max: 10080 },
     ],

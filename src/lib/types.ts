@@ -303,11 +303,13 @@ export interface Proxy {
   // How many accounts are currently sticky-pinned to this proxy - see
   // cinemark-api's platform_config_db.list_proxies.
   assigned_account_count: number;
-  // Which vendor package owns this proxy row (null = hand-entered/static) and that
-  // package's kind - spider-hub picks its rotate adapter by `kind`.
+  // Which vendor source owns this proxy row (null = hand-entered/static) - the
+  // source is one reset link + one key, so there is no per-vendor adapter.
   provider_key: string | null;
-  provider_kind: string | null;
-  // When the owning package was last called, and how it went.
+  // Per-port id in the vendor's own system - filled into the {ref} placeholder
+  // of that source's reset link.
+  provider_ref: string | null;
+  // When the owning source was last called, and how it went.
   provider_last_used_at: string | null;
   provider_last_status: string | null;
 }
@@ -323,7 +325,6 @@ export type ProxyInput = Partial<
     | "consecutive_failures"
     | "last_used_at"
     | "assigned_account_count"
-    | "provider_kind"
     | "provider_last_used_at"
     | "provider_last_status"
   >
@@ -506,7 +507,6 @@ export interface AiProviderInput {
 // Field names/defaults mirror spider-hub's services/proxy_settings.py.
 export interface ProxySettings {
   repin_after_consecutive_failures: number;
-  max_accounts_per_ip: number;
   cooldown_base_minutes: number;
   cooldown_max_minutes: number;
   health_check_ping_url: string;
@@ -534,22 +534,21 @@ export interface ProxySettingsResponse {
 
 export interface ProxyProvider {
   key: string;
-  // Which vendor API this package uses - spider-hub picks its rotate adapter by it.
-  kind: ProxyProviderKind;
+  // The reset link of this source - may contain the {token} / {proxy} /
+  // {username} / {password} / {ref} placeholders.
   api_url: string;
   token_set: boolean;
   updated_at: string | null;
-  // Lần spider-hub thực sự dùng gói này và kết quả ("ok" / "error: ...").
+  // Lần spider-hub thực sự dùng nguồn này và kết quả ("ok" / "error: ...").
   last_used_at: string | null;
   last_status: string | null;
+  // How many proxies currently belong to this source.
+  proxy_count: number;
 }
 
-export type ProxyProviderKind = "static" | "rotate_url" | "webtui" | "zingproxy";
-
 export interface ProxyProviderInput {
-  kind: ProxyProviderKind;
   api_url: string;
-  // Omit or blank to keep whatever token is already stored.
+  // Omit or blank to keep whatever key is already stored.
   token?: string;
 }
 
