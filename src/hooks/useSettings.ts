@@ -412,6 +412,21 @@ export function useSetProxyProvider() {
   });
 }
 
+export function useDeleteProxyProvider() {
+  const { message } = App.useApp();
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (key: string) => api.deleteProxyProvider(key),
+    onSuccess: () => {
+      message.success(t("toastProxyProviderDeleted"));
+      queryClient.invalidateQueries({ queryKey: PROXY_PROVIDERS_KEY });
+    },
+    onError: (err: unknown) => message.error(translateApiError(err, t)),
+  });
+}
+
 export function useCommentSchedule() {
   return useQuery({ queryKey: COMMENT_SCHEDULE_KEY, queryFn: api.commentSchedule });
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { Form, Input, Modal, Switch } from "antd";
+import { Form, Input, Modal, Select } from "antd";
 import { useEffect } from "react";
 import { useTranslation } from "@/i18n/LocaleProvider";
 import type { ProxyProvider, ProxyProviderInput } from "@/lib/types";
@@ -27,13 +27,18 @@ export default function ProxyProviderFormModal({
   const isNew = !provider;
   const tokenRequired = isNew;
 
+  // The kind decides which vendor API the package talks to - spider-hub picks
+  // its rotate adapter by it, so it is part of the form, not a hidden default.
+  const kind = Form.useWatch("kind", form);
+  const needsApiUrl = kind !== "static";
+
   useEffect(() => {
     if (open) {
       form.setFieldsValue({
         key: provider?.key ?? "",
+        kind: provider?.kind ?? "rotate_url",
         api_url: provider?.api_url ?? "",
         token: "",
-        ip_allowlist: provider?.ip_allowlist ?? false,
       });
     }
   }, [open, provider, form]);
@@ -60,15 +65,30 @@ export default function ProxyProviderFormModal({
           tooltip={t("proxyProviderKeyHint")}
           rules={[{ required: true }, { pattern: /^[a-z0-9_]{1,64}$/, message: t("proxyProviderKeyInvalid") }]}
         >
-          <Input placeholder="proxiestrust_tiktok_us" disabled={!isNew} />
+          <Input placeholder="tiktok_us" disabled={!isNew} />
+        </Form.Item>
+        <Form.Item
+          name="kind"
+          label={t("proxyProviderKind")}
+          tooltip={t("proxyProviderKindHint")}
+          rules={[{ required: true }]}
+        >
+          <Select
+            options={[
+              { value: "rotate_url", label: t("proxyProviderKindRotateUrl") },
+              { value: "webtui", label: t("proxyProviderKindWebtui") },
+              { value: "zingproxy", label: t("proxyProviderKindZingproxy") },
+              { value: "static", label: t("proxyProviderKindStatic") },
+            ]}
+          />
         </Form.Item>
         <Form.Item
           name="api_url"
           label={t("proxyProviderApiUrl")}
           tooltip={t("proxyProviderApiUrlHint")}
-          rules={[{ required: true }, { type: "url" }]}
+          rules={needsApiUrl ? [{ required: true }, { type: "url" }] : []}
         >
-          <Input placeholder="https://proxiestrust.com/sp07api/get_new" />
+          <Input placeholder="https://example.com/reset" disabled={!needsApiUrl} />
         </Form.Item>
         <Form.Item
           name="token"
@@ -77,14 +97,6 @@ export default function ProxyProviderFormModal({
           rules={tokenRequired ? [{ required: true }] : []}
         >
           <Input.Password placeholder={provider?.token_set ? "••••••••" : ""} />
-        </Form.Item>
-        <Form.Item
-          name="ip_allowlist"
-          label={t("proxyProviderIpAllowlist")}
-          tooltip={t("proxyProviderIpAllowlistHint")}
-          valuePropName="checked"
-        >
-          <Switch />
         </Form.Item>
       </Form>
     </Modal>

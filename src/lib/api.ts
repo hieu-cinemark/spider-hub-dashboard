@@ -358,6 +358,8 @@ export const api = {
   proxyProviders: () => request<ProxyProvider[]>("/settings/proxy/providers"),
   setProxyProvider: (key: string, input: ProxyProviderInput) =>
     request<ProxyProvider>(`/settings/proxy/providers/${key}`, { method: "PUT", body: JSON.stringify(input) }),
+  deleteProxyProvider: (key: string) =>
+    request<{ ok: boolean }>(`/settings/proxy/providers/${key}`, { method: "DELETE" }),
 
   importParse: (params: ImportParseParams) =>
     request<ImportParseResponse>("/settings/import/parse", { method: "POST", body: JSON.stringify(params) }),

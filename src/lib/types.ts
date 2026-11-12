@@ -303,6 +303,13 @@ export interface Proxy {
   // How many accounts are currently sticky-pinned to this proxy - see
   // cinemark-api's platform_config_db.list_proxies.
   assigned_account_count: number;
+  // Which vendor package owns this proxy row (null = hand-entered/static) and that
+  // package's kind - spider-hub picks its rotate adapter by `kind`.
+  provider_key: string | null;
+  provider_kind: string | null;
+  // When the owning package was last called, and how it went.
+  provider_last_used_at: string | null;
+  provider_last_status: string | null;
 }
 
 export type ProxyInput = Partial<
@@ -316,6 +323,9 @@ export type ProxyInput = Partial<
     | "consecutive_failures"
     | "last_used_at"
     | "assigned_account_count"
+    | "provider_kind"
+    | "provider_last_used_at"
+    | "provider_last_status"
   >
 >;
 
@@ -496,6 +506,7 @@ export interface AiProviderInput {
 // Field names/defaults mirror spider-hub's services/proxy_settings.py.
 export interface ProxySettings {
   repin_after_consecutive_failures: number;
+  max_accounts_per_ip: number;
   cooldown_base_minutes: number;
   cooldown_max_minutes: number;
   health_check_ping_url: string;
@@ -503,7 +514,7 @@ export interface ProxySettings {
   health_check_alert_after_failures: number;
   health_check_streak_ttl_hours: number;
   provider_request_timeout_seconds: number;
-  provider_min_get_new_interval_seconds: number;
+  provider_min_call_interval_seconds: number;
   provider_max_cooldown_wait_seconds: number;
   exhausted_backoff_base_seconds: number;
   exhausted_backoff_growth_factor: number;
@@ -523,20 +534,23 @@ export interface ProxySettingsResponse {
 
 export interface ProxyProvider {
   key: string;
+  // Which vendor API this package uses - spider-hub picks its rotate adapter by it.
+  kind: ProxyProviderKind;
   api_url: string;
   token_set: boolean;
-  ip_allowlist: boolean;
   updated_at: string | null;
   // Lần spider-hub thực sự dùng gói này và kết quả ("ok" / "error: ...").
   last_used_at: string | null;
   last_status: string | null;
 }
 
+export type ProxyProviderKind = "static" | "rotate_url" | "webtui" | "zingproxy";
+
 export interface ProxyProviderInput {
+  kind: ProxyProviderKind;
   api_url: string;
   // Omit or blank to keep whatever token is already stored.
   token?: string;
-  ip_allowlist: boolean;
 }
 
 export type NurturePlatform = "threads" | "all";

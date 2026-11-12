@@ -1,13 +1,13 @@
 "use client";
 
 import { CloudServerOutlined, PlusOutlined } from "@ant-design/icons";
-import { Button, Table, Tag, Tooltip, Typography } from "antd";
+import { Button, Popconfirm, Table, Tag, Tooltip, Typography } from "antd";
 import { useState } from "react";
 import DashboardCard, { CardHeading } from "@/components/DashboardCard";
 import MobileTable, { type ResponsiveColumnType } from "@/components/MobileTable";
 import { useMdUp } from "@/hooks/useMdUp";
 import { usePagedList } from "@/hooks/usePagedList";
-import { useProxyProviders, useSetProxyProvider } from "@/hooks/useSettings";
+import { useDeleteProxyProvider, useProxyProviders, useSetProxyProvider } from "@/hooks/useSettings";
 import { useTranslation } from "@/i18n/LocaleProvider";
 import { formatRelativeTime } from "@/lib/format";
 import type { ProxyProvider, ProxyProviderInput } from "@/lib/types";
@@ -18,6 +18,7 @@ export default function ProxyProvidersCard() {
   const mdUp = useMdUp();
   const { data: providers, isLoading } = useProxyProviders();
   const setProvider = useSetProxyProvider();
+  const deleteProvider = useDeleteProxyProvider();
   const [editing, setEditing] = useState<ProxyProvider | null>(null);
   const [adding, setAdding] = useState(false);
 
@@ -43,8 +44,7 @@ export default function ProxyProvidersCard() {
       <Tag color="orange">{t("proxyProviderTokenMissing")}</Tag>
     );
 
-  const modeTag = (r: ProxyProvider) =>
-    r.ip_allowlist ? <Tag>{t("proxyProviderModeIpAllow")}</Tag> : <Tag>{t("proxyProviderModeUserPass")}</Tag>;
+  const kindTag = (r: ProxyProvider) => <Tag>{r.kind || "—"}</Tag>;
 
   const usage = (r: ProxyProvider) =>
     r.last_used_at ? (
@@ -77,7 +77,7 @@ export default function ProxyProvidersCard() {
       dataIndex: "api_url",
       render: (v: string) => <span className="break-all">{v || "—"}</span>,
     },
-    { title: t("proxyProviderMode"), key: "mode", width: 160, render: (_: unknown, r: ProxyProvider) => modeTag(r) },
+    { title: t("proxyProviderKind"), key: "kind", width: 140, render: (_: unknown, r: ProxyProvider) => kindTag(r) },
     { title: t("proxyProviderToken"), key: "token", width: 260, render: (_: unknown, r: ProxyProvider) => tokenTag(r) },
     {
       title: t("columnLastTriggered"),
@@ -88,9 +88,21 @@ export default function ProxyProvidersCard() {
     {
       title: "",
       key: "actions",
-      width: 90,
+      width: 150,
       mobileHidden: true,
-      render: (_: unknown, r: ProxyProvider) => <Button onClick={() => setEditing(r)}>{t("edit")}</Button>,
+      render: (_: unknown, r: ProxyProvider) => (
+        <div className="flex gap-2">
+          <Button onClick={() => setEditing(r)}>{t("edit")}</Button>
+          <Popconfirm
+            title={t("proxyProviderDeleteConfirm")}
+            okText={t("remove")}
+            cancelText={t("cancel")}
+            onConfirm={() => deleteProvider.mutate(r.key)}
+          >
+            <Button danger>{t("remove")}</Button>
+          </Popconfirm>
+        </div>
+      ),
     },
   ];
 

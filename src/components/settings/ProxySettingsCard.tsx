@@ -36,6 +36,7 @@ const SECTIONS: SectionMeta[] = [
     desc: "proxySectionPinningDesc",
     fields: [
       { name: "repin_after_consecutive_failures", kind: "int", label: "proxyRepinAfter", hint: "proxyRepinAfterHint", unit: "unitTimes", min: 1, max: 100 },
+      { name: "max_accounts_per_ip", kind: "int", label: "proxyMaxAccountsPerIp", hint: "proxyMaxAccountsPerIpHint", unit: "unitTimes", min: 1, max: 100 },
       { name: "cooldown_base_minutes", kind: "float", label: "proxyCooldownBase", hint: "proxyCooldownBaseHint", unit: "unitMinutes", min: 0.1, max: 240 },
       { name: "cooldown_max_minutes", kind: "float", label: "proxyCooldownMax", hint: "proxyCooldownMaxHint", unit: "unitMinutes", min: 0.1, max: 10080 },
     ],
@@ -55,7 +56,7 @@ const SECTIONS: SectionMeta[] = [
     desc: "proxySectionVendorDesc",
     fields: [
       { name: "provider_request_timeout_seconds", kind: "float", label: "proxyVendorTimeout", hint: "proxyVendorTimeoutHint", unit: "unitSeconds", min: 1, max: 120 },
-      { name: "provider_min_get_new_interval_seconds", kind: "float", label: "proxyVendorMinInterval", hint: "proxyVendorMinIntervalHint", unit: "unitSeconds", min: 0, max: 3600 },
+      { name: "provider_min_call_interval_seconds", kind: "float", label: "proxyVendorMinInterval", hint: "proxyVendorMinIntervalHint", unit: "unitSeconds", min: 0, max: 3600 },
       { name: "provider_max_cooldown_wait_seconds", kind: "float", label: "proxyVendorMaxWait", hint: "proxyVendorMaxWaitHint", unit: "unitSeconds", min: 0, max: 3600 },
     ],
   },
