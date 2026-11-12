@@ -1,11 +1,49 @@
-# Thiết kế lại proxy nhiều nguồn — khảo sát (Giai đoạn 0)
+# Thiết kế lại proxy nhiều nguồn — khảo sát (Giai đoạn 0) + kết quả Giai đoạn 1
 
-Tài liệu này là **khảo sát, chưa sửa gì**. Mục tiêu: vẽ toàn bộ đường đi của proxy qua
+Tài liệu này bắt đầu là **khảo sát, chưa sửa gì**. Mục tiêu: vẽ toàn bộ đường đi của proxy qua
 3 repo (`spider-hub-dashboard`, `cinemark-api`, `spider-hub`), ghi rõ loại nguồn proxy
 đang có, cột nào còn dùng / không dùng, và mọi chỗ đang dính `proxiestrust`.
 
 > Các repo đều PUBLIC: tài liệu này không chứa IP proxy thật, user/mật khẩu, token,
 > link reset, email hay UID. Mọi ví dụ đều là dạng giả.
+
+---
+
+## 0. Giai đoạn 1 — ĐÃ LÀM (2026-11-12)
+
+Phần còn lại của tài liệu là khảo sát **trước** Giai đoạn 1, giữ lại để thấy bối cảnh.
+Những gì đã thay đổi:
+
+| Việc | Kết quả | Commit |
+| --- | --- | --- |
+| `proxy_providers.kind` | Cột `text NOT NULL DEFAULT ''` — `static` / `rotate_url` / `webtui` / `zingproxy`. Spider-hub tra adapter theo cột này, **không đoán theo URL nữa** | `spider-hub` `6b22a82` |
+| `platform_proxies.provider_key` | Cột `text` — gói nào sở hữu dòng proxy này (`NULL` = nhập tay/tĩnh) | `spider-hub` `6b22a82` |
+| Registry adapter | `spider-hub/social_crawler/clients/proxy_provider.py` → `ADAPTERS[kind]`, giao diện chung: `rotate()` / `reset_ip()` / `lease()` / `static_port()`. Adapter zingproxy nằm ở `clients/zingproxy.py` | `spider-hub` `744033e` |
+| **Bỏ proxiestrust** | Xoá API lease cũ (`get_new_proxy`), chế độ "cấp quyền theo IP nguồn" (`ip_allowlist`), setting `provider_min_get_new_interval_seconds` → `provider_min_call_interval_seconds` | `spider-hub` `744033e` |
+| Đổi tên gói | `proxiestrust_default` → `default`, `proxiestrust_tiktok_us` → `tiktok_us` (tên trung tính, không dính một nhà cung cấp). Script migration cập nhật mọi tham chiếu: `platform_proxies.provider_key` + setting `tiktok_synthetic_provider` | `spider-hub/scripts/migrate_proxy_providers.py` |
+| Phía ghi API | `ProxyProviderUpdate` = Pydantic **discriminated union** theo `kind`; thêm `DELETE /settings/proxy/providers/{key}`; `/settings/proxies` trả `provider_key`, `provider_kind`, `provider_last_used_at`, `provider_last_status` | `cinemark-api` `e5a974b` |
+| Dashboard | Form chọn `kind`, bỏ trường `ip_allowlist`, thêm nút xoá gói, hiện loại gói + gói sở hữu mỗi proxy | `spider-hub-dashboard` `022bbcd` |
+
+**Quan trọng — hành vi được giữ nguyên:** hai gói `proxiestrust_*` trên DB thực ra là gói
+*cổng xoay cố định* (token = `host:port:user:pass`, `api_url` = link đổi IP), không phải
+API lease. Chúng vẫn chạy y như cũ qua adapter `rotate_url` — chỉ là tên và cách gọi đã
+đổi. TikTok vẫn lấy IP Mỹ từ đúng gói đó, qua `lease_proxy()`.
+
+Cột `proxy_providers.ip_allowlist` **chưa xoá khỏi DB** (còn tồn tại, không còn code nào
+đọc/ghi). Xoá bằng `scripts/migrate_proxy_providers.py --apply --drop-ip-allowlist` sau khi
+đã deploy cả hai phía.
+
+**Thứ tự deploy (VPS):**
+
+1. `python scripts/migrate_proxy_providers.py` (dry-run) → xem kế hoạch đổi tên + kind + provider_key.
+2. `python scripts/migrate_proxy_providers.py --apply` → ghi vào DB (có `--revert` để hoàn tác).
+3. Deploy `cinemark-api` (ghi `kind`, `provider_key`).
+4. Deploy `spider-hub` (đọc `kind`, `provider_key`).
+5. Deploy dashboard.
+
+Bước 2 phải xong **trước** bước 4: code mới mặc định tìm gói `tiktok_us`, còn code cũ
+tìm `proxiestrust_tiktok_us`. Nếu deploy spider-hub trước mà migration chưa chạy,
+`lease_proxy("tiktok_us")` không tìm thấy gói → TikTok rơi về pool proxy thường.
 
 ---
 
