@@ -1,11 +1,12 @@
 "use client";
 
 import { BarChartOutlined, DeleteOutlined, EditOutlined, FireOutlined, PlaySquareOutlined, PlusOutlined } from "@ant-design/icons";
-import { Button, Empty, Input, Popconfirm, Table, Typography } from "antd";
+import { Button, Empty, Input, Table, Tooltip, Typography } from "antd";
 import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
 import DashboardCard, { CardHeading } from "@/components/DashboardCard";
 import MobileTable, { type ResponsiveColumnType } from "@/components/MobileTable";
+import TableActions from "@/components/TableActions";
 
 import { useMdUp } from "@/hooks/useMdUp";
 import { useGenerateReportMutation, useMovieMutations, useMovies, useReportJobStatus } from "@/hooks/useMovies";
@@ -100,24 +101,37 @@ export default function MoviesTable() {
   }
 
   const actions = (movie: Movie) => (
-    <div className="flex justify-end gap-1">
-      <Button
-        size="small"
-        icon={<FireOutlined />}
-        title={t("topPostsAction")}
-        onClick={() => setTopMovie(movie)}
-      />
-      <ReportButton movieId={movie.id} label={t("generateReportAction")} />
-      <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(movie)} />
-      <Popconfirm
-        title={t("removeMovieConfirm")}
-        onConfirm={() => remove.mutate(movie.id)}
-        okText={t("remove")}
-        okButtonProps={{ danger: true }}
-      >
-        <Button size="small" danger icon={<DeleteOutlined />} />
-      </Popconfirm>
-    </div>
+    <TableActions
+      actions={[
+        {
+          key: "edit",
+          label: t("editMovie"),
+          icon: <EditOutlined />,
+          onClick: () => openEdit(movie),
+        },
+        {
+          key: "top-posts",
+          label: t("topPostsAction"),
+          icon: <FireOutlined />,
+          onClick: () => setTopMovie(movie),
+        },
+        {
+          key: "report",
+          label: t("generateReportAction"),
+          element: <ReportButton movieId={movie.id} label={t("generateReportAction")} />,
+        },
+        {
+          key: "delete",
+          label: t("remove"),
+          icon: <DeleteOutlined />,
+          danger: true,
+          confirm: {
+            title: t("removeMovieConfirm"),
+            onConfirm: () => remove.mutate(movie.id),
+          },
+        },
+      ]}
+    />
   );
 
   // Every column is kept - no `ellipsis` anywhere, so the desktop table
@@ -168,9 +182,17 @@ export default function MoviesTable() {
       title: t("movieColumnDescription"),
       dataIndex: "description",
       width: 240,
-      render: (description: Movie["description"]) => (
-        <div className="whitespace-pre-line break-words">{description || "—"}</div>
-      ),
+      // Mô tả dài: trên desktop hiện 1 dòng cắt ngắn, hover vào thì thấy
+      // đầy đủ (dữ liệu không bị bỏ). Trên mobile mọi cột đều hiện đầy đủ
+      // trong card, nên không mất gì.
+      render: (description: Movie["description"]) =>
+        description ? (
+          <Tooltip title={description} styles={{ root: { maxWidth: 420 } }}>
+            <div className="truncate whitespace-pre-line">{description}</div>
+          </Tooltip>
+        ) : (
+          "—"
+        ),
     },
     {
       title: t("actions"),

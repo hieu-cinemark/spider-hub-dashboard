@@ -67,7 +67,7 @@ export function useAlerts(): DashboardAlert[] {
         key: "accounts",
         level: "warning",
         text: t("alertAccounts", { n: broken }),
-        href: "/settings?tab=accounts-proxies&status=dead",
+          href: "/settings?tab=accounts&status=dead",
       });
     }
     const history = jobs?.history ?? [];

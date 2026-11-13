@@ -1,10 +1,9 @@
 "use client";
 
-import { LinkOutlined, UnorderedListOutlined } from "@ant-design/icons";
-import { Button, Checkbox, Empty, Tabs, Typography } from "antd";
+import { LinkOutlined } from "@ant-design/icons";
+import { Button, Checkbox, Empty, Segmented, Typography } from "antd";
 import dynamic from "next/dynamic";
 import { type Key, useState } from "react";
-import DashboardCard, { CardHeading } from "@/components/DashboardCard";
 import EngagementMetrics from "@/components/EngagementMetrics";
 import KeywordFilter from "@/components/KeywordFilter";
 import SharedPostCard from "@/components/SharedPostCard";
@@ -112,62 +111,58 @@ export default function PostsReview() {
 
   return (
     <div className="flex flex-col gap-4 animate-fade-in-up">
-      <DashboardCard
-        title={<CardHeading icon={<UnorderedListOutlined />} title={t("recentlyScrapedPosts")} />}
-        extra={
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            <KeywordFilter
-              platform={platform}
-              value={keywordId}
-              onChange={(next) => {
-                setSelectedRowKeys([]);
-                setQuery({ keyword: next ?? "" });
-              }}
-            />
-            <PlatformFilter
-              value={query.platform}
-              platforms={TRIGGERABLE_PLATFORMS}
-              onChange={(next) => {
-                setSelectedRowKeys([]);
-                setQuery({ platform: next, keyword: "" });
-              }}
-            />
-          </div>
-        }
-      >
-        <Tabs
-          className="ui-tabs"
-          activeKey={match}
+      {/* Bộ lọc nằm ở thanh trên (filter-bar), cùng platform + từ khoá -
+          một chỗ duy nhất để lọc, không chia nhỏ giữa extra và body. */}
+      <div className="filter-bar">
+        <KeywordFilter
+          platform={platform}
+          value={keywordId}
           onChange={(next) => {
             setSelectedRowKeys([]);
-            setQuery({ match: next });
+            setQuery({ keyword: next ?? "" });
           }}
-          items={[
-            { key: "related", label: t("postsRelated") },
-            { key: "unrelated", label: t("postsUnrelated") },
+        />
+        <PlatformFilter
+          value={query.platform}
+          platforms={TRIGGERABLE_PLATFORMS}
+          onChange={(next) => {
+            setSelectedRowKeys([]);
+            setQuery({ platform: next, keyword: "" });
+          }}
+        />
+        <Segmented
+          size="small"
+          value={match}
+          onChange={(next) => {
+            setSelectedRowKeys([]);
+            setQuery({ match: next as (typeof MATCH_TABS)[number] });
+          }}
+          options={[
+            { value: "related", label: t("postsRelated") },
+            { value: "unrelated", label: t("postsUnrelated") },
           ]}
         />
-        {selectedRowKeys.length > 0 && (
-          <div className="mb-1 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[color-mix(in_srgb,var(--accent)_28%,var(--line))] bg-[color-mix(in_srgb,var(--accent)_8%,var(--card))] px-4 py-3">
-            <Typography.Text className="text-sm text-[var(--ink-soft)]">{t("selectPostsCommentsHint")}</Typography.Text>
-            <Button
-              type="primary"
-              loading={runCommentsBulk.isPending}
-              onClick={() => {
-                const byId = new Map(items.map((p) => [p.id, p]));
-                const posts = selectedRowKeys
-                  .map((key) => byId.get(String(key)))
-                  .filter((p): p is Post => p !== undefined)
-                  .map((p) => ({ platform: p.platform, postId: p.id }));
-                runCommentsBulk.mutate(posts);
-                setSelectedRowKeys([]);
-              }}
-            >
-              {t("fetchCommentsSelected", { n: String(selectedRowKeys.length) })}
-            </Button>
-          </div>
-        )}
-      </DashboardCard>
+      </div>
+      {selectedRowKeys.length > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[color-mix(in_srgb,var(--accent)_28%,var(--line))] bg-[color-mix(in_srgb,var(--accent)_8%,var(--card))] px-4 py-3">
+          <Typography.Text className="text-sm text-[var(--ink-soft)]">{t("selectPostsCommentsHint")}</Typography.Text>
+          <Button
+            type="primary"
+            loading={runCommentsBulk.isPending}
+            onClick={() => {
+              const byId = new Map(items.map((p) => [p.id, p]));
+              const posts = selectedRowKeys
+                .map((key) => byId.get(String(key)))
+                .filter((p): p is Post => p !== undefined)
+                .map((p) => ({ platform: p.platform, postId: p.id }));
+              runCommentsBulk.mutate(posts);
+              setSelectedRowKeys([]);
+            }}
+          >
+            {t("fetchCommentsSelected", { n: String(selectedRowKeys.length) })}
+          </Button>
+        </div>
+      )}
 
       {isLoading && !data ? (
         <PostGridSkeleton />

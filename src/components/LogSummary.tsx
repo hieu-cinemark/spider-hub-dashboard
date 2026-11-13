@@ -163,7 +163,6 @@ export default function LogSummary({ kind, sourceLabel }: { kind: "spider-hub" |
           value={health.errorCount}
           loading={isFetching && !data}
           icon={<AlertOutlined />}
-          color="#f2545b"
           tone={health.errorCount > 0 ? "danger" : undefined}
         />
         <StatCard
@@ -171,7 +170,6 @@ export default function LogSummary({ kind, sourceLabel }: { kind: "spider-hub" |
           value={health.warningCount}
           loading={isFetching && !data}
           icon={<WarningOutlined />}
-          color="#f19542"
           tone={health.warningCount > 0 ? "warning" : undefined}
         />
         <StatCard
@@ -179,14 +177,12 @@ export default function LogSummary({ kind, sourceLabel }: { kind: "spider-hub" |
           value={parsed.length}
           loading={isFetching && !data}
           icon={<ReloadOutlined />}
-          color="#3aa6dc"
         />
         <StatCard
           title={t("logSummaryPlatforms")}
           value={platformIssues.length}
           loading={isFetching && !data}
           icon={<CheckCircleOutlined />}
-          color="#35c08a"
           tone={platformIssues.length > 0 ? "warning" : undefined}
           hint={
             health.errorCount === 0 && health.warningCount === 0 ? t("logSummaryHealthy") : undefined

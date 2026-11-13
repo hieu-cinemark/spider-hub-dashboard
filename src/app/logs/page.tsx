@@ -3,6 +3,7 @@
 import { CloudServerOutlined, RadarChartOutlined } from "@ant-design/icons";
 import { Tabs } from "antd";
 import LogSummary from "@/components/LogSummary";
+import PageHeader from "@/components/PageHeader";
 import { useQueryParam } from "@/hooks/useQueryParam";
 import { useTranslation } from "@/i18n/LocaleProvider";
 
@@ -11,6 +12,7 @@ export default function LogsPage() {
   const [tab, setTab] = useQueryParam("log", "spider-hub");
   return (
     <div className="flex flex-col gap-4">
+      <PageHeader title={t("navLogs")} description={t("logsPageDesc")} />
       <Tabs
         className="ui-tabs"
         activeKey={tab}

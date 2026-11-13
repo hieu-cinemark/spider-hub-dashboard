@@ -354,13 +354,12 @@ export default function JobsPageView() {
   return (
     <div className="flex flex-col gap-5 animate-fade-in-up">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-        <StatCard title={t("jobsKpiRunning")} value={running.length} icon={<ThunderboltOutlined />} color="#35c08a" loading={isLoading} />
-        <StatCard title={t("jobsKpiQueued")} value={queued.length} icon={<ClockCircleOutlined />} color="#1076ae" loading={isLoading} />
+        <StatCard title={t("jobsKpiRunning")} value={running.length} icon={<ThunderboltOutlined />} loading={isLoading} />
+        <StatCard title={t("jobsKpiQueued")} value={queued.length} icon={<ClockCircleOutlined />} loading={isLoading} />
         <StatCard
           title={t("jobsKpiDone")}
           value={counts.done}
           icon={<CheckCircleOutlined />}
-          color="#3aa6dc"
           loading={isLoading}
           hint={successRate !== null ? t("jobsSuccessRate", { rate: successRate }) : windowHint}
         />
@@ -368,7 +367,6 @@ export default function JobsPageView() {
           title={t("jobsKpiFailed")}
           value={counts.failed}
           icon={<CloseCircleOutlined />}
-          color="#f2545b"
           tone={counts.failed > counts.done ? "danger" : undefined}
           loading={isLoading}
           hint={windowHint}
@@ -377,7 +375,6 @@ export default function JobsPageView() {
           title={t("jobsKpiSkipped")}
           value={counts.skipped}
           icon={<MinusCircleOutlined />}
-          color="#f19542"
           loading={isLoading}
           hint={windowHint}
         />

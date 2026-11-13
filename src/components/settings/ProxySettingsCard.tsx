@@ -83,6 +83,23 @@ const SECTIONS: SectionMeta[] = [
     desc: "proxySectionFbLoggedOutDesc",
     fields: [{ name: "fb_logged_out_metrics_enabled", kind: "switch", label: "proxyFbLoggedOut", hint: "proxyFbLoggedOutHint" }],
   },
+  {
+    title: "crawlSectionPerformance",
+    desc: "crawlSectionPerformanceDesc",
+    fields: [
+      { name: "youtube_lanes", kind: "int", label: "crawlYoutubeLanes", hint: "crawlYoutubeLanesHint", min: 1, max: 64 },
+      { name: "youtube_filter_concurrency", kind: "int", label: "crawlYoutubeFilters", hint: "crawlYoutubeFiltersHint", min: 1, max: 12 },
+      { name: "youtube_search_pages", kind: "int", label: "crawlYoutubePages", hint: "crawlYoutubePagesHint", min: 1, max: 200 },
+      { name: "youtube_reply_pages", kind: "int", label: "crawlYoutubeReplyPages", hint: "crawlYoutubeReplyPagesHint", min: 0, max: 500 },
+      { name: "youtube_comments_per_round", kind: "int", label: "crawlYoutubeCommentsPerRound", hint: "crawlYoutubeCommentsPerRoundHint", min: 0, max: 10000 },
+      { name: "public_pages_per_proxy", kind: "int", label: "crawlPublicPerProxy", hint: "crawlPublicPerProxyHint", min: 1, max: 10 },
+      { name: "public_pages_gap_seconds", kind: "float", label: "crawlPublicGap", hint: "crawlPublicGapHint", unit: "unitSeconds", min: 0, max: 600 },
+      { name: "public_pages_queue_target", kind: "int", label: "crawlPublicQueue", hint: "crawlPublicQueueHint", min: 0, max: 500 },
+      { name: "threads_channel_workers", kind: "int", label: "crawlThreadsWorkers", hint: "crawlThreadsWorkersHint", min: 0, max: 16 },
+      { name: "threads_channels_queue_target", kind: "int", label: "crawlThreadsQueue", hint: "crawlThreadsQueueHint", min: 0, max: 200 },
+      { name: "facebook_account_page_feed", kind: "switch", label: "crawlFbAccountPageFeed", hint: "crawlFbAccountPageFeedHint" },
+    ],
+  },
 ];
 
 export default function ProxySettingsCard() {

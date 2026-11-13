@@ -2,7 +2,6 @@
 
 import {
   DeleteOutlined,
-  DownOutlined,
   EditOutlined,
   EyeInvisibleOutlined,
   EyeOutlined,
@@ -18,7 +17,6 @@ import {
   Alert,
   App,
   Button,
-  Dropdown,
   Input,
   Modal,
   Select,
@@ -37,6 +35,7 @@ import DashboardCard, { CardHeading } from "@/components/DashboardCard";
 import MobileTable, { type ResponsiveColumnType } from "@/components/MobileTable";
 import { TableRowsSkeleton } from "@/components/PageSkeleton";
 import PlatformBadge from "@/components/PlatformBadge";
+import TableActions from "@/components/TableActions";
 
 import NurtureJobBanner from "@/components/settings/NurtureJobBanner";
 import PlatformFilter, { ALL_PLATFORM_QUERY } from "@/components/PlatformFilter";
@@ -290,15 +289,6 @@ export default function AccountsTable() {
     mutation.then(() => setModalOpen(false));
   }
 
-  function confirmDelete(record: Account) {
-    modal.confirm({
-      title: t("removeAccountConfirm"),
-      okText: t("remove"),
-      okButtonProps: { danger: true },
-      onOk: () => remove.mutate(record.id),
-    });
-  }
-
   function confirmBulkRemove() {
     modal.confirm({
       title: t("bulkRemoveConfirm", { n: selectedIds.length }),
@@ -323,6 +313,9 @@ export default function AccountsTable() {
     setEnabled.mutate({ id: record.id, enabled });
   }
 
+  // Nút hành động của một dòng. "Sửa" là hành động chính nên luôn hiện
+  // ra ngoài; các hành động còn lại (nuôi tài khoản, xoá) nằm trong
+  // dropdown, hành động phá huỷ nằm cuối và tô đỏ.
   const rowActions = (record: Account) => (
     <div className="flex items-center gap-1">
       <Tooltip title={t(record.enabled ? "disableAccountAction" : "enableAccountAction")}>
@@ -341,26 +334,36 @@ export default function AccountsTable() {
           onClick={() => check.mutate(record.id)}
         />
       </Tooltip>
-      <Dropdown
-        menu={{
-          items: [
-            ...(record.platform === "threads"
-              ? [
-                  { key: "nurture", label: t("nurtureThisAccount"), icon: <HeartOutlined /> },
-                ]
-              : []),
-            { key: "edit", label: t("edit"), icon: <EditOutlined /> },
-            { key: "delete", label: t("remove"), icon: <DeleteOutlined />, danger: true },
-          ],
-          onClick: ({ key }) => {
-            if (key === "nurture") nurture.mutate({ account_id: record.id });
-            if (key === "edit") openEdit(record);
-            if (key === "delete") confirmDelete(record);
+      <TableActions
+        actions={[
+          {
+            key: "edit",
+            label: t("edit"),
+            icon: <EditOutlined />,
+            onClick: () => openEdit(record),
           },
-        }}
-      >
-        <Button size="small" icon={<DownOutlined />} />
-      </Dropdown>
+          ...(record.platform === "threads"
+            ? [
+                {
+                  key: "nurture",
+                  label: t("nurtureThisAccount"),
+                  icon: <HeartOutlined />,
+                  onClick: () => nurture.mutate({ account_id: record.id }),
+                },
+              ]
+            : []),
+          {
+            key: "delete",
+            label: t("remove"),
+            icon: <DeleteOutlined />,
+            danger: true,
+            confirm: {
+              title: t("removeAccountConfirm"),
+              onConfirm: () => remove.mutate(record.id),
+            },
+          },
+        ]}
+      />
     </div>
   );
 
@@ -557,6 +560,7 @@ function ProxyPicker({
   resetProxy: ReturnType<typeof useAccountMutations>["resetProxy"];
 }) {
   const { t } = useTranslation();
+  const { modal } = App.useApp();
   const options = useMemo(() => {
     // Meta links Facebook and Threads by IP, so a port of either platform can
     // be offered; the API refuses a pin that breaks the IP policy. A proxy
@@ -600,8 +604,19 @@ function ProxyPicker({
       loading={pending}
       disabled={pending}
       onChange={(proxyId: number) => {
-        if (proxyId === 0) resetProxy.mutate(account.id);
-        else setProxy.mutate({ id: account.id, proxyId });
+        if (proxyId === 0) {
+          // Bỏ ghim proxy là hành động phá huỷ ghim hiện tại - hỏi lại
+          // trước, vì tài khoản sẽ được ghim lại vào một proxy trống nào đó.
+          modal.confirm({
+            title: t("unpinProxyConfirm"),
+            content: t("unpinProxyHint"),
+            okText: t("unpinProxyAction"),
+            okButtonProps: { danger: true },
+            onOk: () => resetProxy.mutate(account.id),
+          });
+          return;
+        }
+        setProxy.mutate({ id: account.id, proxyId });
       }}
     />
   );

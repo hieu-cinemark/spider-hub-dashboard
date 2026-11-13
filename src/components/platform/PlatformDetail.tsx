@@ -15,7 +15,7 @@ import { useCommentCounts, useCommentTimeseries, useTimeseries, usePlatformStats
 import { useTranslation } from "@/i18n/LocaleProvider";
 import { CHART_HEIGHT, STALE_CRAWL_MS, TRIGGERABLE_PLATFORMS } from "@/lib/constants";
 import { formatRelativeTime } from "@/lib/format";
-import { PlatformIcon, platformCssColor, platformLabel, platformSource } from "@/lib/platform";
+import { PlatformIcon, platformLabel, platformSource } from "@/lib/platform";
 
 const TimeseriesChart = dynamic(() => import("@/components/TimeseriesChart"), { ssr: false });
 const KeywordVolumeTable = dynamic(() => import("@/components/KeywordVolumeTable"), {
@@ -43,7 +43,6 @@ export default function PlatformDetail({ platform }: { platform: string }) {
   const postSeries = (timeseries ?? []).filter((point) => point.platform === platform);
   const commentSeries = (commentTimeseries ?? []).filter((point) => point.platform === platform);
   const isTriggerable = (TRIGGERABLE_PLATFORMS as readonly string[]).includes(platform);
-  const color = platformCssColor(platform);
   const label = platformLabel(platform);
   const trendLoading = timeseriesLoading;
   const hasTrend = postSeries.length > 0 || commentSeries.length > 0;
@@ -57,7 +56,6 @@ export default function PlatformDetail({ platform }: { platform: string }) {
           title={t("platformPostsTitle", { platform: label })}
           value={row?.count ?? 0}
           icon={<PlatformIcon platform={platform} />}
-          color={issues?.errors ? "#ff4d4f" : color}
           tone={issues?.errors ? "danger" : issues?.warnings ? "warning" : undefined}
           loading={statsLoading}
           hint={
@@ -74,7 +72,6 @@ export default function PlatformDetail({ platform }: { platform: string }) {
           title={t("platformCommentsTitle", { platform: label })}
           value={commentRow?.count ?? 0}
           icon={<CommentOutlined />}
-          color="#f19542"
           loading={commentsLoading}
           delta={<CountDelta current={commentRow?.count_today ?? 0} previous={commentRow?.count_prev ?? 0} />}
         />

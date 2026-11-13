@@ -28,7 +28,7 @@ export default function ProxyFormModal({
     { value: "all", label: t("allPlatformsShared") },
     { value: "public", label: t("publicOnlyProxy") },
     ...Object.keys(PLATFORM_META)
-      .filter((p) => p === "facebook" || p === "threads" || p === "tiktok")
+      .filter((p) => p === "facebook" || p === "threads" || p === "tiktok" || p === "youtube")
       .map((p) => ({ value: p, label: PLATFORM_META[p].label })),
   ];
 

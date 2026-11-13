@@ -1,10 +1,11 @@
 "use client";
 
 import { DeleteOutlined, EditOutlined, FilterOutlined, PlusOutlined } from "@ant-design/icons";
-import { Button, Popconfirm, Switch, Table, Tag } from "antd";
+import { Button, Switch, Table, Tag } from "antd";
 import { useState } from "react";
 import DashboardCard, { CardHeading } from "@/components/DashboardCard";
 import MobileTable, { type ResponsiveColumnType } from "@/components/MobileTable";
+import TableActions from "@/components/TableActions";
 import FilterKeywordFormModal from "@/components/settings/FilterKeywordFormModal";
 import { useMdUp } from "@/hooks/useMdUp";
 import { usePagedList } from "@/hooks/usePagedList";
@@ -83,17 +84,26 @@ export default function FilterKeywordsTable() {
       align: "right",
       mobileHidden: true,
       render: (_: unknown, record: FilterKeyword) => (
-        <div className="flex justify-end gap-1">
-          <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(record)} />
-          <Popconfirm
-            title={t("removeFilterKeywordConfirm")}
-            onConfirm={() => remove.mutate(record.id)}
-            okText={t("remove")}
-            okButtonProps={{ danger: true }}
-          >
-            <Button size="small" danger icon={<DeleteOutlined />} />
-          </Popconfirm>
-        </div>
+        <TableActions
+          actions={[
+            {
+              key: "edit",
+              label: t("edit"),
+              icon: <EditOutlined />,
+              onClick: () => openEdit(record),
+            },
+            {
+              key: "delete",
+              label: t("remove"),
+              icon: <DeleteOutlined />,
+              danger: true,
+              confirm: {
+                title: t("removeFilterKeywordConfirm"),
+                onConfirm: () => remove.mutate(record.id),
+              },
+            },
+          ]}
+        />
       ),
     },
   ];
@@ -124,17 +134,27 @@ export default function FilterKeywordsTable() {
           columns={columns}
           pagination={paging}
           title={(record) => (
-            <div className="flex gap-1">
-              <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(record)} />
-              <Popconfirm
-                title={t("removeFilterKeywordConfirm")}
-                onConfirm={() => remove.mutate(record.id)}
-                okText={t("remove")}
-                okButtonProps={{ danger: true }}
-              >
-                <Button size="small" danger icon={<DeleteOutlined />} />
-              </Popconfirm>
-            </div>
+            <TableActions
+              align="start"
+              actions={[
+                {
+                  key: "edit",
+                  label: t("edit"),
+                  icon: <EditOutlined />,
+                  onClick: () => openEdit(record),
+                },
+                {
+                  key: "delete",
+                  label: t("remove"),
+                  icon: <DeleteOutlined />,
+                  danger: true,
+                  confirm: {
+                    title: t("removeFilterKeywordConfirm"),
+                    onConfirm: () => remove.mutate(record.id),
+                  },
+                },
+              ]}
+            />
           )}
         />
       )}

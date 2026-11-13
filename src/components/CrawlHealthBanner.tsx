@@ -1,6 +1,6 @@
 "use client";
 
-import { WarningFilled } from "@ant-design/icons";
+import { CheckCircleFilled, WarningFilled } from "@ant-design/icons";
 import { Alert, Button, Tag } from "antd";
 import Link from "next/link";
 import { useCrawlHealth } from "@/hooks/useCrawlHealth";
@@ -16,7 +16,7 @@ function logsHref(platform?: string) {
 
 export default function CrawlHealthBanner({ platform }: { platform?: string }) {
   const { t } = useTranslation();
-  const { health } = useCrawlHealth();
+  const { health, dataUpdatedAt } = useCrawlHealth();
 
   const scoped = platform ? health.byPlatform[platform] : null;
   const errorCount = platform ? (scoped?.errors ?? 0) : health.errorCount;
@@ -24,7 +24,26 @@ export default function CrawlHealthBanner({ platform }: { platform?: string }) {
   const lastMessage = platform ? (scoped?.lastError ?? null) : (health.lastError?.message ?? null);
   const lastClock = platform ? null : formatLogClock(health.lastError?.timestamp ?? null);
 
-  if (errorCount === 0 && warningCount === 0) return null;
+  // Không có lỗi/cảnh báo: một dòng gọn màu --ok kèm thời điểm kiểm tra
+  // gần nhất. Ở Tổng quan ("all") đây là trạng thái yên tĩnh - đủ để biết
+  // hệ thống vẫn được kiểm tra, nhưng không chiếm chỗ như một card.
+  // Ở từng nền tảng thì không hiện (biểu đồ trạng thái đã nói rõ).
+  if (errorCount === 0 && warningCount === 0) {
+    if (platform) return null;
+    return (
+      <div className="crawl-status-ok">
+        <CheckCircleFilled aria-hidden />
+        <span>{t("crawlAllHealthy")}</span>
+        {dataUpdatedAt > 0 ? (
+          <span className="crawl-status-ok-time">
+            {t("crawlAllHealthyCheckedAt", {
+              time: new Date(dataUpdatedAt).toLocaleTimeString(undefined, { hour12: false }),
+            })}
+          </span>
+        ) : null}
+      </div>
+    );
+  }
 
   const isError = errorCount > 0;
   const title = isError

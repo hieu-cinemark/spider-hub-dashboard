@@ -5,7 +5,11 @@ import type { ReactNode } from "react";
 import DashboardCard from "@/components/DashboardCard";
 import { SkelBlock } from "@/components/PageSkeleton";
 
-const DEFAULT_ICON_COLOR = "#0d6e9e";
+// Mặc định một màu duy nhất (--accent) cho mọi KPI: số liệu thường không
+// được "cạnh tranh" với cảnh báo lỗi. Chỉ đổi sang --warn / --danger khi
+// chính chỉ số đó vượt ngưỡng (qua `tone`). Màu theo nền tảng chỉ dùng cho
+// biểu đồ và PlatformBadge, không dùng cho KPI.
+const DEFAULT_ACCENT = "var(--accent)";
 
 export default function StatCard({
   title,
@@ -30,7 +34,7 @@ export default function StatCard({
   hint?: ReactNode;
   href?: string;
 }) {
-  const iconColor = color ?? DEFAULT_ICON_COLOR;
+  const iconColor = color ?? DEFAULT_ACCENT;
   const accent = tone === "danger" ? "var(--danger)" : tone === "warning" ? "var(--warn)" : iconColor;
   const ring =
     tone === "danger"
@@ -56,7 +60,7 @@ export default function StatCard({
             className="flex min-w-0 flex-1 flex-col gap-1.5 border-l-2 pl-2.5"
             style={{ borderColor: accent }}
           >
-            <span className="micro-label">{title}</span>
+            <span className="micro-label !text-[var(--ink-soft)]">{title}</span>
             {loading ? (
               <>
                 <SkelBlock className="h-7 w-28" />
@@ -64,7 +68,10 @@ export default function StatCard({
               </>
             ) : (
               <>
-                <span className="text-[26px] leading-none font-semibold tracking-tight text-[var(--ink)]">
+                <span
+                  className="text-[26px] leading-none font-semibold tracking-tight"
+                  style={{ color: tone ? accent : "var(--accent)" }}
+                >
                   {typeof value === "number" ? value.toLocaleString() : value}
                   {suffix && <span className="ml-1 text-base font-medium text-[var(--muted)]">{suffix}</span>}
                 </span>

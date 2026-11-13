@@ -61,7 +61,7 @@ export default function AccountIssuesCard({ accounts, loading }: { accounts: Acc
       mobilePrimary: true,
       render: (_: unknown, row: Issue) => (
         <Link
-          href={`/settings?tab=accounts-proxies&q=${encodeURIComponent(row.account.account_id)}`}
+          href={`/settings?tab=accounts&q=${encodeURIComponent(row.account.account_id)}`}
           className="block min-w-0 text-inherit"
         >
           <div className="font-medium break-words">{row.account.account_id}</div>
@@ -106,7 +106,7 @@ export default function AccountIssuesCard({ accounts, loading }: { accounts: Acc
         />
       }
       extra={
-        <Link href="/settings?tab=accounts-proxies">
+        <Link href="/settings?tab=accounts">
           <Button size="small" icon={<RightOutlined />} iconPlacement="end">
             {t("openInSettings")}
           </Button>

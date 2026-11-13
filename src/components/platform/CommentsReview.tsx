@@ -1,9 +1,8 @@
 "use client";
 
-import { ApartmentOutlined, CommentOutlined, HeartOutlined, LinkOutlined, MessageOutlined, UnorderedListOutlined } from "@ant-design/icons";
-import { Button, Empty, Segmented, Table, Tabs } from "antd";
+import { ApartmentOutlined, HeartOutlined, LinkOutlined, MessageOutlined, UnorderedListOutlined } from "@ant-design/icons";
+import { Button, Empty, Segmented, Table } from "antd";
 import { useMemo, useState } from "react";
-import DashboardCard, { CardHeading } from "@/components/DashboardCard";
 import MobileTable, { type ResponsiveColumnType } from "@/components/MobileTable";
 import CommentTree, { countReplies, buildCommentTree } from "@/components/platform/CommentTree";
 import KeywordFilter from "@/components/KeywordFilter";
@@ -125,33 +124,28 @@ export default function CommentsReview() {
   ];
 
   return (
-    <DashboardCard
-      className="animate-fade-in-up"
-      title={<CardHeading icon={<CommentOutlined />} title={t("recentlyCollectedComments")} />}
-      extra={
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          <KeywordFilter
-            platform={platform}
-            value={keywordId}
-            onChange={(next) => setQuery({ keyword: next ?? "" })}
-          />
-          <PlatformFilter
-            value={query.platform}
-            platforms={COMMENT_SUPPORTED_PLATFORMS}
-            onChange={(next) => setQuery({ platform: next, keyword: "" })}
-          />
-        </div>
-      }
-    >
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <Tabs
-          className="ui-tabs"
-          activeKey={sentiment}
-          onChange={(next) => setQuery({ sentiment: next })}
-          items={[
-            { key: "positive", label: t("commentsPositive") },
-            { key: "negative", label: t("commentsNegative") },
-            { key: "neutral", label: t("commentsNeutral") },
+    <div className="flex flex-col gap-4 animate-fade-in-up">
+      {/* Mọi bộ lọc nằm chung một thanh: nền tảng + từ khoá + cảm xúc +
+          kiểu hiển thị. Không tách "cảm xúc" ra tab riêng nữa. */}
+      <div className="filter-bar">
+        <KeywordFilter
+          platform={platform}
+          value={keywordId}
+          onChange={(next) => setQuery({ keyword: next ?? "" })}
+        />
+        <PlatformFilter
+          value={query.platform}
+          platforms={COMMENT_SUPPORTED_PLATFORMS}
+          onChange={(next) => setQuery({ platform: next, keyword: "" })}
+        />
+        <Segmented
+          size="small"
+          value={sentiment}
+          onChange={(next) => setQuery({ sentiment: next as string })}
+          options={[
+            { value: "positive", label: t("commentsPositive") },
+            { value: "negative", label: t("commentsNegative") },
+            { value: "neutral", label: t("commentsNeutral") },
           ]}
         />
         <Segmented
@@ -240,7 +234,6 @@ export default function CommentsReview() {
           columns={columns}
         />
       )}
-
-    </DashboardCard>
+    </div>
   );
 }

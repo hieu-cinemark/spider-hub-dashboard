@@ -524,6 +524,17 @@ export interface ProxySettings {
   tiktok_hashtag_max_attempts: number;
   tiktok_comments_max_attempts: number;
   fb_logged_out_metrics_enabled: boolean;
+  youtube_lanes: number;
+  youtube_filter_concurrency: number;
+  youtube_search_pages: number;
+  youtube_reply_pages: number;
+  public_pages_per_proxy: number;
+  public_pages_gap_seconds: number;
+  threads_channel_workers: number;
+  facebook_account_page_feed: boolean;
+  public_pages_queue_target: number;
+  threads_channels_queue_target: number;
+  youtube_comments_per_round: number;
 }
 
 export interface ProxySettingsResponse {

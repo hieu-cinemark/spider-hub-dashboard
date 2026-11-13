@@ -11,7 +11,7 @@ import {
   ThunderboltOutlined,
   UnorderedListOutlined,
 } from "@ant-design/icons";
-import { Badge, Button, Layout, Menu, Tag, Typography } from "antd";
+import { Badge, Button, Layout, Menu, Tag } from "antd";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
@@ -255,6 +255,9 @@ export default function AppShell({ children }: { children: ReactNode }) {
         <Header className="app-header sticky top-0 z-20 !px-3 sm:!px-7">
           <div className="flex flex-col">
             <div className="flex items-center gap-2">
+              {/* Tiêu đề + mô tả của trang do chính page.tsx render (PageHeader),
+                  nên header chỉ giữ điều hướng và chip trạng thái. Khi cuộn
+                  xuống dài, người dùng vẫn biết đang ở trang nào. */}
               <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
                 {collapsed && (
                   <Button
@@ -265,17 +268,15 @@ export default function AppShell({ children }: { children: ReactNode }) {
                     aria-label={t("openNavigation")}
                   />
                 )}
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--accent)]/16 text-[16px] text-[var(--accent-deep)]">
-                  {activeNavItem.icon}
-                </span>
-                <div className="min-w-0">
-                  <Typography.Title level={4} className="!mb-0 truncate !font-semibold !tracking-tight">
+                {/* Brand chỉ hiện ở mobile: sidebar bị ẩn nên không có logo ở đâu khác. */}
+                <span className="flex min-w-0 items-center gap-2 lg:hidden">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--accent)]/16 text-[var(--accent-deep)]">
+                    {activeNavItem.icon}
+                  </span>
+                  <span className="truncate text-[14px] font-semibold tracking-tight text-[var(--ink)]">
                     {t(activeNavItem.labelKey)}
-                  </Typography.Title>
-                  <p className="m-0 hidden max-w-xl truncate text-[12px] text-[var(--muted)] sm:block">
-                    {t(activeNavItem.descKey)}
-                  </p>
-                </div>
+                  </span>
+                </span>
               </div>
               {/* Chip trạng thái. Trên desktop nó nằm cùng hàng với tiêu đề;
                   trên mobile nó xuống hàng riêng có cuộn ngang - nếu để

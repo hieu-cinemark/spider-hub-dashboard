@@ -259,14 +259,15 @@ export default function AllPlatformsOverview() {
       <CrawlHealthBanner />
 
       {/* --- 2. Con số tổng quan: câu trả lời ngắn nhất cho "tình hình
-             thế nào" ---------------------------------------------- */}
+             thế nào". Tất cả dùng chung một màu accent; chỉ chỉ số có
+             vấn đề mới đổi sang cảnh báo, để số liệu không lấn át cảnh
+             báo lỗi. ----------------------------------------------- */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           title={t("totalPostsCollected")}
           value={totalPosts}
           loading={statsLoading}
           icon={<AppstoreOutlined />}
-          color="#1076ae"
           delta={<CountDelta current={postsToday} previous={postsPrev} />}
         />
         <StatCard
@@ -274,7 +275,6 @@ export default function AllPlatformsOverview() {
           value={totalComments}
           loading={commentsLoading}
           icon={<CommentOutlined />}
-          color="#f19542"
           delta={<CountDelta current={commentsToday} previous={commentsPrev} />}
         />
         <StatCard
@@ -282,7 +282,6 @@ export default function AllPlatformsOverview() {
           value={success.rate === null ? "—" : `${success.rate.toFixed(1)}%`}
           loading={jobsLoading}
           icon={<CheckCircleOutlined />}
-          color="#35c08a"
           tone={successTone}
           href="/jobs"
           hint={
@@ -296,8 +295,7 @@ export default function AllPlatformsOverview() {
           value={`${readyAccounts} / ${totalAccounts}`}
           loading={accountsLoading}
           icon={<TeamOutlined />}
-          color="#e0649a"
-          href="/settings"
+          href="/settings?tab=accounts"
           hint={t("kpiReadyAccountsHint", { running: runningJobs })}
         />
       </div>
