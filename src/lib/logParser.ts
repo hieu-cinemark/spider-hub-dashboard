@@ -55,7 +55,7 @@ function normalizeLevel(value: string): LogLevel {
   return lower as LogLevel;
 }
 
-const KNOWN_PLATFORMS = ["facebook", "threads", "tiktok", "instagram"] as const;
+const KNOWN_PLATFORMS = ["facebook", "threads", "tiktok", "youtube", "instagram"] as const;
 
 function extractPlatform(message: string): { platform: string | null; message: string } {
   const match = message.match(PLATFORM_PREFIX_RE);

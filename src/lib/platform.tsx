@@ -4,6 +4,7 @@ import {
   InstagramFilled,
   ThreadsFilled,
   TikTokFilled,
+  YoutubeFilled,
 } from "@ant-design/icons";
 import type { CSSProperties } from "react";
 
@@ -22,6 +23,8 @@ export const PLATFORM_META: Record<string, { label: string; color: string; sourc
   // chart, the Posts platform tag) - standing in with TikTok's cyan accent
   // instead keeps every platform visually distinct.
   tiktok: { label: "TikTok", color: "#00F2EA", source: "spider-hub" },
+  // YouTube: no accounts - spider-hub reads search, comments and channels through InnerTube.
+  youtube: { label: "YouTube", color: "#FF0000", source: "spider-hub" },
 };
 
 export function platformLabel(platform: string): string {
@@ -96,6 +99,8 @@ export function PlatformIcon({
       return <ThreadsFilled className={["threads-mark", className].filter(Boolean).join(" ")} style={style} />;
     case "tiktok":
       return <TikTokFilled className={className} style={style} />;
+    case "youtube":
+      return <YoutubeFilled className={className} style={style} />;
     case "instagram":
       return <InstagramFilled className={className} style={style} />;
     default:

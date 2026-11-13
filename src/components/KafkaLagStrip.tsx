@@ -9,7 +9,7 @@ import { useTranslation } from "@/i18n/LocaleProvider";
 import { PlatformIcon, platformLabel } from "@/lib/platform";
 import type { KafkaLagEntry } from "@/lib/types";
 
-const KAFKA_LAG_PLATFORMS = new Set(["facebook", "threads", "tiktok"]);
+const KAFKA_LAG_PLATFORMS = new Set(["facebook", "threads", "tiktok", "youtube"]);
 
 // Above this many unprocessed messages a queue is treated as "not
 // draining" rather than a normal in-flight burst - crawl/ingest queues sit

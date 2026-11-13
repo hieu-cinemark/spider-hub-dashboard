@@ -44,6 +44,8 @@ export function platformChartColor(platform: string, isDark: boolean): string {
       return isDark ? "#e5e7eb" : "#334155";
     case "tiktok":
       return isDark ? "#22d3ee" : "#0891b2";
+    case "youtube":
+      return isDark ? "#f87171" : "#dc2626";
     case "instagram":
       return isDark ? "#f472b6" : "#c026d3";
     default:

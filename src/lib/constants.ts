@@ -49,16 +49,16 @@ export const HEALTH_LOG_LINES = 100;
 // Platforms cinemark-api can actually trigger a crawl for (POST /<platform>/run).
 // instagram may show up in /stats/platforms too but is scraped entirely by
 // cinemark-scraper's own Worker, not spider-hub - no button for it here.
-export const TRIGGERABLE_PLATFORMS = ["facebook", "threads", "tiktok"] as const;
+export const TRIGGERABLE_PLATFORMS = ["facebook", "threads", "tiktok", "youtube"] as const;
 export type TriggerablePlatform = (typeof TRIGGERABLE_PLATFORMS)[number];
 
 // Platforms spider-hub has a comments spider for at all (see its
 // crawl_request_consumer.py's COMMENTS_SPIDER_BY_PLATFORM).
-export const COMMENT_SUPPORTED_PLATFORMS = ["facebook", "threads", "tiktok"] as const;
+export const COMMENT_SUPPORTED_PLATFORMS = ["facebook", "threads", "tiktok", "youtube"] as const;
 
 // Top-100 "fetch comments" from the dashboard - every platform spider-hub
 // has a comments spider for (see COMMENT_SUPPORTED_PLATFORMS).
-export const TOP_POSTS_COMMENT_PLATFORMS = ["facebook", "threads", "tiktok"] as const;
+export const TOP_POSTS_COMMENT_PLATFORMS = ["facebook", "threads", "tiktok", "youtube"] as const;
 
 // Platforms that show restore-session / import-cookies (and the live
 // refresh log). Facebook/Threads recapture GraphQL tokens; TikTok
