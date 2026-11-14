@@ -69,7 +69,6 @@ const en = {
   username: "Username",
   password: "Password",
   unknown: "unknown",
-  allPlatformsShared: "Used for every platform",
   publicOnlyProxy: "Logged-out crawling only",
   allPlatformsFilter: "All platforms",
   filterByKeyword: "Filter by keyword",

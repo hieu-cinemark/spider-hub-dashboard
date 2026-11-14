@@ -116,10 +116,7 @@ export default function ImportWithAiModal({ defaultTarget }: { defaultTarget: Im
                 className="w-full"
                 value={platform}
                 onChange={setPlatform}
-                options={[
-                  ...TRIGGERABLE_PLATFORMS.map((p) => ({ value: p, label: platformLabel(p) })),
-                  ...(target === "proxies" ? [{ value: "all", label: t("allPlatformsShared") }] : []),
-                ]}
+                options={TRIGGERABLE_PLATFORMS.map((p) => ({ value: p, label: platformLabel(p) }))}
               />
             </div>
 

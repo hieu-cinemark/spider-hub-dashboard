@@ -57,7 +57,6 @@ export const vi: Record<TranslationKey, string> = {
   username: "Tên đăng nhập",
   password: "Mật khẩu",
   unknown: "không rõ",
-  allPlatformsShared: "Dùng chung cho mọi nền tảng",
   publicOnlyProxy: "Chỉ cào không đăng nhập",
   allPlatformsFilter: "Tất cả nền tảng",
   filterByKeyword: "Lọc theo từ khoá",

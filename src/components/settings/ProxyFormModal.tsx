@@ -25,7 +25,6 @@ export default function ProxyFormModal({
   const { data: providers } = useProxyProviders();
 
   const platformOptions = [
-    { value: "all", label: t("allPlatformsShared") },
     { value: "public", label: t("publicOnlyProxy") },
     ...Object.keys(PLATFORM_META)
       .filter((p) => p === "facebook" || p === "threads" || p === "tiktok" || p === "youtube")

@@ -82,7 +82,7 @@ export default function ProxiesTable() {
       render: (p: string) => (
         <PlatformBadge
           platform={p}
-          label={p === "all" ? t("allPlatformsShared") : p === "public" ? t("publicOnlyProxy") : undefined}
+          label={p === "public" ? t("publicOnlyProxy") : undefined}
           size={22}
           showLabel={false}
         />
