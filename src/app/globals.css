@@ -3,72 +3,86 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ---------------------------------------------------------------------------
-   Spider Hub - ops palette.
+   Spider Hub - design tokens.
 
-   The reference look: a graphite console (near-black page, slightly lighter
-   panels, hairline borders), one electric blue as the primary accent, orange
-   for attention, magenta for the third data series. Everything below is
-   derived from those five so no component has to invent its own color.
+   One palette, two modes, no per-component colors. Everything below is
+   derived from these tokens so a page never has to invent its own hex.
 
-   Light mode is the same system inverted (cool neutrals instead of warm
-   ones) so the two themes read as one product rather than two.
+   Dark is the primary style (the product is an operations console that runs
+   all day); light is the same system inverted with cool neutrals, so the two
+   read as one product rather than two.
+
+   Surfaces are layered, not decorated:
+     --paper       app background   (darkest)
+     --paper-deep  inset / sidebar  (one step up)
+     --card        panel surface
+     --elevated    raised surface (popovers, drawers, dropdowns)
+   Every one of them is separated by a hairline (--line), never a shadow.
 --------------------------------------------------------------------------- */
 
 :root {
-  --ink: #14161a;
-  --ink-soft: #454b57;
-  --paper: #f2f4f7;
-  --paper-deep: #e6e9ef;
+  /* Surfaces */
+  --paper: #f4f6f9;
+  --paper-deep: #eaeef3;
   --card: #ffffff;
-  --line: #dde1e8;
-  --line-strong: #c3c9d4;
-  --muted: #6b7280;
+  --elevated: #ffffff;
+  --sider: #ffffff;
+  --line: #e2e6ec;
+  --line-strong: #cbd3dd;
 
-  --accent: #0d6e9e;
-  --accent-deep: #0a587e;
-  --accent-soft: #2b93c7;
-  --accent-2: #d97706;
-  --accent-3: #be185d;
+  /* Text */
+  --ink: #0f172a;
+  --ink-soft: #475569;
+  --muted: #64748b;
 
-  --danger: #d92d3f;
-  --warn: #c2620a;
-  --ok: #0f8a5f;
+  /* Accents */
+  --accent: #2563eb;
+  --accent-deep: #1d4ed8;
+  --accent-soft: #3b82f6;
+  --accent-2: #7c3aed;
+  --accent-3: #0891b2;
 
-  --background: var(--paper);
-  --foreground: var(--ink);
-  --sider: #171a1f;
-  --sider-glow: rgba(16, 118, 174, 0.32);
-  --threads-ink: #111111;
-  --grid-line: rgba(13, 110, 158, 0.07);
+  --ok: #16a34a;
+  --warn: #d97706;
+  --danger: #dc2626;
+
+  --threads-ink: #111827;
+  --grid-line: rgba(37, 99, 235, 0.06);
+
   color-scheme: light;
 }
 
 html.dark {
-  --ink: #eef1f6;
-  --ink-soft: #b3b9c5;
-  --paper: #0c0d10;
-  --paper-deep: #141519;
-  --card: #1a1b20;
-  --line: #2b2c33;
-  --line-strong: #3d3f48;
-  --muted: #858a96;
+  /* Surfaces */
+  --paper: #0b0f14;
+  --paper-deep: #10151c;
+  --card: #141a22;
+  --elevated: #1b222c;
+  --sider: #10151c;
+  --line: #28313d;
+  --line-strong: #38434f;
 
-  --accent: #1076ae;
-  --accent-deep: #3aa6dc;
-  --accent-soft: #1e88c4;
-  --accent-2: #f19542;
-  --accent-3: #e0649a;
+  /* Text */
+  --ink: #e8edf3;
+  --ink-soft: #9aa7b5;
+  --muted: #667586;
 
-  --danger: #f2545b;
-  --warn: #f19542;
-  --ok: #35c08a;
+  /* Accents */
+  --accent: #3b82f6;
+  /* On a dark surface the accent itself is too dark to read as text, so
+     labels use the lighter sibling of the same hue. */
+  --accent-deep: #60a5fa;
+  --accent-soft: #2563eb;
+  --accent-2: #a78bfa;
+  --accent-3: #22d3ee;
 
-  --background: var(--paper);
-  --foreground: var(--ink);
-  --sider: #101115;
-  --sider-glow: rgba(16, 118, 174, 0.28);
-  --threads-ink: #e8eaef;
-  --grid-line: rgba(58, 166, 220, 0.07);
+  --ok: #22c55e;
+  --warn: #f59e0b;
+  --danger: #ef4444;
+
+  --threads-ink: #e8edf3;
+  --grid-line: rgba(59, 130, 246, 0.07);
+
   color-scheme: dark;
 }
 
@@ -100,78 +114,155 @@ samp,
   font-family: var(--font-jetbrains), ui-monospace, monospace;
 }
 
-.spider-web-canvas {
-  width: 100%;
-  height: 100%;
-  contain: paint;
+/* ---------------------------------------------------------------------------
+   Scrollbars
+
+   A thin, unobtrusive scrollbar everywhere - including inside modal bodies
+   and drawers. The default macOS overlay scrollbar disappears when idle,
+   which makes a long list look like it has no scroll affordance at all.
+--------------------------------------------------------------------------- */
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--muted) 42%, transparent) transparent;
 }
+
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--muted) 38%, transparent);
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--muted) 62%, transparent);
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* ---------------------------------------------------------------------------
+   Layout shell
+--------------------------------------------------------------------------- */
 
 .app-shell.ant-layout,
 .app-shell .ant-layout {
   background: transparent !important;
 }
 
-/* The page canvas: one soft blue wash top-left (the "console light"), a faint
-   warm counter-glow top-right, then a flat graphite body. */
+/* Flat app background. No gradients, no glows - the depth comes from the
+   hairline borders between surfaces. */
 .page-canvas {
-  background:
-    radial-gradient(1100px 560px at -10% -20%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 60%),
-    radial-gradient(680px 400px at 106% -6%, color-mix(in srgb, var(--accent-2) 7%, transparent), transparent 52%),
-    linear-gradient(180deg, color-mix(in srgb, var(--paper-deep) 55%, transparent), transparent 26%),
-    var(--paper);
-  min-height: calc(100vh - 76px);
+  background: var(--paper);
+  min-height: calc(100vh - 60px);
 }
 
-.platform-kpi-grid {
-  display: grid;
-  gap: 0.75rem;
-  grid-template-columns: 1fr;
+/* Flex/grid children default to min-width:auto, which lets one wide child
+   (a table, a long unbroken string) push the whole page wider than the
+   viewport. Every direct child of the content area is allowed to shrink. */
+.page-canvas > *,
+.app-content > * {
+  min-width: 0;
 }
 
-@media (min-width: 640px) {
-  .platform-kpi-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+/* The content column clears the fixed sidebar rail. Doing it with a
+   margin (rather than letting the rail sit in the flex flow) is what keeps
+   the page from ever overflowing sideways: the rail never participates in
+   the width calculation. */
+.app-content-offset {
+  margin-inline-start: 232px;
+  width: auto;
 }
 
-@media (min-width: 1024px) {
-  .platform-kpi-grid {
-    grid-template-columns: repeat(var(--platform-count, 3), minmax(0, 1fr));
+.app-content-offset--collapsed {
+  margin-inline-start: 64px;
+}
+
+@media (max-width: 1023px) {
+  .app-content-offset,
+  .app-content-offset--collapsed {
+    margin-inline-start: 0;
   }
 }
 
 /* --- Sidebar -------------------------------------------------------------- */
 
+/* The rail is fixed so the content can scroll under it without the page
+   itself ever gaining a horizontal scrollbar. Its width lives in
+   globals.css only - the component reads it from the same custom property
+   through `width`/`collapsedWidth`, so the two can never drift apart. */
 .app-sider.ant-layout-sider {
+  position: fixed !important;
+  inset-inline-start: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 30;
+  overflow: hidden;
   background: var(--sider) !important;
+  border-right: 1px solid var(--line);
+}
+
+/* Below the desktop breakpoint the rail is replaced by the header's drawer,
+   so it must not reserve any horizontal space. */
+@media (max-width: 1023px) {
+  .app-sider.ant-layout-sider {
+    display: none;
+  }
 }
 
 .app-sider .ant-layout-sider-children {
-  border-right: 1px solid rgba(255, 255, 255, 0.07);
-  background:
-    radial-gradient(560px 320px at 0% 0%, var(--sider-glow), transparent 64%),
-    var(--sider);
+  background: var(--sider);
 }
 
-.app-sider .ant-menu-dark .ant-menu-item {
-  height: 38px;
-  line-height: 38px;
+.app-sider .ant-menu-dark,
+.app-sider .ant-menu {
+  background: transparent;
+}
+
+.app-sider .ant-menu-item {
+  height: 36px;
+  line-height: 36px;
   margin-inline: 8px !important;
   width: calc(100% - 16px) !important;
   font-size: 13.5px;
+  border-radius: 8px;
+  color: var(--ink-soft);
 }
 
-.app-sider .ant-menu-dark .ant-menu-item-selected {
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--accent) 62%, transparent),
-    color-mix(in srgb, var(--accent) 20%, transparent)
-  ) !important;
-  box-shadow: inset 3px 0 0 var(--accent-soft);
+.app-sider .ant-menu-item .anticon {
+  font-size: 15px;
 }
 
-.app-sider .ant-menu-dark .ant-menu-item-selected .anticon {
-  color: #fff !important;
+/* Active state: one accent-tinted row, a quiet left rule. No gradient fill,
+   no glow - the row reads as selected without shouting. */
+.app-sider .ant-menu-item-selected {
+  background: color-mix(in srgb, var(--accent) 14%, transparent) !important;
+  color: var(--ink) !important;
+  font-weight: 600;
+}
+
+.app-sider .ant-menu-item-selected::after {
+  display: none !important;
+}
+
+.app-sider .ant-menu-item-selected .anticon {
+  color: var(--accent-deep) !important;
+}
+
+.app-sider .ant-menu-item:hover {
+  background: color-mix(in srgb, var(--ink) 6%, transparent) !important;
+  color: var(--ink) !important;
 }
 
 .app-sider .nav-section-label {
@@ -181,29 +272,33 @@ samp,
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.42);
+  color: var(--muted);
 }
 
 .app-sider .ant-menu-item-group-title {
-  padding: 12px 20px 3px !important;
+  padding: 14px 20px 4px !important;
   height: auto !important;
   line-height: 1.2 !important;
+}
+
+.app-sider .ant-menu-inline-collapsed .ant-menu-item {
+  margin-inline: 6px !important;
+  width: calc(100% - 12px) !important;
 }
 
 /* --- Header --------------------------------------------------------------- */
 
 .app-header.ant-layout-header {
   height: auto;
-  min-height: 76px;
+  min-height: 60px;
   padding-block: 10px;
   line-height: 1.25;
-  background: color-mix(in srgb, var(--card) 86%, transparent) !important;
+  background: var(--card) !important;
   border-bottom: 1px solid var(--line);
-  backdrop-filter: blur(18px) saturate(140%);
 }
 
-/* Trên mobile header cao hơn một chút vì có thêm hàng chip trạng thái -
-   đặt min-height cứng sẽ khiến hàng chip bị chồng lên tiêu đề. */
+/* On mobile the header carries a second, scrollable row of status chips -
+   a hard min-height would make that row overlap the title. */
 @media (max-width: 639px) {
   .app-header.ant-layout-header {
     min-height: 0;
@@ -211,32 +306,14 @@ samp,
   }
 }
 
-/* Hàng chip trạng thái trên mobile cuộn ngang - ẩn thanh cuộn để không
-   chiếm chỗ trên màn hình hẹp. */
+/* The chip row on mobile scrolls sideways; hide the scrollbar so it does
+   not steal vertical space on a small screen. */
 .app-header .status-scroll {
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
 .app-header .status-scroll::-webkit-scrollbar {
   display: none;
-}
-
-/* A hairline of the accent along the bottom of the header - the one place a
-   bright line is allowed, so the top of the screen reads as "live console". */
-.app-header.ant-layout-header::after {
-  content: "";
-  position: absolute;
-  inset-inline: 0;
-  bottom: -1px;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--accent) 55%, transparent),
-    transparent 38%,
-    transparent 62%,
-    color-mix(in srgb, var(--accent-2) 35%, transparent)
-  );
-  pointer-events: none;
 }
 
 /* --- Toolbar / filter bar ------------------------------------------------- */
@@ -246,17 +323,60 @@ samp,
   flex-wrap: wrap;
   align-items: center;
   gap: 10px;
+  min-width: 0;
   padding: 10px 12px;
   border: 1px solid var(--line);
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--card) 92%, transparent);
-  box-shadow: 0 1px 2px rgba(10, 14, 20, 0.06);
+  border-radius: 10px;
+  background: var(--card);
+}
+
+/* On a phone the filter row is the first thing that breaks: the keyword
+   picker, the platform chips and the sentiment chips all want a full row.
+   Instead of squeezing them, each group takes the whole width and the
+   chips scroll sideways inside their own strip - so a row is never taller
+   than one chip and never overflows the viewport. */
+@media (max-width: 767px) {
+  .filter-bar {
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .filter-bar > * {
+    max-width: 100%;
+  }
+}
+
+/* The chip groups inside a filter bar: on a phone they become a horizontally
+   scrollable strip with a soft fade on the right, signalling "there is more
+   this way" without adding a visible scrollbar. */
+.filter-bar-scroll {
+  display: flex;
+  max-width: 100%;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+
+.filter-bar-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* On a wide screen there is room for everything, so the chips wrap onto
+   several lines instead of hiding behind a scroll. */
+@media (min-width: 768px) {
+  .filter-bar-scroll {
+    flex-wrap: wrap;
+    overflow-x: visible;
+    row-gap: 6px;
+  }
 }
 
 /* --- Micro labels --------------------------------------------------------- */
 
-/* Small uppercase labels over values - the console look. One class so every
-   panel labels its numbers the same way. */
+/* Small uppercase labels over values - one class so every panel labels its
+   numbers the same way. */
 .micro-label {
   font-size: 10px;
   font-weight: 700;
@@ -281,21 +401,20 @@ samp,
   content: "";
   flex: 1 1 auto;
   height: 1px;
-  background: linear-gradient(90deg, var(--line), transparent);
+  background: var(--line);
 }
 
 /* --- Tags ----------------------------------------------------------------- */
 
-/* Tags wrap instead of being clipped - a truncated status badge is a
-   status you can't read. */
+/* Tags wrap instead of being clipped - a truncated status badge is a status
+   you can't read. */
 .ant-tag {
   font-weight: 600 !important;
-  font-size: 12px !important;
-  line-height: 20px !important;
-  padding: 1px 10px !important;
+  font-size: 11.5px !important;
+  line-height: 19px !important;
+  padding: 0 8px !important;
   border-width: 1px !important;
-  /* Never spill into the next table cell (it used to get painted over by the
-     proxy Select beside it) - wrap inside the cell instead of clipping. */
+  /* Never spill into the next table cell - wrap inside the cell instead. */
   max-width: 100%;
   overflow: visible;
   text-overflow: clip;
@@ -303,28 +422,25 @@ samp,
   vertical-align: middle;
 }
 
-/* One badge palette for every status tag in the app. antd derived the
-   success/processing fill from the primary (a muddy block) while error/warning
-   used light pastels, so badges sitting in the same row looked like they came
-   from different design systems. Every tone is now: soft tinted fill +
-   same-hue border + strong same-hue text. */
+/* One badge palette for the whole app: soft tinted fill + same-hue border +
+   strong same-hue text. */
 :root {
-  --tag-ok: #0f8a5f;
-  --tag-info: #0d6e9e;
-  --tag-blue: #1d4ed8;
-  --tag-warn: #b45309;
-  --tag-orange: #c2620a;
-  --tag-danger: #be123c;
-  --tag-neutral: #6b7280;
+  --tag-ok: #16a34a;
+  --tag-info: #2563eb;
+  --tag-blue: #2563eb;
+  --tag-warn: #d97706;
+  --tag-orange: #ea580c;
+  --tag-danger: #dc2626;
+  --tag-neutral: #64748b;
 }
 html.dark {
-  --tag-ok: #35c08a;
-  --tag-info: #3aa6dc;
-  --tag-blue: #93c5fd;
-  --tag-warn: #fbbf24;
-  --tag-orange: #f19542;
-  --tag-danger: #f2545b;
-  --tag-neutral: #9aa1ae;
+  --tag-ok: #22c55e;
+  --tag-info: #60a5fa;
+  --tag-blue: #60a5fa;
+  --tag-warn: #f59e0b;
+  --tag-orange: #fb923c;
+  --tag-danger: #ef4444;
+  --tag-neutral: #94a3b8;
 }
 .ant-tag.ant-tag-success,
 .ant-tag.ant-tag-green { --tag-c: var(--tag-ok); }
@@ -347,16 +463,16 @@ html.dark {
   ) {
   color: var(--tag-c) !important;
   background: color-mix(in srgb, var(--tag-c) 12%, var(--card)) !important;
-  border-color: color-mix(in srgb, var(--tag-c) 34%, transparent) !important;
+  border-color: color-mix(in srgb, var(--tag-c) 32%, transparent) !important;
 }
 .ant-tag[class*="ant-tag-"] .anticon {
   color: inherit !important;
 }
 
 .status-chip.ant-tag {
-  font-size: 13px !important;
-  line-height: 22px !important;
-  padding: 3px 12px !important;
+  font-size: 12px !important;
+  line-height: 20px !important;
+  padding: 1px 10px !important;
 }
 
 .ant-badge .ant-badge-count {
@@ -370,26 +486,21 @@ html.dark {
 
 /* --- Cards ---------------------------------------------------------------- */
 
-/* Panels sit on the page as flat graphite plates with a hairline edge - no
-   cream gradient, no heavy drop shadow. The accent only shows up on the
-   icon chip and on hover. */
+/* Panels are flat surfaces with a hairline edge. Depth comes from the
+   surface step, not from shadows. */
 .dash-card.ant-card {
   background: var(--card);
   border-color: var(--line);
   overflow: hidden;
 }
 
-html.dark .dash-card.ant-card {
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 12px 28px -22px rgba(0, 0, 0, 0.9) !important;
-}
-
 .dash-card.ant-card .ant-card-head {
   border-bottom-color: var(--line);
-  min-height: 50px;
+  min-height: 48px;
   padding: 0 16px;
   font-weight: 600;
   letter-spacing: -0.01em;
-  background: color-mix(in srgb, var(--paper-deep) 40%, var(--card));
+  background: transparent;
 }
 
 .dash-card.ant-card .ant-card-body {
@@ -406,6 +517,7 @@ html.dark .dash-card.ant-card {
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
+  min-height: 0;
 }
 
 /* --- Tables --------------------------------------------------------------- */
@@ -414,37 +526,33 @@ html.dark .dash-card.ant-card {
 .ant-modal .ant-table-wrapper,
 .data-table.ant-table-wrapper {
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 10px;
   overflow: hidden;
   background: var(--card);
 }
 
-.dash-card .ant-table-container,
-.ant-modal .ant-table-container {
-  overflow-x: auto;
-  overflow-y: hidden;
-}
-
-.dash-card .ant-table-content,
-.dash-card .ant-table-body,
-.ant-modal .ant-table-content,
-.ant-modal .ant-table-body {
-  overflow: visible;
-}
-
+/* A table is a fixed-layout grid: the declared column widths are honoured
+   and the leftover space goes to the flexible column, so the table can
+   never grow past its container. Long values wrap or clamp inside their
+   cell instead of pushing the page sideways. */
 .dash-card .ant-table table,
-.ant-modal .ant-table table {
+.ant-modal .ant-table table,
+.data-table.ant-table table {
   width: 100% !important;
+  table-layout: fixed;
 }
 
-/* anywhere, không phải break-word: chuỗi dài không dấu cách (link page, host proxy) mới được tính là ngắt được khi trình duyệt
-   chia độ rộng cột, nên không đẩy bảng rộng hơn khung và sinh thanh cuộn ngang. */
+/* `overflow-wrap: anywhere` matters here specifically: unbroken strings
+   (page links, proxy hosts) have no natural break point, so without it the
+   browser keeps them on one line and stretches the cell. */
 .dash-card .ant-table-cell,
 .ant-modal .ant-table-cell {
   overflow-wrap: anywhere;
+  word-break: normal;
 }
 
-.dash-card .ant-table .ant-select {
+.dash-card .ant-table .ant-select,
+.dash-card .ant-table .ant-input {
   max-width: 100%;
 }
 
@@ -455,10 +563,10 @@ html.dark .dash-card.ant-card {
   letter-spacing: 0.07em;
   text-transform: uppercase;
   white-space: nowrap;
-  overflow: visible !important;
-  text-overflow: clip !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
   padding: 9px 14px !important;
-  background: color-mix(in srgb, var(--paper-deep) 70%, var(--card)) !important;
+  background: color-mix(in srgb, var(--paper-deep) 55%, var(--card)) !important;
   color: var(--muted) !important;
   border-bottom: 1px solid var(--line) !important;
   line-height: 1.3 !important;
@@ -493,12 +601,12 @@ html.dark .dash-card.ant-card {
    not enough to look like a striped report. */
 .dash-card .ant-table-tbody > tr:nth-child(even) > td,
 .ant-modal .ant-table-tbody > tr:nth-child(even) > td {
-  background: color-mix(in srgb, var(--paper-deep) 26%, var(--card));
+  background: color-mix(in srgb, var(--paper-deep) 22%, var(--card));
 }
 
 .dash-card .ant-table-tbody > tr:hover > td,
 .ant-modal .ant-table-tbody > tr:hover > td {
-  background: color-mix(in srgb, var(--accent) 10%, var(--card)) !important;
+  background: color-mix(in srgb, var(--accent) 8%, var(--card)) !important;
 }
 
 .dash-card .ant-table-cell-row-hover {
@@ -545,6 +653,30 @@ html.dark .dash-card.ant-card {
   overflow-wrap: anywhere;
 }
 
+/* Two-line clamp for long free text (post bodies, log messages). The full
+   value stays reachable in the row's detail drawer. */
+.clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.truncate-1 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .threads-mark svg,
 .threads-mark svg path {
   fill: currentColor !important;
@@ -576,7 +708,7 @@ html.dark .dash-card.ant-card {
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--accent-deep);
 }
 
 .metric-grid {
@@ -632,36 +764,156 @@ html.dark .dash-card.ant-card {
   flex: 1 1 auto;
 }
 
+/* --- Drawers -------------------------------------------------------------- */
+
+.ant-drawer .ant-drawer-content {
+  background: var(--card);
+}
+
+.ant-drawer .ant-drawer-header {
+  border-bottom: 1px solid var(--line);
+  padding: 16px 20px;
+}
+
+.ant-drawer .ant-drawer-title {
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.ant-drawer .ant-drawer-body {
+  padding: 18px 20px 24px;
+}
+
+/* Key/value rows used by every detail drawer - one definition so the
+   drawers do not drift apart. */
+.detail-list {
+  display: grid;
+  gap: 10px;
+}
+
+.detail-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2px;
+}
+
+.detail-row-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.detail-row-value {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.detail-row-value-mono {
+  font-family: var(--font-jetbrains), ui-monospace, monospace;
+  font-size: 12px;
+}
+
+.detail-section-title {
+  margin: 20px 0 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.detail-section-title:first-child {
+  margin-top: 0;
+}
+
 /* --- Modals --------------------------------------------------------------- */
 
+/* Every modal in the app shares this shell:
+     - the content box is a flex column, so the BODY is the only part that
+       scrolls - the title and the actions stay pinned,
+     - the body gets its own scrollbar (with a subtle inset fade at the
+       top/bottom) instead of the page behind the modal scrolling,
+     - the close button is a real, tappable target rather than a tiny "x".
+   The max-height caps the modal to the viewport, so a long form or a long
+   comment thread never pushes the dialog off screen. */
+.ant-modal {
+  max-width: calc(100vw - 24px);
+  top: 64px;
+  padding-bottom: 24px;
+}
+
 .ant-modal .ant-modal-content {
+  display: flex;
+  max-height: calc(100vh - 88px);
+  flex-direction: column;
+  overflow: hidden;
   border-radius: 16px;
   border: 1px solid var(--line);
-  box-shadow: 0 24px 60px -24px rgba(5, 10, 18, 0.55);
-  overflow: hidden;
+  box-shadow:
+    0 32px 80px -32px rgba(5, 10, 18, 0.6),
+    0 0 0 1px color-mix(in srgb, var(--ink) 4%, transparent);
+}
+
+.ant-modal-mask {
+  backdrop-filter: blur(3px);
 }
 
 .ant-modal .ant-modal-header {
+  flex: 0 0 auto;
   margin-bottom: 0;
-  padding: 18px 22px 13px;
+  padding: 18px 22px 14px;
   border-bottom: 1px solid var(--line);
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--paper-deep) 45%, var(--card)),
+    var(--card)
+  );
 }
 
 .ant-modal .ant-modal-title {
-  font-size: 17px;
+  font-size: 16.5px;
   font-weight: 650;
   letter-spacing: -0.01em;
   line-height: 1.35;
+  color: var(--ink);
+}
+
+.ant-modal .ant-modal-close {
+  top: 14px;
+  inset-inline-end: 14px;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  color: var(--muted);
+  transition:
+    background 0.16s ease,
+    color 0.16s ease;
+}
+
+.ant-modal .ant-modal-close:hover {
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+  color: var(--ink);
 }
 
 .ant-modal .ant-modal-body {
-  padding: 16px 22px 20px !important;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 18px 22px 22px !important;
 }
 
 .ant-modal .ant-modal-footer {
+  flex: 0 0 auto;
   margin-top: 0;
-  padding: 12px 22px 16px;
+  padding: 13px 22px 16px;
   border-top: 1px solid var(--line);
+  background: color-mix(in srgb, var(--paper-deep) 35%, var(--card));
 }
 
 .ant-modal .ant-form-item {
@@ -671,6 +923,48 @@ html.dark .dash-card.ant-card {
 .ant-modal .ant-form-item-label > label {
   font-weight: 550;
   color: var(--ink-soft);
+}
+
+/* A modal that is only a confirmation (short body, real footer) should not
+   stretch to fill the viewport - it stays a compact dialog. */
+.ant-modal .ant-modal-body:empty {
+  display: none;
+}
+
+/* On a phone the dialog is a near-fullscreen sheet: full width, top-anchored,
+   with a comfortable scroll area. */
+@media (max-width: 767px) {
+  .ant-modal {
+    top: 12px;
+    max-width: calc(100vw - 16px);
+    padding-bottom: 12px;
+  }
+
+  .ant-modal .ant-modal-content {
+    max-height: calc(100vh - 24px);
+    border-radius: 14px;
+  }
+
+  .ant-modal .ant-modal-header {
+    padding: 14px 16px 12px;
+  }
+
+  .ant-modal .ant-modal-title {
+    font-size: 15.5px;
+    padding-inline-end: 34px;
+  }
+
+  .ant-modal .ant-modal-body {
+    padding: 14px 16px 18px !important;
+  }
+
+  .ant-modal .ant-modal-footer {
+    padding: 11px 16px 14px;
+  }
+
+  .ant-modal .ant-modal-footer .ant-btn {
+    flex: 1 1 auto;
+  }
 }
 
 .modal-media-frame {
@@ -689,6 +983,12 @@ html.dark .dash-card.ant-card {
   width: auto;
   height: auto;
   object-fit: contain;
+}
+
+.modal-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .modal-meta-row {
@@ -720,14 +1020,35 @@ html.dark .dash-card.ant-card {
 .modal-comment {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 12px 0;
+  gap: 7px;
+  padding: 14px 0;
   border-bottom: 1px solid var(--line);
 }
 
 .modal-comment:last-child {
   border-bottom: none;
   padding-bottom: 0;
+}
+
+/* Trích dẫn bình luận cha trong modal: một đường kẻ dọc bên trái, cùng
+   ngôn ngữ với khối trích dẫn ở trang danh sách. */
+.modal-comment-quote {
+  display: block;
+  border-left: 2px solid var(--line-strong);
+  padding-left: 10px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+/* Nội dung bình luận trong modal: cỡ chữ riêng, không dùng chung với
+   tiêu đề - trước đây nó cùng độ đậm với tên tác giả nên rất chật. */
+.modal-comment-body {
+  margin: 0;
+  white-space: pre-wrap;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink-soft);
 }
 
 .ant-modal .ant-table-wrapper {
@@ -776,7 +1097,7 @@ html.dark .dash-card.ant-card {
 }
 
 .ui-tabs .ant-tabs-tabpane-active {
-  animation: fade-in-up 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: fade-in-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .dash-card .ui-tabs .ant-tabs-nav {
@@ -793,58 +1114,27 @@ html.dark .dash-card.ant-card {
   border-radius: 12px;
 }
 
-.summary-error-row {
-  border-left: 3px solid var(--danger);
-  background: color-mix(in srgb, var(--danger) 8%, var(--card));
+/* Log rows: a subtle left rule marks severity. A full red background on
+   every error row reads as an emergency wall - the table is a scannable
+   log, not an alert feed. */
+.summary-error-row > td:first-child {
+  box-shadow: inset 2px 0 0 var(--danger);
 }
 
-.summary-warn-row {
-  border-left: 3px solid var(--warn);
-  background: color-mix(in srgb, var(--warn) 9%, var(--card));
+.summary-warn-row > td:first-child {
+  box-shadow: inset 2px 0 0 var(--warn);
 }
 
 .crawl-alert-error.ant-alert {
   border: 1px solid color-mix(in srgb, var(--danger) 32%, var(--line));
   background: color-mix(in srgb, var(--danger) 9%, var(--card));
-  border-radius: 12px;
+  border-radius: 10px;
 }
 
 .crawl-alert-warning.ant-alert {
   border: 1px solid color-mix(in srgb, var(--warn) 32%, var(--line));
   background: color-mix(in srgb, var(--warn) 9%, var(--card));
-  border-radius: 12px;
-}
-
-/* Dòng "mọi nền tảng đang ổn" - một dòng gọn, không phải card. Chỉ hiện
-   khi KHÔNG có cảnh báo; khi có cảnh báo thì banner lỗi chiếm đúng chỗ
-   này và dòng này biến mất. */
-.crawl-status-ok {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 12px;
-  border: 1px solid color-mix(in srgb, var(--ok) 30%, var(--line));
-  border-left: 3px solid var(--ok);
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--ok) 7%, var(--card));
-  color: var(--ok);
-  font-size: 12.5px;
-  font-weight: 600;
-  line-height: 1.4;
-}
-
-.crawl-status-ok-time {
-  color: var(--muted);
-  font-weight: 400;
-}
-
-.crawl-table-error > td {
-  background: color-mix(in srgb, var(--danger) 9%, var(--card)) !important;
-}
-
-.crawl-table-stale > td {
-  background: color-mix(in srgb, var(--warn) 9%, var(--card)) !important;
+  border-radius: 10px;
 }
 
 /* --- Live queue chip ------------------------------------------------------ */
@@ -852,19 +1142,15 @@ html.dark .dash-card.ant-card {
 .queue-live-chip {
   display: inline-flex;
   min-width: 0;
-  max-width: min(420px, 46vw);
+  max-width: min(360px, 42vw);
   align-items: center;
   gap: 8px;
-  min-height: 34px;
+  min-height: 32px;
   margin: 0;
-  padding: 4px 12px 4px 10px;
-  border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--line));
+  padding: 3px 12px 3px 10px;
+  border: 1px solid color-mix(in srgb, var(--accent) 36%, var(--line));
   border-radius: 999px;
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--accent) 18%, var(--card)),
-    color-mix(in srgb, var(--accent) 9%, var(--card))
-  );
+  background: color-mix(in srgb, var(--accent) 10%, var(--card));
   color: var(--ink);
   cursor: pointer;
   font: inherit;
@@ -874,11 +1160,7 @@ html.dark .dash-card.ant-card {
 
 .queue-live-chip:hover {
   border-color: color-mix(in srgb, var(--accent) 70%, var(--line));
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--accent) 26%, var(--card)),
-    color-mix(in srgb, var(--accent) 13%, var(--card))
-  );
+  background: color-mix(in srgb, var(--accent) 16%, var(--card));
 }
 
 .queue-live-chip:focus-visible {
@@ -987,26 +1269,12 @@ html.dark .dash-card.ant-card {
   }
 }
 
-@keyframes glow-pulse {
-  0%,
-  100% {
-    opacity: 0.35;
-  }
-  50% {
-    opacity: 0.6;
-  }
-}
-
 .animate-fade-in-up {
-  animation: fade-in-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: fade-in-up 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .animate-logo-float {
   animation: logo-float 3.5s ease-in-out infinite;
-}
-
-.animate-glow-pulse {
-  animation: glow-pulse 3.5s ease-in-out infinite;
 }
 
 .skel-block {
@@ -1028,7 +1296,6 @@ html.dark .dash-card.ant-card {
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-in-up,
   .animate-logo-float,
-  .animate-glow-pulse,
   .queue-live-dot,
   .skel-block {
     animation: none;

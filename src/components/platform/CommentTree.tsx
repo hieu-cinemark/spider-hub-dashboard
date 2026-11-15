@@ -77,8 +77,10 @@ export function countReplies(nodes: CommentNode[]): number {
 function CommentMeta({ comment }: { comment: CommentWithPost }) {
   const { t } = useTranslation();
   return (
-    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11.5px] text-[var(--muted)]">
-      <span className="tabular-nums">{formatRelativeTime(comment.scraped_at, t)}</span>
+    <div className="mt-1 flex flex-wrap items-center gap-1.5">
+      <span className="rounded-md bg-[var(--paper-deep)] px-1.5 py-0.5 text-[11px] tabular-nums text-[var(--muted)]">
+        {formatRelativeTime(comment.scraped_at, t)}
+      </span>
       <span className="metric-item">
         <HeartOutlined />
         {comment.reactions_count.toLocaleString()}
@@ -92,7 +94,7 @@ function CommentMeta({ comment }: { comment: CommentWithPost }) {
           href={comment.post_url}
           target="_blank"
           rel="noreferrer"
-          className="inline-flex items-center gap-1 text-[var(--accent)]"
+          className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11.5px] font-semibold text-[var(--accent)] transition-colors hover:bg-[color-mix(in_srgb,var(--accent)_10%,transparent)]"
         >
           <LinkOutlined /> {t("columnOnPost")}
         </a>
@@ -105,43 +107,54 @@ function CommentRow({
   node,
   depth,
   isLast,
+  root = false,
 }: {
   node: CommentNode;
   depth: number;
   isLast: boolean;
+  /** Bình luận gốc được bọc trong một thẻ riêng để các nhánh không dính vào nhau. */
+  root?: boolean;
 }) {
   const { t } = useTranslation();
   const { comment, children, orphan } = node;
 
   return (
-    <li className="relative">
+    <li
+      className={
+        root
+          ? "min-w-0 rounded-xl border border-[var(--line)] bg-[var(--card)] p-3 sm:p-3.5"
+          : "relative"
+      }
+    >
       {depth > 0 ? (
         <span
           aria-hidden
-          className="absolute left-0 top-0 w-5 border-l border-dashed border-[var(--line)]"
-          style={{ height: isLast ? "1.25rem" : "100%" }}
+          className="absolute left-0 top-0 w-6 border-l border-dashed border-[var(--line-strong)]"
+          style={{ height: isLast ? "1.75rem" : "100%" }}
         />
       ) : null}
 
       <div
         className={`flex min-w-0 items-start gap-3 ${
-          depth > 0 ? "pl-6 pt-1" : "pb-1"
+          depth > 0 ? "py-1 pl-7" : "pb-1.5"
         }`}
       >
         <UserAvatar src={comment.author_profile_picture} name={comment.author_name} size={depth > 0 ? 28 : 36} />
-        <div className="cell-stack min-w-0 flex-1">
-          <div className="flex min-w-0 flex-wrap items-center gap-2">
-            <span className="cell-primary break-words">{comment.author_name || "—"}</span>
+        <div className="cell-stack min-w-0 flex-1 gap-1.5">
+          {/* Dòng tiêu đề: tên tác giả (đậm) + nền tảng + nhãn "trả lời". */}
+          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+            <span className="cell-primary truncate-1 !font-semibold">{comment.author_name || "—"}</span>
             <PlatformBadge platform={comment.platform} size={20} showLabel={false} />
             {depth > 0 ? (
-              <span className="text-[11px] font-medium uppercase tracking-wide text-[var(--accent-deep)]">
+              <span className="rounded-md bg-[color-mix(in_srgb,var(--accent)_12%,transparent)] px-1.5 py-0.5 text-[10.5px] font-bold uppercase tracking-wide text-[var(--accent-deep)]">
                 {t("commentReplyLabel")}
               </span>
             ) : null}
           </div>
 
+          {/* Trích dẫn bình luận cha: một dòng riêng, màu nhạt hơn. */}
           {orphan && comment.parent_external_id ? (
-            <div className="cell-secondary break-words">
+            <div className="border-l-2 border-[var(--line-strong)] pl-2 text-[12.5px] leading-snug break-words text-[var(--muted)]">
               {comment.parent_author_name || comment.parent_message
                 ? t("inReplyTo", {
                     author: comment.parent_author_name || "—",
@@ -151,7 +164,10 @@ function CommentRow({
             </div>
           ) : null}
 
-          <span className="cell-primary font-normal whitespace-pre-line break-words">
+          {/* Nội dung bình luận: cỡ chữ riêng, không dùng chung class của
+              tiêu đề - trước đây nó cùng font-weight với tên tác giả nên
+              hai dòng "đậm" cạnh nhau rất chật. */}
+          <span className="text-[14px] leading-[1.6] break-words whitespace-pre-line text-[var(--ink-soft)]">
             {comment.message || "—"}
           </span>
 
@@ -189,9 +205,9 @@ export default function CommentTree({ items }: { items: CommentWithPost[] }) {
           {t("commentTreeSummary", { replies, comments: items.length })}
         </div>
       ) : null}
-      <ul className="flex flex-col">
+      <ul className="flex flex-col gap-2.5">
         {roots.map((root) => (
-          <CommentRow key={root.comment.id} node={root} depth={0} isLast />
+          <CommentRow key={root.comment.id} node={root} depth={0} isLast root />
         ))}
       </ul>
     </div>

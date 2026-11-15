@@ -2,32 +2,33 @@
 
 import {
   AppstoreOutlined,
-  AreaChartOutlined,
   CheckCircleOutlined,
+  ClockCircleOutlined,
   CommentOutlined,
   DashboardOutlined,
   FieldTimeOutlined,
   TeamOutlined,
   WarningFilled,
 } from "@ant-design/icons";
-import { Empty, Segmented, Tag } from "antd";
+import { Button, Segmented, Tooltip } from "antd";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import AccountIssuesCard from "@/components/AccountIssuesCard";
-import IngestFunnelCard from "@/components/IngestFunnelCard";
 import AccountPoolGauges from "@/components/AccountPoolGauges";
-import { summarizeAccounts } from "@/lib/accountPool";
-import { ChartCardSkeleton } from "@/components/PageSkeleton";
-import CrawlHealthBanner from "@/components/CrawlHealthBanner";
-import CrawlQueuePanel from "@/components/CrawlQueuePanel";
-import KafkaLagStrip from "@/components/KafkaLagStrip";
-import DashboardCard, { CardHeading } from "@/components/DashboardCard";
 import { CountDelta } from "@/components/CountDelta";
+import CrawlQueuePanel from "@/components/CrawlQueuePanel";
+import DashboardCard, { CardHeading } from "@/components/DashboardCard";
+import IngestFunnelCard from "@/components/IngestFunnelCard";
+import KafkaLagStrip from "@/components/KafkaLagStrip";
+import { ChartCardSkeleton } from "@/components/PageSkeleton";
 import StatCard from "@/components/StatCard";
-import { useJobsSnapshot, useOpsMetrics } from "@/hooks/useJobs";
+import PlatformCard from "@/components/ui/PlatformCard";
+import SectionHeader from "@/components/ui/SectionHeader";
+import StatusBadge, { StatusDot, type StatusTone } from "@/components/ui/StatusBadge";
 import { useAccounts } from "@/hooks/useSettings";
 import { useCrawlHealth } from "@/hooks/useCrawlHealth";
+import { useJobsSnapshot, useOpsMetrics } from "@/hooks/useJobs";
 import {
   useCommentCounts,
   useCommentTimeseries,
@@ -37,13 +38,18 @@ import {
 } from "@/hooks/useStats";
 import { useTranslation } from "@/i18n/LocaleProvider";
 import { CHART_HEIGHT, STALE_CRAWL_MS, TIMESERIES_DAYS } from "@/lib/constants";
+import { summarizeAccounts } from "@/lib/accountPool";
 import { formatRelativeTime } from "@/lib/format";
-import { PlatformIcon, platformLabel } from "@/lib/platform";
 import type { JobTask, PlatformStat } from "@/lib/types";
 
 const PlatformTotalsChart = dynamic(() => import("@/components/PlatformTotalsChart"), {
   ssr: false,
   loading: () => <ChartCardSkeleton height={CHART_HEIGHT} />,
+});
+
+const HourlyChart = dynamic(() => import("@/components/HourlyChart"), {
+  ssr: false,
+  loading: () => <ChartCardSkeleton height={280} />,
 });
 
 const TimeseriesChart = dynamic(() => import("@/components/TimeseriesChart"), {
@@ -54,11 +60,6 @@ const TimeseriesChart = dynamic(() => import("@/components/TimeseriesChart"), {
 const PlatformTrendChart = dynamic(() => import("@/components/PlatformTrendChart"), {
   ssr: false,
   loading: () => <ChartCardSkeleton height={CHART_HEIGHT} />,
-});
-
-const HourlyChart = dynamic(() => import("@/components/HourlyChart"), {
-  ssr: false,
-  loading: () => <ChartCardSkeleton height={280} />,
 });
 
 const SystemPerformanceChart = dynamic(() => import("@/components/SystemPerformanceChart"), {
@@ -73,133 +74,6 @@ function isStale(lastScrapedAt: string | null): boolean {
   return Date.now() - then > STALE_CRAWL_MS;
 }
 
-function PlatformHealthStrip() {
-  const { t } = useTranslation();
-  const { data: stats, isLoading } = usePlatformStats();
-  const { data: commentCounts } = useCommentCounts();
-  const { health } = useCrawlHealth();
-
-  if (isLoading && !stats) {
-    return <ChartCardSkeleton height={220} />;
-  }
-  if (!stats || stats.length === 0) {
-    return (
-      <DashboardCard title={<CardHeading icon={<DashboardOutlined />} title={t("lastCrawlPerPlatform")} />}>
-        <Empty description={t("noPostsYet")} />
-      </DashboardCard>
-    );
-  }
-
-  return (
-    <DashboardCard
-      title={<CardHeading icon={<DashboardOutlined />} title={t("lastCrawlPerPlatform")} />}
-    >
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {stats.map((row) => (
-          <PlatformHealthCell
-            key={row.platform}
-            row={row}
-            commentRow={commentCounts?.find((c) => c.platform === row.platform)}
-            errors={health.byPlatform[row.platform]?.errors ?? 0}
-            warnings={health.byPlatform[row.platform]?.warnings ?? 0}
-          />
-        ))}
-      </div>
-    </DashboardCard>
-  );
-}
-
-function PlatformHealthCell({
-  row,
-  commentRow,
-  errors,
-  warnings,
-}: {
-  row: PlatformStat;
-  commentRow?: PlatformStat;
-  errors: number;
-  warnings: number;
-}) {
-  const { t } = useTranslation();
-  const stale = isStale(row.last_scraped_at);
-  const tone = errors > 0 ? "danger" : warnings > 0 || stale ? "warning" : "ok";
-
-  return (
-    <Link
-      href={`/?tab=${row.platform}`}
-      className="group flex h-full flex-col gap-3 rounded-[12px] border border-[var(--line)] bg-[var(--card)] p-3.5 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-[var(--accent)]"
-      style={{
-        borderColor:
-          tone === "danger"
-            ? "var(--danger)"
-            : tone === "warning"
-              ? "var(--warn)"
-              : "var(--line)",
-        boxShadow:
-          tone === "danger"
-            ? "0 0 0 1px color-mix(in srgb, var(--danger) 18%, transparent)"
-            : tone === "warning"
-              ? "0 0 0 1px color-mix(in srgb, var(--warn) 18%, transparent)"
-              : undefined,
-      }}
-    >
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="flex min-w-0 shrink-0 items-center gap-2.5">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--accent)]/15 text-[var(--accent-deep)]">
-            <PlatformIcon platform={row.platform} />
-          </span>
-          <div className="min-w-0">
-            <div className="break-words text-[12.5px] font-semibold tracking-wide text-[var(--ink)]">
-              {platformLabel(row.platform)}
-            </div>
-            <div className="break-words text-[11px] text-[var(--muted)]">
-              {formatRelativeTime(row.last_scraped_at, t)}
-            </div>
-          </div>
-        </div>
-        {tone !== "ok" ? (
-          <Tag color={tone === "danger" ? "error" : "warning"} className="!m-0" icon={<WarningFilled />}>
-            {errors > 0
-              ? t("crawlIssueErrors", { n: errors })
-              : stale
-                ? t("crawlIssueStale")
-                : t("crawlIssueWarnings", { n: warnings })}
-          </Tag>
-        ) : (
-          <Tag color="success" className="!m-0">
-            {t("crawlHealthy")}
-          </Tag>
-        )}
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <div className="micro-label">{t("chartPosts")}</div>
-          <div className="mt-1 flex items-baseline gap-2">
-            <span className="text-[20px] font-semibold tabular-nums text-[var(--ink)]">
-              {row.count.toLocaleString()}
-            </span>
-            <CountDelta current={row.count_today ?? 0} previous={row.count_prev ?? 0} compact />
-          </div>
-        </div>
-        <div>
-          <div className="micro-label">{t("chartComments")}</div>
-          <div className="mt-1 flex items-baseline gap-2">
-            <span className="text-[20px] font-semibold tabular-nums text-[var(--ink)]">
-              {(commentRow?.count ?? 0).toLocaleString()}
-            </span>
-            <CountDelta
-              current={commentRow?.count_today ?? 0}
-              previous={commentRow?.count_prev ?? 0}
-              compact
-            />
-          </div>
-        </div>
-      </div>
-    </Link>
-  );
-}
-
 // Job success over the snapshot's history window (cinemark-api keeps the
 // last ~100). "skipped" (e.g. a comments crawl for a post with nothing new)
 // is neither a success nor a failure, so it's left out of the ratio.
@@ -210,6 +84,159 @@ function jobSuccess(history: JobTask[]) {
   return { done, failed, finished, rate: finished > 0 ? (done / finished) * 100 : null };
 }
 
+/* -------------------------------------------------------------------------- */
+/* Section A - operational status                                             */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * A single compact status strip.
+ *
+ * It answers "is the collection working right now?" in one line, and the
+ * latest error is available on demand - a long error message never takes
+ * over the top of the dashboard.
+ */
+function OperationalStatusBar({
+  errorCount,
+  warningCount,
+  runningCount,
+  queuedCount,
+  failedCount,
+  readyAccounts,
+  totalAccounts,
+  updatedAt,
+  lastError,
+  lastErrorAt,
+}: {
+  errorCount: number;
+  warningCount: number;
+  runningCount: number;
+  queuedCount: number;
+  failedCount: number;
+  readyAccounts: number;
+  totalAccounts: number;
+  updatedAt: number;
+  lastError: string | null;
+  lastErrorAt: string | null;
+}) {
+  const { t } = useTranslation();
+
+  const tone: StatusTone = errorCount > 0 ? "danger" : warningCount > 0 ? "warning" : "ok";
+  const toneLabel =
+    errorCount > 0 ? t("opsStatusDegraded") : warningCount > 0 ? t("opsStatusDegraded") : t("opsStatusHealthy");
+
+  return (
+    <div className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-[10px] border border-[var(--line)] bg-[var(--card)] px-4 py-2.5">
+      <StatusBadge tone={tone} title={t("opsOverallStatus")}>
+        {toneLabel}
+      </StatusBadge>
+
+      <div className="flex min-w-0 flex-wrap items-center gap-x-5 gap-y-2">
+        <StatusDot tone={runningCount > 0 ? "running" : "neutral"} title={t("opsActiveJobs")}>
+          {t("opsActiveJobs")}: {runningCount.toLocaleString()}
+        </StatusDot>
+        <StatusDot tone={queuedCount > 0 ? "info" : "neutral"} title={t("opsPendingJobs")}>
+          {t("opsPendingJobs")}: {queuedCount.toLocaleString()}
+        </StatusDot>
+        <StatusDot tone={failedCount > 0 ? "danger" : "neutral"} title={t("opsFailedJobs")}>
+          {t("opsFailedJobs")}: {failedCount.toLocaleString()}
+        </StatusDot>
+        <StatusDot tone={readyAccounts > 0 ? "ok" : "warning"} title={t("kpiAvailableAccounts")}>
+          {t("kpiAvailableAccounts")}: {readyAccounts.toLocaleString()}/{totalAccounts.toLocaleString()}
+        </StatusDot>
+      </div>
+
+      <div className="ml-auto flex min-w-0 items-center gap-3">
+        {lastError ? (
+          <Tooltip title={lastError} styles={{ root: { maxWidth: 520 } }}>
+            <span className="flex min-w-0 items-center gap-1.5 text-[12.5px] text-[var(--danger)]">
+              <WarningFilled className="shrink-0" />
+              <span className="truncate-1">{t("opsRecentErrors")}</span>
+              {lastErrorAt ? (
+                <span className="shrink-0 text-[var(--muted)]">
+                  {formatRelativeTime(lastErrorAt, t)}
+                </span>
+              ) : null}
+            </span>
+          </Tooltip>
+        ) : null}
+        {updatedAt > 0 ? (
+          <span className="shrink-0 text-[12px] whitespace-nowrap text-[var(--muted)]">
+            {t("opsLastUpdate")} {formatRelativeTime(new Date(updatedAt).toISOString(), t)}
+          </span>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Section D - platform health                                                 */
+/* -------------------------------------------------------------------------- */
+
+function PlatformHealthSection({
+  stats,
+  commentCounts,
+  errors,
+  warnings,
+}: {
+  stats: PlatformStat[];
+  commentCounts: PlatformStat[];
+  errors: Record<string, number>;
+  warnings: Record<string, number>;
+}) {
+  const { t } = useTranslation();
+
+  if (stats.length === 0) {
+    return (
+      <DashboardCard
+        title={<CardHeading icon={<DashboardOutlined />} title={t("sectionPlatformHealth")} />}
+      >
+        <p className="m-0 py-4 text-center text-sm text-[var(--muted)]">{t("noPostsYet")}</p>
+      </DashboardCard>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      {stats.map((row) => {
+        const commentRow = commentCounts.find((c) => c.platform === row.platform);
+        const errorCount = errors[row.platform] ?? 0;
+        const warningCount = warnings[row.platform] ?? 0;
+        const stale = isStale(row.last_scraped_at);
+        const tone: StatusTone = errorCount > 0 ? "danger" : warningCount > 0 || stale ? "warning" : "ok";
+        const toneLabel =
+          errorCount > 0
+            ? t("crawlIssueErrors", { n: errorCount })
+            : warningCount > 0
+              ? t("crawlIssueWarnings", { n: warningCount })
+              : stale
+                ? t("crawlIssueStale")
+                : t("crawlHealthy");
+
+        return (
+          <PlatformCard
+            key={row.platform}
+            platform={row.platform}
+            posts={row.count}
+            comments={commentRow?.count ?? 0}
+            lastScrapedAt={row.last_scraped_at}
+            postsToday={row.count_today ?? 0}
+            postsPrev={row.count_prev ?? 0}
+            commentsToday={commentRow?.count_today ?? 0}
+            commentsPrev={commentRow?.count_prev ?? 0}
+            tone={tone}
+            toneLabel={toneLabel}
+            stale={stale && tone !== "danger"}
+            href={`/?tab=${row.platform}`}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+
 export default function AllPlatformsOverview() {
   const { t } = useTranslation();
   const { data: stats, isLoading: statsLoading } = usePlatformStats();
@@ -219,6 +246,7 @@ export default function AllPlatformsOverview() {
   const { data: opsMetrics, isLoading: opsLoading } = useOpsMetrics();
   const { data: jobs, isLoading: jobsLoading } = useJobsSnapshot("slow");
   const { data: accounts, isLoading: accountsLoading } = useAccounts();
+  const { health, dataUpdatedAt } = useCrawlHealth();
   const [hourlyWindow, setHourlyWindow] = useState(24);
   const [hourlyMetric, setHourlyMetric] = useState<"posts" | "comments">("posts");
   const { data: hourly, isLoading: hourlyLoading, dataUpdatedAt: hourlyUpdatedAt } = useHourlyStats(hourlyWindow);
@@ -251,182 +279,255 @@ export default function AllPlatformsOverview() {
   const readyAccounts = accountSummaries.reduce((sum, row) => sum + row.ready, 0);
   const totalAccounts = accountSummaries.reduce((sum, row) => sum + row.total, 0);
   const runningJobs = jobs?.running.length ?? 0;
-  const successTone = success.rate === null ? undefined : success.rate < 50 ? "danger" : success.rate < 80 ? "warning" : undefined;
+  const queuedJobs = jobs?.queued.length ?? 0;
+  const failedJobs = jobs?.history.filter((job) => job.status === "failed").length ?? 0;
+  const successTone =
+    success.rate === null ? undefined : success.rate < 50 ? "danger" : success.rate < 80 ? "warning" : undefined;
+
+  const errorsByPlatform = useMemo(() => {
+    const out: Record<string, number> = {};
+    for (const [name, row] of Object.entries(health.byPlatform)) out[name] = row.errors;
+    return out;
+  }, [health.byPlatform]);
+  const warningsByPlatform = useMemo(() => {
+    const out: Record<string, number> = {};
+    for (const [name, row] of Object.entries(health.byPlatform)) out[name] = row.warnings;
+    return out;
+  }, [health.byPlatform]);
 
   return (
-    <div className="flex flex-col gap-5 animate-fade-in-up">
-      {/* --- 1. Cảnh báo: luôn ở trên cùng, không cần cuộn mới thấy ----- */}
-      <CrawlHealthBanner />
+    <div className="flex flex-col gap-6">
+      {/* --- Section A: operational status ------------------------------- */}
+      <section className="flex flex-col gap-3">
+        <SectionHeader title={t("sectionOperational")} desc={t("opsSectionHint")} />
+        <OperationalStatusBar
+          errorCount={health.errorCount}
+          warningCount={health.warningCount}
+          runningCount={runningJobs}
+          queuedCount={queuedJobs}
+          failedCount={failedJobs}
+          readyAccounts={readyAccounts}
+          totalAccounts={totalAccounts}
+          updatedAt={dataUpdatedAt > 0 ? dataUpdatedAt : hourlyUpdatedAt}
+          lastError={health.lastError?.message ?? null}
+          lastErrorAt={health.lastError?.timestamp ?? null}
+        />
+      </section>
 
-      {/* --- 2. Con số tổng quan: câu trả lời ngắn nhất cho "tình hình
-             thế nào". Tất cả dùng chung một màu accent; chỉ chỉ số có
-             vấn đề mới đổi sang cảnh báo, để số liệu không lấn át cảnh
-             báo lỗi. ----------------------------------------------- */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          title={t("totalPostsCollected")}
-          value={totalPosts}
-          loading={statsLoading}
-          icon={<AppstoreOutlined />}
-          delta={<CountDelta current={postsToday} previous={postsPrev} />}
-        />
-        <StatCard
-          title={t("totalCommentsCollected")}
-          value={totalComments}
-          loading={commentsLoading}
-          icon={<CommentOutlined />}
-          delta={<CountDelta current={commentsToday} previous={commentsPrev} />}
-        />
-        <StatCard
-          title={t("kpiJobSuccess")}
-          value={success.rate === null ? "—" : `${success.rate.toFixed(1)}%`}
-          loading={jobsLoading}
-          icon={<CheckCircleOutlined />}
-          tone={successTone}
-          href="/jobs"
-          hint={
-            success.finished > 0
-              ? t("kpiJobSuccessHint", { done: success.done, failed: success.failed, n: success.finished })
-              : t("kpiJobSuccessEmpty")
+      {/* --- Section B: key numbers -------------------------------------- */}
+      <section className="flex flex-col gap-3">
+        <SectionHeader title={t("sectionKpis")} />
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <StatCard
+            title={t("kpiTotalPosts")}
+            value={totalPosts}
+            loading={statsLoading}
+            icon={<AppstoreOutlined />}
+            delta={<CountDelta current={postsToday} previous={postsPrev} />}
+          />
+          <StatCard
+            title={t("kpiTotalComments")}
+            value={totalComments}
+            loading={commentsLoading}
+            icon={<CommentOutlined />}
+            delta={<CountDelta current={commentsToday} previous={commentsPrev} />}
+          />
+          <StatCard
+            title={t("kpiSuccessRate")}
+            value={success.rate === null ? "—" : `${success.rate.toFixed(1)}%`}
+            loading={jobsLoading}
+            icon={<CheckCircleOutlined />}
+            tone={successTone}
+            href="/jobs"
+            hint={
+              success.finished > 0
+                ? t("kpiSuccessRateHint", { done: success.done, failed: success.failed })
+                : t("kpiJobSuccessEmpty")
+            }
+          />
+          <StatCard
+            title={t("kpiAvailableAccounts")}
+            value={`${readyAccounts} / ${totalAccounts}`}
+            loading={accountsLoading}
+            icon={<TeamOutlined />}
+            href="/settings?tab=accounts"
+            hint={t("kpiAvailableAccountsHint", { ready: readyAccounts, total: totalAccounts })}
+          />
+        </div>
+      </section>
+
+      {/* --- Section C: collection activity ------------------------------ */}
+      <section className="flex flex-col gap-3">
+        <SectionHeader
+          title={t("sectionCollection")}
+          desc={t("opsQueueSummary", { running: runningJobs, queued: queuedJobs })}
+          actions={
+            <Link href="/jobs">
+              <Button size="small">{t("crawlQueueViewAll")}</Button>
+            </Link>
           }
         />
-        <StatCard
-          title={t("kpiReadyAccounts")}
-          value={`${readyAccounts} / ${totalAccounts}`}
-          loading={accountsLoading}
-          icon={<TeamOutlined />}
-          href="/settings?tab=accounts"
-          hint={t("kpiReadyAccountsHint", { running: runningJobs })}
-        />
-      </div>
+        <CrawlQueuePanel compact />
+      </section>
 
-      {/* --- 3. Đang chạy + sức khoẻ từng nền tảng -------------------
-             Hai khối này cùng trả lời "hệ thống đang thu thập được gì
-             và có nền tảng nào đang lỗi" - đặt cạnh nhau. --------------- */}
-      <div className="section-rule">{t("sectionLive")}</div>
-      <CrawlQueuePanel compact />
+      {/* --- Section D: platform health ---------------------------------- */}
+      <section className="flex flex-col gap-3">
+        <SectionHeader title={t("sectionPlatformHealth")} />
+        {statsLoading && !stats ? (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="skel-block h-[136px] rounded-[10px]" />
+            ))}
+          </div>
+        ) : (
+          <PlatformHealthSection
+            stats={stats ?? []}
+            commentCounts={commentCounts ?? []}
+            errors={errorsByPlatform}
+            warnings={warningsByPlatform}
+          />
+        )}
+      </section>
 
-      <PlatformHealthStrip />
-
-      <div className="section-rule">{t("sectionVolume")}</div>
-
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-5">
-        <DashboardCard
-          className="h-full xl:col-span-3"
-          title={
-            <CardHeading
-              icon={<FieldTimeOutlined />}
-              title={t("hourlyTitle", { hours: hourlyWindow })}
-              desc={t("hourlyDesc")}
-            />
-          }
-          extra={
-            <div className="flex flex-wrap items-center gap-2">
-              <Segmented<"posts" | "comments">
-                size="small"
-                value={hourlyMetric}
-                onChange={setHourlyMetric}
-                options={[
-                  { value: "posts", label: t("chartPosts") },
-                  { value: "comments", label: t("chartComments") },
-                ]}
+      {/* --- Section E: analytics ---------------------------------------- */}
+      <section className="flex flex-col gap-3">
+        <SectionHeader title={t("sectionAnalytics")} />
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-5">
+          <DashboardCard
+            className="h-full xl:col-span-3"
+            title={
+              <CardHeading
+                icon={<FieldTimeOutlined />}
+                title={t("analyticsActivityTitle")}
+                desc={t("analyticsActivityDesc")}
               />
-              <Segmented<number>
-                size="small"
-                value={hourlyWindow}
-                onChange={setHourlyWindow}
-                options={[
-                  { value: 24, label: "24h" },
-                  { value: 72, label: "72h" },
-                ]}
+            }
+            extra={
+              <div className="flex flex-wrap items-center gap-2">
+                <Segmented<"posts" | "comments">
+                  size="small"
+                  value={hourlyMetric}
+                  onChange={setHourlyMetric}
+                  options={[
+                    { value: "posts", label: t("chartPosts") },
+                    { value: "comments", label: t("chartComments") },
+                  ]}
+                />
+                <Segmented<number>
+                  size="small"
+                  value={hourlyWindow}
+                  onChange={setHourlyWindow}
+                  options={[
+                    { value: 24, label: "24h" },
+                    { value: 72, label: "72h" },
+                  ]}
+                />
+              </div>
+            }
+          >
+            {hourlyLoading && !hourly ? (
+              <ChartCardSkeleton height={280} />
+            ) : (
+              <>
+                <HourlyChart
+                  points={hourly ?? []}
+                  hours={hourlyWindow}
+                  metric={hourlyMetric}
+                  platforms={(stats ?? []).map((row) => row.platform)}
+                  asOf={hourlyUpdatedAt}
+                />
+                {hourlyTotal === 0 ? (
+                  <div className="mt-1 text-center text-xs text-[var(--muted)]">{t("hourlyEmpty")}</div>
+                ) : null}
+              </>
+            )}
+          </DashboardCard>
+
+          <DashboardCard
+            className="h-full xl:col-span-2"
+            title={
+              <CardHeading
+                icon={<AppstoreOutlined />}
+                title={t("analyticsDistributionTitle")}
+                desc={t("analyticsDistributionDesc")}
               />
+            }
+          >
+            <div className="flex w-full items-center justify-center" style={{ minHeight: 300 }}>
+              {statsLoading && <ChartCardSkeleton height={300} />}
+              {!statsLoading && !hasPlatformChartData && (
+                <p className="m-0 text-sm text-[var(--muted)]">{t("noPostsYet")}</p>
+              )}
+              {!statsLoading && hasPlatformChartData && (
+                <div className="w-full">
+                  <PlatformTotalsChart
+                    posts={stats ?? []}
+                    comments={commentCounts ?? []}
+                    postsLabel={t("chartPosts")}
+                    commentsLabel={t("chartComments")}
+                    height={300}
+                  />
+                </div>
+              )}
             </div>
-          }
-        >
-          {hourlyLoading && !hourly ? (
-            <ChartCardSkeleton height={280} />
-          ) : (
-            <>
-              <HourlyChart
-                points={hourly ?? []}
-                hours={hourlyWindow}
-                metric={hourlyMetric}
-                platforms={(stats ?? []).map((row) => row.platform)}
-                asOf={hourlyUpdatedAt}
+          </DashboardCard>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+          <DashboardCard
+            className="h-full"
+            title={
+              <CardHeading
+                icon={<ClockCircleOutlined />}
+                title={t("dailyVolumeLast14Days")}
+                desc={`${t("chartPosts")} · ${t("chartComments")}`}
               />
-              {hourlyTotal === 0 ? (
-                <div className="mt-1 text-center text-xs text-[var(--muted)]">{t("hourlyEmpty")}</div>
-              ) : null}
-            </>
-          )}
-        </DashboardCard>
-        <DashboardCard
-          className="h-full xl:col-span-2"
-          title={<CardHeading icon={<AppstoreOutlined />} title={t("volumePerPlatform")} desc={`${t("chartPosts")} · ${t("chartComments")}`} />}
-        >
-          <div className="flex w-full items-center justify-center" style={{ minHeight: 300 }}>
-            {statsLoading && <ChartCardSkeleton height={300} />}
-            {!statsLoading && !hasPlatformChartData && <Empty description={t("noPostsYet")} />}
-            {!statsLoading && hasPlatformChartData && (
-              <div className="w-full">
-                <PlatformTotalsChart
-                  posts={stats ?? []}
-                  comments={commentCounts ?? []}
-                  postsLabel={t("chartPosts")}
-                  commentsLabel={t("chartComments")}
-                  height={300}
-                />
-              </div>
-            )}
-          </div>
-        </DashboardCard>
-      </div>
+            }
+          >
+            <div className="flex w-full items-center justify-center" style={{ minHeight: CHART_HEIGHT }}>
+              {trendLoading && <ChartCardSkeleton height={CHART_HEIGHT} />}
+              {!trendLoading && !hasTrendData && (
+                <p className="m-0 text-sm text-[var(--muted)]">{t("noPostsInWindow")}</p>
+              )}
+              {!trendLoading && hasTrendData && (
+                <div className="w-full">
+                  <TimeseriesChart
+                    posts={timeseries ?? []}
+                    comments={commentTimeseries ?? []}
+                    postsLabel={t("chartPosts")}
+                    commentsLabel={t("chartComments")}
+                  />
+                </div>
+              )}
+            </div>
+          </DashboardCard>
 
-      <IngestFunnelCard hours={hourlyWindow} />
+          <DashboardCard
+            className="h-full"
+            title={
+              <CardHeading
+                icon={<AppstoreOutlined />}
+                title={t("platformTrendTitle")}
+                desc={t("platformTrendDesc", { days: TIMESERIES_DAYS })}
+              />
+            }
+          >
+            <div className="flex w-full items-center justify-center" style={{ minHeight: CHART_HEIGHT }}>
+              {timeseriesLoading && <ChartCardSkeleton height={CHART_HEIGHT} />}
+              {!timeseriesLoading && (timeseries?.length ?? 0) === 0 && (
+                <p className="m-0 text-sm text-[var(--muted)]">{t("noPostsInWindow")}</p>
+              )}
+              {!timeseriesLoading && (timeseries?.length ?? 0) > 0 && (
+                <div className="w-full">
+                  <PlatformTrendChart points={timeseries ?? []} />
+                </div>
+              )}
+            </div>
+          </DashboardCard>
+        </div>
+      </section>
 
-      <div className="section-rule">{t("sectionTrend")}</div>
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <DashboardCard
-          className="h-full"
-          title={<CardHeading icon={<CommentOutlined />} title={t("dailyVolumeLast14Days")} desc={`${t("chartPosts")} · ${t("chartComments")}`} />}
-        >
-          <div className="flex w-full items-center justify-center" style={{ minHeight: CHART_HEIGHT }}>
-            {trendLoading && <ChartCardSkeleton height={CHART_HEIGHT} />}
-            {!trendLoading && !hasTrendData && <Empty description={t("noPostsInWindow")} />}
-            {!trendLoading && hasTrendData && (
-              <div className="w-full">
-                <TimeseriesChart
-                  posts={timeseries ?? []}
-                  comments={commentTimeseries ?? []}
-                  postsLabel={t("chartPosts")}
-                  commentsLabel={t("chartComments")}
-                />
-              </div>
-            )}
-          </div>
-        </DashboardCard>
-        <DashboardCard
-          className="h-full"
-          title={
-            <CardHeading
-              icon={<AreaChartOutlined />}
-              title={t("platformTrendTitle")}
-              desc={t("platformTrendDesc", { days: TIMESERIES_DAYS })}
-            />
-          }
-        >
-          <div className="flex w-full items-center justify-center" style={{ minHeight: CHART_HEIGHT }}>
-            {timeseriesLoading && <ChartCardSkeleton height={CHART_HEIGHT} />}
-            {!timeseriesLoading && (timeseries?.length ?? 0) === 0 && <Empty description={t("noPostsInWindow")} />}
-            {!timeseriesLoading && (timeseries?.length ?? 0) > 0 && (
-              <div className="w-full">
-                <PlatformTrendChart points={timeseries ?? []} />
-              </div>
-            )}
-          </div>
-        </DashboardCard>
-      </div>
-
+      {/* --- Secondary operational detail -------------------------------- */}
       <div className="section-rule">{t("sectionResources")}</div>
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         <DashboardCard
@@ -436,7 +537,7 @@ export default function AllPlatformsOverview() {
           {accountsLoading ? (
             <ChartCardSkeleton height={220} />
           ) : accountSummaries.length === 0 ? (
-            <Empty />
+            <p className="m-0 py-6 text-center text-sm text-[var(--muted)]">{t("noPostsYet")}</p>
           ) : (
             <AccountPoolGauges summaries={accountSummaries} />
           )}
@@ -445,6 +546,8 @@ export default function AllPlatformsOverview() {
           <AccountIssuesCard accounts={accounts ?? []} loading={accountsLoading} />
         </div>
       </div>
+
+      <IngestFunnelCard hours={hourlyWindow} />
 
       <div className="section-rule">{t("sectionInfra")}</div>
       <DashboardCard
@@ -458,16 +561,12 @@ export default function AllPlatformsOverview() {
         extra={
           opsCurrent ? (
             <div className="flex flex-wrap items-center gap-1.5">
-              <Tag className="!mr-0">{t("systemPerfRss", { mb: opsCurrent.rss_mb })}</Tag>
+              <StatusBadge tone="neutral">{t("systemPerfRss", { mb: opsCurrent.rss_mb })}</StatusBadge>
               {(opsCurrent.done_15m ?? 0) > 0 ? (
-                <Tag color="success" className="!mr-0">
-                  {t("systemPerfDone15m", { n: opsCurrent.done_15m ?? 0 })}
-                </Tag>
+                <StatusBadge tone="ok">{t("systemPerfDone15m", { n: opsCurrent.done_15m ?? 0 })}</StatusBadge>
               ) : null}
               {(opsCurrent.failed_15m ?? 0) > 0 ? (
-                <Tag color="error" className="!mr-0">
-                  {t("systemPerfFailed15m", { n: opsCurrent.failed_15m ?? 0 })}
-                </Tag>
+                <StatusBadge tone="danger">{t("systemPerfFailed15m", { n: opsCurrent.failed_15m ?? 0 })}</StatusBadge>
               ) : null}
             </div>
           ) : undefined
@@ -475,7 +574,9 @@ export default function AllPlatformsOverview() {
       >
         <div className="flex w-full items-center justify-center" style={{ minHeight: 240 }}>
           {opsLoading && !hasOpsData && <ChartCardSkeleton height={220} />}
-          {!opsLoading && !hasOpsData && <Empty description={t("systemPerfNoData")} />}
+          {!opsLoading && !hasOpsData && (
+            <p className="m-0 text-sm text-[var(--muted)]">{t("systemPerfNoData")}</p>
+          )}
           {hasOpsData && (
             <div className="w-full">
               <SystemPerformanceChart

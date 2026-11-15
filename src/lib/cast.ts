@@ -13,9 +13,20 @@
 const SPLIT = /[,;·•|/]+/;
 
 export function formatCast(raw: string | null | undefined): string {
-  if (!raw) return "";
+  return castList(raw).join(", ");
+}
+
+/**
+ * The cast as a list of names.
+ *
+ * Same normalisation as `formatCast`, but returning the array - the table
+ * shows the first two or three names plus a "+N more" count, and the detail
+ * drawer shows the whole list.
+ */
+export function castList(raw: string | null | undefined): string[] {
+  if (!raw) return [];
   const text = raw.trim();
-  if (!text) return "";
+  if (!text) return [];
 
   let items: string[];
   try {
@@ -31,5 +42,5 @@ export function formatCast(raw: string | null | undefined): string {
     const name = item.trim().replace(/^["']|["']$/g, "").replace(/\.$/, "").trim();
     if (name && !names.includes(name)) names.push(name);
   }
-  return names.join(", ");
+  return names;
 }

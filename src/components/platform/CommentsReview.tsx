@@ -1,10 +1,22 @@
 "use client";
 
-import { ApartmentOutlined, HeartOutlined, LinkOutlined, MessageOutlined, UnorderedListOutlined } from "@ant-design/icons";
-import { Button, Empty, Segmented, Table } from "antd";
+import {
+  ApartmentOutlined,
+  DislikeOutlined,
+  HeartOutlined,
+  InfoCircleOutlined,
+  LikeOutlined,
+  LinkOutlined,
+  MessageOutlined,
+  MinusCircleOutlined,
+  UnorderedListOutlined,
+} from "@ant-design/icons";
+import { Button, Empty, Table, Tooltip } from "antd";
 import { useMemo, useState } from "react";
 import MobileTable, { type ResponsiveColumnType } from "@/components/MobileTable";
 import CommentTree, { countReplies, buildCommentTree } from "@/components/platform/CommentTree";
+import CommentDetailDrawer from "@/components/platform/CommentDetailDrawer";
+import FilterChip from "@/components/ui/FilterChip";
 import KeywordFilter from "@/components/KeywordFilter";
 import PlatformBadge from "@/components/PlatformBadge";
 import { UserAvatar } from "@/components/UserAvatar";
@@ -31,8 +43,8 @@ function OnPostQuote({ record }: { record: CommentWithPost }) {
     <div className="on-post-quote">
       <div className="on-post-quote-body">
         <span className="on-post-quote-kicker">{t("commentedOnPost")}</span>
-        {meta ? <span className="cell-secondary break-words">{meta}</span> : null}
-        <span className="cell-primary whitespace-pre-line break-words">{record.post_content || "—"}</span>
+        {meta ? <span className="cell-secondary truncate-1">{meta}</span> : null}
+        <span className="cell-primary clamp-2">{record.post_content || "—"}</span>
       </div>
       {record.post_url ? (
         <a
@@ -55,6 +67,7 @@ export default function CommentsReview() {
   const [query, setQuery] = useQueryRecord(COMMENTS_QUERY);
   // "tree" nhìn bình luận có reply theo dạng cây; "list" là bảng phẳng cũ.
   const [view, setView] = useState<"tree" | "list">("tree");
+  const [detail, setDetail] = useState<CommentWithPost | null>(null);
   const platform = query.platform === ALL_PLATFORM_QUERY ? undefined : query.platform;
   const keywordId = query.keyword || undefined;
   const sentiment = SENTIMENT_TABS.includes(query.sentiment as (typeof SENTIMENT_TABS)[number])
@@ -74,11 +87,11 @@ export default function CommentsReview() {
           <UserAvatar src={record.author_profile_picture} name={record.author_name} size={36} />
           <div className="cell-stack min-w-0 flex-1">
             <div className="flex min-w-0 items-center gap-2">
-              <span className="cell-primary break-words">{record.author_name || "—"}</span>
+              <span className="cell-primary truncate-1">{record.author_name || "—"}</span>
               <PlatformBadge platform={record.platform} size={20} showLabel={false} />
             </div>
             {record.parent_external_id && (
-              <div className="cell-secondary break-words">
+              <div className="cell-secondary truncate-1">
                 {record.parent_author_name || record.parent_message
                   ? t("inReplyTo", {
                       author: record.parent_author_name || "—",
@@ -87,7 +100,7 @@ export default function CommentsReview() {
                   : t("inReplyToUnknown")}
               </div>
             )}
-            <span className="cell-primary font-normal whitespace-pre-line break-words">{v || "—"}</span>
+            <span className="cell-primary !font-normal clamp-2">{v || "—"}</span>
           </div>
         </div>
       ),
@@ -95,13 +108,13 @@ export default function CommentsReview() {
     {
       title: t("columnOnPost"),
       key: "post",
-      width: 320,
+      width: 300,
       render: (_: unknown, record: CommentWithPost) => <OnPostQuote record={record} />,
     },
     {
       title: t("columnEngagement"),
       key: "engagement",
-      width: 140,
+      width: 132,
       render: (_: unknown, record: CommentWithPost) => (
         <div className="metric-grid" style={{ gridTemplateColumns: "repeat(2, minmax(0, auto))" }}>
           <span className="metric-item">
@@ -118,8 +131,26 @@ export default function CommentsReview() {
     {
       title: t("columnScraped"),
       dataIndex: "scraped_at",
-      width: 120,
+      width: 116,
       render: (v: string) => <span className="cell-meta">{formatRelativeTime(v, t)}</span>,
+    },
+    {
+      title: t("actions"),
+      key: "actions",
+      width: 76,
+      align: "right",
+      mobileHidden: true,
+      render: (_: unknown, record: CommentWithPost) => (
+        <Tooltip title={t("viewDetails")}>
+          <Button
+            size="small"
+            type="text"
+            icon={<InfoCircleOutlined />}
+            aria-label={t("viewDetails")}
+            onClick={() => setDetail(record)}
+          />
+        </Tooltip>
+      ),
     },
   ];
 
@@ -138,44 +169,55 @@ export default function CommentsReview() {
           platforms={COMMENT_SUPPORTED_PLATFORMS}
           onChange={(next) => setQuery({ platform: next, keyword: "" })}
         />
-        <Segmented
-          size="small"
-          value={sentiment}
-          onChange={(next) => setQuery({ sentiment: next as string })}
-          options={[
-            { value: "positive", label: t("commentsPositive") },
-            { value: "negative", label: t("commentsNegative") },
-            { value: "neutral", label: t("commentsNeutral") },
-          ]}
-        />
-        <Segmented
-          size="small"
-          value={view}
-          onChange={(next) => setView(next as "tree" | "list")}
-          options={[
-            {
-              value: "tree",
-              label: (
-                <span className="inline-flex items-center gap-1.5">
-                  <ApartmentOutlined /> {t("commentsViewTree")}
-                  {replyCount > 0 ? (
-                    <span className="rounded-full bg-[var(--accent)]/15 px-1.5 text-[11px] font-semibold tabular-nums text-[var(--accent-deep)]">
-                      {replyCount}
-                    </span>
-                  ) : null}
-                </span>
-              ),
-            },
-            {
-              value: "list",
-              label: (
-                <span className="inline-flex items-center gap-1.5">
-                  <UnorderedListOutlined /> {t("commentsViewList")}
-                </span>
-              ),
-            },
-          ]}
-        />
+        <div className="filter-bar-scroll">
+          <FilterChip
+            active={sentiment === "positive"}
+            icon={<LikeOutlined />}
+            label={t("commentsPositive")}
+            accent="#16a34a"
+            onClick={() => setQuery({ sentiment: "positive" })}
+          />
+          <FilterChip
+            active={sentiment === "negative"}
+            icon={<DislikeOutlined />}
+            label={t("commentsNegative")}
+            accent="#dc2626"
+            onClick={() => setQuery({ sentiment: "negative" })}
+          />
+          <FilterChip
+            active={sentiment === "neutral"}
+            icon={<MinusCircleOutlined />}
+            label={t("commentsNeutral")}
+            accent="#64748b"
+            onClick={() => setQuery({ sentiment: "neutral" })}
+          />
+        </div>
+        <span className="mx-1 hidden h-5 w-px bg-[var(--line)] sm:block" aria-hidden />
+        <div className="filter-bar-scroll">
+          <FilterChip
+            active={view === "tree"}
+            icon={<ApartmentOutlined />}
+            label={
+              <span className="inline-flex items-center gap-1.5">
+                {t("commentsViewTree")}
+                {replyCount > 0 ? (
+                  <span className="rounded-full bg-[var(--accent)]/15 px-1.5 text-[11px] font-semibold tabular-nums text-[var(--accent-deep)]">
+                    {replyCount}
+                  </span>
+                ) : null}
+              </span>
+            }
+            accent="var(--accent)"
+            onClick={() => setView("tree")}
+          />
+          <FilterChip
+            active={view === "list"}
+            icon={<UnorderedListOutlined />}
+            label={t("commentsViewList")}
+            accent="var(--accent-2)"
+            onClick={() => setView("list")}
+          />
+        </div>
       </div>
       {view === "tree" ? (
         <div className="flex flex-col gap-3">
@@ -234,6 +276,7 @@ export default function CommentsReview() {
           columns={columns}
         />
       )}
+      <CommentDetailDrawer comment={detail} onClose={() => setDetail(null)} />
     </div>
   );
 }

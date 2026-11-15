@@ -5,16 +5,19 @@ import {
   DashboardOutlined,
   FileTextOutlined,
   LogoutOutlined,
+  MenuFoldOutlined,
   MenuOutlined,
+  MenuUnfoldOutlined,
   PlaySquareOutlined,
   SettingOutlined,
   ThunderboltOutlined,
   UnorderedListOutlined,
+  UserOutlined,
 } from "@ant-design/icons";
-import { Badge, Button, Layout, Menu, Tag } from "antd";
+import { Badge, Button, Dropdown, Layout, Menu, Tag } from "antd";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import Logo from "@/components/Logo";
 import LocaleSwitcher from "@/components/LocaleSwitcher";
@@ -30,7 +33,44 @@ import { logout } from "@/lib/auth";
 
 const { Header, Sider, Content } = Layout;
 
+/**
+ * Desktop sidebar width. The collapsed width is the icon rail.
+ *
+ * Both numbers live here and nowhere else - the sider itself and the
+ * content offset that clears it are driven from this one place (the CSS
+ * mirrors it in globals.css under `.app-content-offset`).
+ */
 const SIDER_WIDTH = 232;
+const SIDER_COLLAPSED_WIDTH = 64;
+
+const COLLAPSE_STORAGE_KEY = "spider-hub-dashboard.sidebar-collapsed";
+/** Same-tab notification that the collapse preference changed. */
+const COLLAPSE_EVENT = "spider-hub-dashboard.sidebar-collapsed-change";
+
+/**
+ * The operator's sidebar preference lives in localStorage.
+ *
+ * It is read through `useSyncExternalStore` rather than an effect: the
+ * server snapshot is always "expanded", and React swaps in the stored
+ * value right after hydration - so the first paint is never a flash of the
+ * wrong sidebar width, and no effect has to set state.
+ */
+function subscribeCollapsed(onChange: () => void) {
+  window.addEventListener(COLLAPSE_EVENT, onChange);
+  window.addEventListener("storage", onChange);
+  return () => {
+    window.removeEventListener(COLLAPSE_EVENT, onChange);
+    window.removeEventListener("storage", onChange);
+  };
+}
+
+function readCollapsed(): boolean {
+  try {
+    return window.localStorage.getItem(COLLAPSE_STORAGE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
 
 type NavItem = {
   key: string;
@@ -56,10 +96,10 @@ function pathToKey(pathname: string): string {
 }
 
 /**
- * Chip trạng thái của header: lỗi/cảnh báo thu thập + hàng đợi đang chạy.
+ * Compact health/queue indicators for the top bar.
  *
- * Tách riêng thành component vì nó xuất hiện ở hai chỗ: cạnh tiêu đề
- * (desktop) và ở hàng riêng có cuộn ngang (mobile).
+ * Deliberately small: a dot and a number, not a colored notification block.
+ * The full detail belongs on the Overview page and in the Logs tab.
  */
 function StatusChips({
   errorCount,
@@ -77,7 +117,7 @@ function StatusChips({
 
   return (
     <>
-      {errorCount > 0 && (
+      {errorCount > 0 ? (
         <Tag
           color="error"
           className="status-chip !mr-0 shrink-0 cursor-pointer"
@@ -85,8 +125,8 @@ function StatusChips({
         >
           {t("crawlIssueErrors", { n: errorCount })}
         </Tag>
-      )}
-      {errorCount === 0 && warningCount > 0 && (
+      ) : null}
+      {errorCount === 0 && warningCount > 0 ? (
         <Tag
           color="warning"
           className="status-chip !mr-0 shrink-0 cursor-pointer"
@@ -94,8 +134,8 @@ function StatusChips({
         >
           {t("crawlIssueWarnings", { n: warningCount })}
         </Tag>
-      )}
-      {liveCount > 0 && (
+      ) : null}
+      {liveCount > 0 ? (
         <button type="button" className="queue-live-chip shrink-0" onClick={() => router.push("/jobs")}>
           <span className="queue-live-dot" aria-hidden />
           <span className="queue-live-count">{liveCount}</span>
@@ -109,7 +149,7 @@ function StatusChips({
             </>
           ) : null}
         </button>
-      )}
+      ) : null}
     </>
   );
 }
@@ -140,9 +180,23 @@ export default function AppShell({ children }: { children: ReactNode }) {
     const id = window.setTimeout(run, 2000);
     return () => window.clearTimeout(id);
   }, [queryClient]);
+
   const runningLabel = jobs?.running[0]?.label || jobs?.queued[0]?.label || "";
-  const [collapsed, setCollapsed] = useState(false);
+
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Restore the operator's own sidebar preference.
+  const collapsed = useSyncExternalStore(subscribeCollapsed, readCollapsed, () => false);
+
+  function toggleCollapsed() {
+    const next = !collapsed;
+    try {
+      window.localStorage.setItem(COLLAPSE_STORAGE_KEY, next ? "1" : "0");
+    } catch {
+      /* storage unavailable - the preference just won't persist */
+    }
+    window.dispatchEvent(new Event(COLLAPSE_EVENT));
+  }
 
   const [renderedPathname, setRenderedPathname] = useState(pathname);
   if (renderedPathname !== pathname) {
@@ -166,122 +220,134 @@ export default function AppShell({ children }: { children: ReactNode }) {
           type: "group" as const,
           key: `section-${section.id}`,
           label: <span className="nav-section-label !px-0 !pt-2 !pb-0">{t(section.labelKey)}</span>,
-          children: rows.map((item) => ({
-            key: item.key,
-            icon: item.icon,
-            label: (
-              <Link
-                href={
-                  item.key === "/logs" && health.errorCount > 0
-                    ? "/logs?log=spider-hub&level=error"
-                    : item.key
-                }
-                className="flex items-center justify-between gap-2"
-              >
-                <span>{t(item.labelKey)}</span>
-                {item.key === "/logs" && health.errorCount > 0 ? (
-                  <Badge size="small" count={health.errorCount} overflowCount={99} />
-                ) : item.key === "/jobs" && liveCount > 0 ? (
-                  <Badge size="small" count={liveCount} overflowCount={99} />
-                ) : null}
-              </Link>
-            ),
-          })),
+          children: rows.map((item) => {
+            const href =
+              item.key === "/logs" && health.errorCount > 0
+                ? "/logs?log=spider-hub&level=error"
+                : item.key;
+            return {
+              key: item.key,
+              icon: item.icon,
+              // Plain-text title: this is what the collapsed rail shows as a
+              // tooltip (the label itself is a Link with a badge in it).
+              title: t(item.labelKey),
+              label: (
+                <Link href={href} className="flex min-w-0 items-center justify-between gap-2">
+                  <span className="truncate-1">{t(item.labelKey)}</span>
+                  {item.key === "/logs" && health.errorCount > 0 ? (
+                    <Badge size="small" count={health.errorCount} overflowCount={99} />
+                  ) : item.key === "/jobs" && liveCount > 0 ? (
+                    <Badge size="small" count={liveCount} overflowCount={99} />
+                  ) : null}
+                </Link>
+              ),
+            };
+          }),
         },
       ];
     });
   }, [t, health.errorCount, liveCount]);
 
-  return (
-    <Layout hasSider className="app-shell min-h-screen">
-      {mobileOpen && (
+  function renderNav(collapsedRail: boolean) {
+    return (
+      <div className="flex h-full min-h-0 flex-col">
         <div
-          className="fixed inset-0 z-20 bg-[#161310]/60 lg:hidden"
-          onClick={() => setMobileOpen(false)}
-          aria-hidden
-        />
-      )}
-      <Sider
-        breakpoint="lg"
-        collapsedWidth={0}
-        width={SIDER_WIDTH}
-        trigger={null}
-        collapsed={collapsed && !mobileOpen}
-        onBreakpoint={setCollapsed}
-        className="app-sider"
-        style={{
-          position: "fixed",
-          insetInlineStart: 0,
-          top: 0,
-          bottom: 0,
-          overflow: "auto",
-          zIndex: 30,
-        }}
-      >
-        <div className="flex h-full flex-col">
-          <div className="relative overflow-hidden px-4 pb-5 pt-5">
-            <div
-              className="pointer-events-none absolute -right-10 -top-12 h-32 w-32 rounded-full bg-[var(--accent)]/25 blur-3xl animate-glow-pulse"
-              aria-hidden
-            />
-            <div className="relative flex items-center gap-2.5">
-              <Logo size={34} animate />
-              <div className="min-w-0 leading-tight">
-                <div className="truncate text-[14px] font-semibold tracking-tight text-white">Spider Hub</div>
-                <div className="truncate text-[10px] font-semibold tracking-[0.12em] text-white/45 uppercase">
-                  {t("appTagline")}
-                </div>
+          className={`flex shrink-0 items-center gap-2.5 border-b border-[var(--line)] px-4 py-4 ${
+            collapsedRail ? "justify-center px-0" : ""
+          }`}
+        >
+          <Logo size={30} />
+          {!collapsedRail ? (
+            <div className="min-w-0 leading-tight">
+              <div className="truncate text-[13.5px] font-semibold tracking-tight text-[var(--ink)]">Spider Hub</div>
+              <div className="truncate text-[10px] font-semibold tracking-[0.12em] text-[var(--muted)] uppercase">
+                {t("appTagline")}
               </div>
             </div>
-          </div>
-          <Menu
-            theme="dark"
-            mode="inline"
-            selectedKeys={[selected]}
-            className="!flex-1 !border-none !bg-transparent"
-            items={menuItems}
-          />
-          <div className="px-4 py-3 text-[10px] font-semibold tracking-[0.12em] text-white/30 uppercase">
-            Cinemark · {t("appTagline")}
-          </div>
+          ) : null}
         </div>
-      </Sider>
-      <Layout
-        style={{
-          marginInlineStart: collapsed ? 0 : SIDER_WIDTH,
-          transition: "margin-inline-start 0.2s",
-        }}
+
+        <Menu
+          theme="dark"
+          mode="inline"
+          inlineCollapsed={collapsedRail}
+          selectedKeys={[selected]}
+          className="!flex-1 !overflow-y-auto !border-none !bg-transparent"
+          items={menuItems}
+        />
+
+        <div className="shrink-0 border-t border-[var(--line)] px-3 py-3">
+          <Button
+            type="text"
+            size="small"
+            block
+            icon={collapsedRail ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+            onClick={toggleCollapsed}
+            aria-label={collapsedRail ? t("expandSidebar") : t("collapseSidebar")}
+            className="!text-[var(--muted)] hover:!text-[var(--ink)]"
+          >
+            {!collapsedRail ? t("collapseSidebar") : null}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <Layout hasSider className="app-shell min-h-screen">
+      {/* The desktop rail. Below 1024px it is hidden by CSS and the header's
+          menu button opens the drawer version instead - so the layout never
+          depends on a JS-measured breakpoint (no hydration flash). */}
+      <Sider
+        width={SIDER_WIDTH}
+        collapsedWidth={SIDER_COLLAPSED_WIDTH}
+        trigger={null}
+        collapsed={collapsed}
+        className="app-sider"
       >
-        <Header className="app-header sticky top-0 z-20 !px-3 sm:!px-7">
-          <div className="flex flex-col">
-            <div className="flex items-center gap-2">
-              {/* Tiêu đề + mô tả của trang do chính page.tsx render (PageHeader),
-                  nên header chỉ giữ điều hướng và chip trạng thái. Khi cuộn
-                  xuống dài, người dùng vẫn biết đang ở trang nào. */}
-              <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
-                {collapsed && (
-                  <Button
-                    type="text"
-                    icon={<MenuOutlined />}
-                    onClick={() => setMobileOpen(true)}
-                    className="!-ml-2 shrink-0"
-                    aria-label={t("openNavigation")}
-                  />
-                )}
-                {/* Brand chỉ hiện ở mobile: sidebar bị ẩn nên không có logo ở đâu khác. */}
-                <span className="flex min-w-0 items-center gap-2 lg:hidden">
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--accent)]/16 text-[var(--accent-deep)]">
-                    {activeNavItem.icon}
-                  </span>
-                  <span className="truncate text-[14px] font-semibold tracking-tight text-[var(--ink)]">
-                    {t(activeNavItem.labelKey)}
-                  </span>
-                </span>
+        {renderNav(collapsed)}
+      </Sider>
+
+      {/* Mobile navigation drawer. */}
+      {mobileOpen ? (
+        <>
+          <div className="fixed inset-0 z-40 bg-[#0b0f14]/70 lg:hidden" onClick={() => setMobileOpen(false)} aria-hidden />
+          <div
+            className="fixed inset-y-0 left-0 z-50 w-[264px] border-r border-[var(--line)] bg-[var(--sider)] lg:hidden"
+            role="dialog"
+            aria-modal="true"
+            aria-label={t("openNavigation")}
+          >
+            {renderNav(false)}
+          </div>
+        </>
+      ) : null}
+
+      <Layout
+        className={`app-content-offset ${collapsed ? "app-content-offset--collapsed" : ""}`}
+        style={{ minWidth: 0 }}
+      >
+        <Header className="app-header sticky top-0 z-20 !px-3 sm:!px-6">
+          <div className="flex min-w-0 flex-col">
+            <div className="flex min-w-0 items-center gap-2">
+              {/* Page identity. The in-page heading repeats the title for
+                  accessibility, but the header is what stays visible while
+                  scrolling a long page. */}
+              <div className="flex min-w-0 flex-1 items-center gap-2">
+                <Button
+                  type="text"
+                  icon={<MenuOutlined />}
+                  onClick={() => setMobileOpen(true)}
+                  className="!-ml-2 shrink-0 lg:!hidden"
+                  aria-label={t("openNavigation")}
+                />
+                <h1 className="m-0 min-w-0 truncate text-[15px] font-semibold tracking-tight text-[var(--ink)]">
+                  {t(activeNavItem.labelKey)}
+                </h1>
               </div>
-              {/* Chip trạng thái. Trên desktop nó nằm cùng hàng với tiêu đề;
-                  trên mobile nó xuống hàng riêng có cuộn ngang - nếu để
-                  chung hàng, chip hàng đợi sống bị đẩy ra ngoài màn hình
-                  và nhãn của nó bị cắt. */}
+
+              {/* Status indicators. On mobile they move to their own
+                  scrollable row so nothing is pushed off-screen. */}
               <div className="hidden min-w-0 shrink-0 items-center gap-2 lg:flex">
                 <StatusChips
                   errorCount={health.errorCount}
@@ -290,21 +356,29 @@ export default function AppShell({ children }: { children: ReactNode }) {
                   runningLabel={runningLabel}
                 />
               </div>
+
               <div className="flex shrink-0 items-center gap-1 sm:gap-2">
                 <AlertsBell />
                 <ThemeToggle />
                 <LocaleSwitcher variant="light" />
-                <Button icon={<LogoutOutlined />} onClick={logout} className="!hidden sm:!inline-flex">
-                  {t("navLogout")}
-                </Button>
-                <Button
-                  icon={<LogoutOutlined />}
-                  onClick={logout}
-                  aria-label={t("navLogout")}
-                  className="!px-2 sm:!hidden"
-                />
+                <Dropdown
+                  trigger={["click"]}
+                  menu={{
+                    items: [
+                      {
+                        key: "logout",
+                        icon: <LogoutOutlined />,
+                        label: t("navLogout"),
+                        onClick: () => logout(),
+                      },
+                    ],
+                  }}
+                >
+                  <Button type="text" shape="circle" icon={<UserOutlined />} aria-label={t("navLogout")} />
+                </Dropdown>
               </div>
             </div>
+
             <div className="status-scroll mt-1.5 flex min-w-0 items-center gap-2 overflow-x-auto pb-1 lg:hidden">
               <StatusChips
                 errorCount={health.errorCount}
@@ -315,8 +389,9 @@ export default function AppShell({ children }: { children: ReactNode }) {
             </div>
           </div>
         </Header>
-        <Content className="page-canvas p-3 sm:p-5">
-          <div key={pathname} className="relative z-[1] mx-auto max-w-[1600px] animate-fade-in-up">
+
+        <Content className="page-canvas p-3 sm:p-4 lg:p-6">
+          <div key={pathname} className="app-content mx-auto flex max-w-[1680px] flex-col animate-fade-in-up">
             {children}
           </div>
         </Content>

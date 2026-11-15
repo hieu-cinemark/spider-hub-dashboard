@@ -42,6 +42,35 @@ export function platformCssColor(platform: string): string {
   return platform === "threads" ? "var(--threads-ink)" : platformColor(platform);
 }
 
+/**
+ * The colour to use when a platform's colour is the *foreground* of an icon
+ * or a chip - i.e. it has to be readable against a card, not just be a paint
+ * colour for a chart.
+ *
+ * Two platforms need a different value than their brand mark:
+ *   - Threads' mark is black, which vanishes on a dark card, so it borrows
+ *     the theme's own --threads-ink (cream in dark mode).
+ *   - TikTok's brand cyan (#00F2EA) and YouTube's red (#FF0000) are far too
+ *     light/saturated to read as small text, so they use the darker sibling
+ *     of the same hue - still unmistakably "TikTok" / "YouTube", but legible.
+ */
+export function platformAccentColor(platform: string): string {
+  switch (platform) {
+    case "threads":
+      return "var(--threads-ink)";
+    case "tiktok":
+      return "#0891b2";
+    case "youtube":
+      return "#dc2626";
+    case "facebook":
+      return "#1877F2";
+    case "instagram":
+      return "#c13584";
+    default:
+      return platformColor(platform);
+  }
+}
+
 export function platformCssSoftBg(platform: string): string {
   return `color-mix(in srgb, ${platformCssColor(platform)} 20%, transparent)`;
 }

@@ -1,12 +1,20 @@
 "use client";
 
 import { AppstoreOutlined } from "@ant-design/icons";
-import { Button } from "antd";
-import { PlatformIcon, platformLabel } from "@/lib/platform";
+import FilterChip from "@/components/ui/FilterChip";
+import { PlatformIcon, platformAccentColor, platformLabel } from "@/lib/platform";
 import { useTranslation } from "@/i18n/LocaleProvider";
 
 export const ALL_PLATFORM_QUERY = "all";
 
+/**
+ * The platform filter row.
+ *
+ * Each platform chip wears that platform's own brand colour (Facebook blue,
+ * TikTok cyan, YouTube red...), so the row doubles as a legend: you can tell
+ * at a glance which platforms the current view is scoped to, and the chip
+ * that is selected is obvious without reading any text.
+ */
 export default function PlatformFilter({
   value,
   onChange,
@@ -22,31 +30,25 @@ export default function PlatformFilter({
   const total = counts ? Object.values(counts).reduce((sum, n) => sum + n, 0) : undefined;
 
   return (
-    <div className="flex flex-wrap items-center gap-1.5">
-      <Button
-        size="small"
-        shape="round"
-        type={value === ALL_PLATFORM_QUERY ? "primary" : "default"}
+    <div className="filter-bar-scroll">
+      <FilterChip
+        active={value === ALL_PLATFORM_QUERY}
         icon={<AppstoreOutlined />}
+        label={t("allPlatformsFilter")}
+        count={total}
+        accent="var(--accent-2)"
         onClick={() => onChange(ALL_PLATFORM_QUERY)}
-        className={value === ALL_PLATFORM_QUERY ? undefined : "!font-semibold"}
-      >
-        {t("allPlatformsFilter")}
-        {total !== undefined ? ` (${total})` : ""}
-      </Button>
+      />
       {platforms.map((platform) => (
-        <Button
+        <FilterChip
           key={platform}
-          size="small"
-          shape="round"
-          type={value === platform ? "primary" : "default"}
-          icon={<PlatformIcon platform={platform} style={{ color: "inherit" }} />}
+          active={value === platform}
+          icon={<PlatformIcon platform={platform} />}
+          label={platformLabel(platform)}
+          count={counts ? (counts[platform] ?? 0) : undefined}
+          accent={platformAccentColor(platform)}
           onClick={() => onChange(platform)}
-          className={value === platform ? undefined : "!font-semibold"}
-        >
-          {platformLabel(platform)}
-          {counts ? ` (${counts[platform] ?? 0})` : ""}
-        </Button>
+        />
       ))}
     </div>
   );

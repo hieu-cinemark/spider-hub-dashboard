@@ -1,6 +1,6 @@
 "use client";
 
-import { LoadingOutlined, StopOutlined } from "@ant-design/icons";
+import { CheckCircleOutlined, LoadingOutlined, StopOutlined } from "@ant-design/icons";
 import { Button, Tag, Typography } from "antd";
 import Link from "next/link";
 import DashboardCard from "@/components/DashboardCard";
@@ -68,6 +68,23 @@ export default function CrawlQueuePanel({
   );
 
   if (compact) {
+    // The compact panel is the Overview's "Collection activity" block. An
+    // idle queue is a real state, not an absence of one - it renders as a
+    // single quiet line instead of an empty card.
+    if (rows.length === 0) {
+      return (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[10px] border border-[var(--line)] bg-[var(--card)] px-4 py-3">
+          <span className="flex items-center gap-2 text-[13px] text-[var(--muted)]">
+            <CheckCircleOutlined className="text-[var(--ok)]" />
+            {t("opsQueueIdle")}
+          </span>
+          <Link href="/jobs" className="text-[12.5px] font-medium text-[var(--accent)] hover:underline">
+            {t("crawlQueueViewAll")}
+          </Link>
+        </div>
+      );
+    }
+
     return (
       <DashboardCard
         extra={stopAllButton}
@@ -171,9 +188,9 @@ function QueueItem({
         dense ? "py-1.5" : "py-2"
       } ${
         row.status === "failed"
-          ? "border-rose-200 bg-rose-50 dark:border-rose-900 dark:bg-rose-950/40"
+          ? "border-[color-mix(in_srgb,var(--danger)_32%,var(--line))] bg-[color-mix(in_srgb,var(--danger)_7%,var(--card))]"
           : row.status === "running"
-            ? "border-indigo-200 bg-indigo-50 dark:border-indigo-900 dark:bg-indigo-950/40"
+            ? "border-[color-mix(in_srgb,var(--accent)_32%,var(--line))] bg-[color-mix(in_srgb,var(--accent)_7%,var(--card))]"
             : "border-[var(--line)] bg-[var(--paper-deep)]"
       }`}
     >

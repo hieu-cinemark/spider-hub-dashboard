@@ -5,14 +5,13 @@ import {
   CheckCircleOutlined,
   ClockCircleOutlined,
   CloseCircleOutlined,
-  ExclamationCircleOutlined,
   HistoryOutlined,
   LoadingOutlined,
   MinusCircleOutlined,
   StopOutlined,
   ThunderboltOutlined,
 } from "@ant-design/icons";
-import { Button, Empty, Segmented, Select, Table, Tag, Tooltip } from "antd";
+import { Button, Empty, Segmented, Select, Table, Tooltip } from "antd";
 import dynamic from "next/dynamic";
 import { useMemo, useState, type ReactNode } from "react";
 import DashboardCard, { CardHeading } from "@/components/DashboardCard";
@@ -21,6 +20,7 @@ import MobileTable, { type ResponsiveColumnType } from "@/components/MobileTable
 import { ChartCardSkeleton } from "@/components/PageSkeleton";
 import PlatformBadge from "@/components/PlatformBadge";
 import StatCard from "@/components/StatCard";
+import StatusBadge, { type StatusTone } from "@/components/ui/StatusBadge";
 import { useIsMobile } from "@/hooks/useMediaQuery";
 import { useJobsSnapshot, useStopJob, useStopLiveQueue, useStoppingJobIds } from "@/hooks/useJobs";
 import { useTranslation } from "@/i18n/LocaleProvider";
@@ -52,11 +52,11 @@ const STATUS_KEY: Record<string, TranslationKey> = {
   skipped: "jobStatusSkipped",
 };
 
-const STATUS_COLOR: Record<string, string> = {
-  running: "processing",
-  queued: "blue",
-  done: "success",
-  failed: "error",
+const STATUS_TONE: Record<string, StatusTone> = {
+  running: "running",
+  queued: "info",
+  done: "ok",
+  failed: "danger",
   skipped: "warning",
 };
 
@@ -81,14 +81,11 @@ function formatDuration(job: JobTask): string {
 
 function StatusTag({ job, stopping }: { job: JobTask; stopping?: boolean }) {
   const { t } = useTranslation();
+  const tone = stopping ? "warning" : (STATUS_TONE[job.status] ?? "neutral");
   const tag = (
-    <Tag
-      icon={job.status === "running" || stopping ? <LoadingOutlined spin /> : job.error ? <ExclamationCircleOutlined /> : undefined}
-      color={stopping ? "warning" : (STATUS_COLOR[job.status] ?? "default")}
-      className="!mr-0"
-    >
+    <StatusBadge tone={tone} icon={stopping ? <LoadingOutlined spin /> : undefined}>
       {stopping ? t("crawlQueueStopping") : t(STATUS_KEY[job.status] ?? "crawlQueueWaiting")}
-    </Tag>
+    </StatusBadge>
   );
   return job.error ? <Tooltip title={job.error}>{tag}</Tooltip> : tag;
 }
@@ -137,7 +134,7 @@ function LiveTable({
       title: t("jobColumnLabel"),
       dataIndex: "label",
       mobilePrimary: true,
-      render: (label: string) => <span className="cell-primary break-words">{label || "—"}</span>,
+      render: (label: string) => <span className="cell-primary truncate-1">{label || "—"}</span>,
     },
     {
       title: t("jobColumnStatus"),
@@ -241,7 +238,7 @@ function HistoryTable({
       title: t("jobColumnLabel"),
       dataIndex: "label",
       mobilePrimary: true,
-      render: (label: string) => <span className="cell-primary break-words">{label || "—"}</span>,
+      render: (label: string) => <span className="cell-primary truncate-1">{label || "—"}</span>,
     },
     {
       title: t("jobColumnStatus"),

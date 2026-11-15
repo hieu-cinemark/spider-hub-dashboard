@@ -11,14 +11,18 @@ export default function SharedPostCard({ quoted }: { quoted?: QuotedPost | null 
   if (!quoted.author && !quoted.content && !quoted.url && !quoted.media_url) return null;
 
   return (
-    <div className="on-post-quote mt-2">
+    <div className="on-post-quote">
       {quoted.media_url ? (
         <PostMediaThumb mediaUrl={quoted.media_url} mediaType="photo" alt={quoted.content} size={56} />
       ) : null}
       <div className="on-post-quote-body">
         <span className="on-post-quote-kicker">{t("sharedPostKicker")}</span>
-        {quoted.author ? <span className="cell-secondary break-words">{quoted.author}</span> : null}
-        <span className="cell-primary whitespace-pre-line break-words">{quoted.content || "—"}</span>
+        {quoted.author ? (
+          <span className="truncate-1 text-[12px] font-semibold text-[var(--ink-soft)]">{quoted.author}</span>
+        ) : null}
+        <span className="line-clamp-2 text-[13px] leading-[1.5] whitespace-pre-line text-[var(--ink-soft)]">
+          {quoted.content || "—"}
+        </span>
       </div>
       {quoted.url ? (
         <a
@@ -26,7 +30,8 @@ export default function SharedPostCard({ quoted }: { quoted?: QuotedPost | null 
           target="_blank"
           rel="noreferrer"
           onClick={(e) => e.stopPropagation()}
-          className="mt-0.5 flex shrink-0 items-center text-[var(--accent)]"
+          className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[var(--accent)] transition-colors hover:bg-[var(--paper-deep)]"
+          aria-label={t("openOriginal")}
         >
           <LinkOutlined />
         </a>

@@ -1,10 +1,11 @@
 "use client";
 
-import { LinkOutlined } from "@ant-design/icons";
-import { Button, Checkbox, Empty, Segmented, Typography } from "antd";
+import { DisconnectOutlined, LinkOutlined, TagOutlined, VideoCameraOutlined } from "@ant-design/icons";
+import { Button, Checkbox, Empty, Typography } from "antd";
 import dynamic from "next/dynamic";
 import { type Key, useState } from "react";
 import EngagementMetrics from "@/components/EngagementMetrics";
+import FilterChip from "@/components/ui/FilterChip";
 import KeywordFilter from "@/components/KeywordFilter";
 import SharedPostCard from "@/components/SharedPostCard";
 import PlatformBadge from "@/components/PlatformBadge";
@@ -43,51 +44,71 @@ function PostTile({
 
   return (
     <article
-      className="group flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--card)] shadow-[0_1px_2px_rgba(22,19,16,0.05)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+      className="group flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--card)] shadow-[0_1px_2px_rgba(22,19,16,0.05)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--accent)_40%,var(--line))] hover:shadow-md"
       onClick={onOpen}
     >
       <div className="relative">
         <PostMediaCover mediaUrl={post.media_url} mediaType={post.media_type} alt={post.content} />
         {canSelect ? (
-          <span className="absolute left-2.5 top-2.5" onClick={(e) => e.stopPropagation()}>
+          <span
+            className="absolute left-2.5 top-2.5 flex h-7 w-7 items-center justify-center rounded-lg bg-black/45 backdrop-blur-sm"
+            onClick={(e) => e.stopPropagation()}
+          >
             <Checkbox checked={selected} onChange={(e) => onToggleSelect(e.target.checked)} />
           </span>
         ) : null}
         <span className="absolute right-2.5 top-2.5">
-          <PlatformBadge platform={post.platform} size={20} showLabel={false} />
+          <PlatformBadge platform={post.platform} size={24} showLabel={false} />
         </span>
       </div>
 
-      <div className="flex min-w-0 flex-1 flex-col gap-2.5 p-3.5">
-        <div className="flex items-start gap-2">
-          <p className="cell-primary mb-0 min-w-0 flex-1 text-[15px] font-semibold leading-snug whitespace-pre-line break-words">
-            {post.content || "—"}
-          </p>
+      <div className="flex min-w-0 flex-1 flex-col gap-3 p-4">
+        {/* Nội dung bài viết - 3 dòng rồi cắt, phần đầy đủ mở trong modal. */}
+        <p className="cell-primary mb-0 line-clamp-3 min-w-0 flex-1 text-[14.5px] leading-[1.55] font-semibold whitespace-pre-line">
+          {post.content || "—"}
+        </p>
+
+        <SharedPostCard quoted={post.quoted} />
+
+        {/* Phim / từ khoá: chip riêng thay vì một dòng chữ dài chồm chữ. */}
+        {[post.movie_title, post.keyword].filter(Boolean).length > 0 ? (
+          <div className="flex flex-wrap items-center gap-1.5">
+            {post.movie_title ? (
+              <span className="inline-flex max-w-full items-center gap-1 rounded-md bg-[var(--paper-deep)] px-2 py-0.5 text-[11.5px] font-semibold text-[var(--ink-soft)]">
+                <VideoCameraOutlined className="shrink-0 text-[var(--muted)]" />
+                <span className="truncate-1">{post.movie_title}</span>
+              </span>
+            ) : null}
+            {post.keyword ? (
+              <span className="inline-flex max-w-full items-center gap-1 rounded-md bg-[color-mix(in_srgb,var(--accent)_10%,transparent)] px-2 py-0.5 text-[11.5px] font-semibold text-[var(--accent-deep)]">
+                <TagOutlined className="shrink-0" />
+                <span className="truncate-1">{post.keyword}</span>
+              </span>
+            ) : null}
+          </div>
+        ) : null}
+
+        {/* Tác giả + thời điểm: tác giả là chữ lớn, thời điểm là meta nhỏ. */}
+        <div className="mt-auto flex min-w-0 items-center gap-2.5 border-t border-[var(--line)] pt-3">
+          <UserAvatar name={post.author} size={30} />
+          <div className="min-w-0 flex-1">
+            <div className="truncate-1 text-[13px] font-semibold text-[var(--ink)]">{post.author || "—"}</div>
+            <div className="truncate-1 text-[11.5px] text-[var(--muted)]">
+              {formatRelativeTime(post.scraped_at, t)}
+            </div>
+          </div>
           {post.url ? (
             <a
               href={post.url}
               target="_blank"
               rel="noreferrer"
               onClick={(e) => e.stopPropagation()}
-              className="mt-0.5 flex shrink-0 items-center text-[var(--accent)]"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[var(--accent)] transition-colors hover:bg-[var(--paper-deep)]"
               aria-label={t("openOriginal")}
             >
               <LinkOutlined />
             </a>
           ) : null}
-        </div>
-
-        <SharedPostCard quoted={post.quoted} />
-
-        <div className="mt-auto flex min-w-0 items-center gap-2">
-          <UserAvatar name={post.author} size={28} />
-          <div className="min-w-0 flex-1">
-            <div className="break-words text-[13px] font-medium text-[var(--ink)]">{post.author || "—"}</div>
-            <div className="break-words text-[12px] text-[var(--muted)]">
-              {[post.movie_title, post.keyword].filter(Boolean).join(" · ") || t("columnMovieKeyword")}
-            </div>
-          </div>
-          <span className="shrink-0 text-[12px] text-[var(--muted)]">{formatRelativeTime(post.scraped_at, t)}</span>
         </div>
 
         <EngagementMetrics likes={post.like_count} replies={post.reply_count} reposts={post.repost_count} />
@@ -130,18 +151,28 @@ export default function PostsReview() {
             setQuery({ platform: next, keyword: "" });
           }}
         />
-        <Segmented
-          size="small"
-          value={match}
-          onChange={(next) => {
-            setSelectedRowKeys([]);
-            setQuery({ match: next as (typeof MATCH_TABS)[number] });
-          }}
-          options={[
-            { value: "related", label: t("postsRelated") },
-            { value: "unrelated", label: t("postsUnrelated") },
-          ]}
-        />
+        <div className="filter-bar-scroll">
+          <FilterChip
+            active={match === "related"}
+            icon={<LinkOutlined />}
+            label={t("postsRelated")}
+            accent="var(--accent)"
+            onClick={() => {
+              setSelectedRowKeys([]);
+              setQuery({ match: "related" });
+            }}
+          />
+          <FilterChip
+            active={match === "unrelated"}
+            icon={<DisconnectOutlined />}
+            label={t("postsUnrelated")}
+            accent="var(--accent-2)"
+            onClick={() => {
+              setSelectedRowKeys([]);
+              setQuery({ match: "unrelated" });
+            }}
+          />
+        </div>
       </div>
       {selectedRowKeys.length > 0 && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[color-mix(in_srgb,var(--accent)_28%,var(--line))] bg-[color-mix(in_srgb,var(--accent)_8%,var(--card))] px-4 py-3">
@@ -205,3 +236,5 @@ export default function PostsReview() {
     </div>
   );
 }
+
+

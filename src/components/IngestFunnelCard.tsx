@@ -40,7 +40,7 @@ function FunnelRow({ row }: { row: IngestFunnel }) {
   };
 
   return (
-    <div className="flex flex-col gap-3 rounded-2xl border border-[var(--line)] bg-[var(--paper-deep)]/40 p-4">
+    <div className="flex flex-col gap-3 rounded-[10px] border border-[var(--line)] bg-[var(--card)] p-4">
       <div className="flex items-baseline justify-between gap-2">
         <span className="flex items-center gap-1.5 text-sm font-semibold text-[var(--ink)]">
           <PlatformIcon platform={row.platform} /> {platformLabel(row.platform)}

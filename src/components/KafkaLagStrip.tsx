@@ -112,7 +112,7 @@ export default function KafkaLagStrip() {
                     size="small"
                     showInfo={false}
                     strokeColor={barColor}
-                    trailColor="var(--paper-deep)"
+                    railColor="var(--paper-deep)"
                     className="!m-0"
                   />
                 </div>

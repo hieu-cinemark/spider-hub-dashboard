@@ -6,15 +6,20 @@ import {
   EyeInvisibleOutlined,
   EyeOutlined,
   GlobalOutlined,
+  InfoCircleOutlined,
   PlusOutlined,
 } from "@ant-design/icons";
-import { Button, Popconfirm, Space, Switch, Table, Tag, Tooltip, Typography } from "antd";
+import { Button, Space, Switch, Table, Tooltip, Typography } from "antd";
 import { useState } from "react";
 import DashboardCard, { CardHeading } from "@/components/DashboardCard";
 import MobileTable, { type ResponsiveColumnType } from "@/components/MobileTable";
 import { TableRowsSkeleton } from "@/components/PageSkeleton";
 import PlatformBadge from "@/components/PlatformBadge";
+import TableActions from "@/components/TableActions";
+import StatusBadge, { toneFromTagColor } from "@/components/ui/StatusBadge";
+import CopyButton from "@/components/ui/CopyButton";
 import ImportWithAiModal from "@/components/settings/ImportWithAiModal";
+import ProxyDetailDrawer from "@/components/settings/ProxyDetailDrawer";
 import ProxyFormModal from "@/components/settings/ProxyFormModal";
 import { useMdUp } from "@/hooks/useMdUp";
 import { usePagedList } from "@/hooks/usePagedList";
@@ -25,10 +30,10 @@ import { poolStatusInfo } from "@/lib/poolStatus";
 import type { Proxy, ProxyInput, ProxyIpType } from "@/lib/types";
 
 const IP_TYPE_INFO = {
-  static: { labelKey: "ipTypeStatic", tagColor: "green" },
-  rotating: { labelKey: "ipTypeRotating", tagColor: "orange" },
-  unknown: { labelKey: "ipTypeUnknown", tagColor: "default" },
-} as const satisfies Record<ProxyIpType, { labelKey: TranslationKey; tagColor: string }>;
+  static: { labelKey: "ipTypeStatic", tone: "ok" as const },
+  rotating: { labelKey: "ipTypeRotating", tone: "info" as const },
+  unknown: { labelKey: "ipTypeUnknown", tone: "neutral" as const },
+} as const satisfies Record<ProxyIpType, { labelKey: TranslationKey; tone: "ok" | "info" | "neutral" }>;
 
 function MaskedText({ value }: { value: string }) {
   const [visible, setVisible] = useState(false);
@@ -46,6 +51,18 @@ function MaskedText({ value }: { value: string }) {
   );
 }
 
+// The full address can carry credentials and a long query string. The table
+// shows host:port; the full value stays in the row tooltip, the detail
+// drawer and the copy button - nothing is ever silently dropped.
+function shortProxyLabel(url: string): string {
+  try {
+    const parsed = new URL(url.includes("://") ? url : `http://${url}`);
+    return parsed.host;
+  } catch {
+    return url;
+  }
+}
+
 export default function ProxiesTable() {
   const { t } = useTranslation();
   const mdUp = useMdUp();
@@ -55,6 +72,7 @@ export default function ProxiesTable() {
   const paging = proxyPaging.paging((n) => t("tableTotal", { n: n.toLocaleString() }));
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Proxy | null>(null);
+  const [detail, setDetail] = useState<Proxy | null>(null);
 
   function openCreate() {
     setEditing(null);
@@ -77,7 +95,7 @@ export default function ProxiesTable() {
     {
       title: t("platform"),
       dataIndex: "platform",
-      width: 108,
+      width: 96,
       mobileHidden: true,
       render: (p: string) => (
         <PlatformBadge
@@ -91,8 +109,16 @@ export default function ProxiesTable() {
     {
       title: t("columnProxy"),
       dataIndex: "proxy_url",
+      width: 240,
       mobilePrimary: true,
-      render: (v: string) => <span className="font-mono text-xs break-all">{v}</span>,
+      render: (v: string) => (
+        <Tooltip title={v} styles={{ root: { maxWidth: 420 } }}>
+          <span className="inline-flex min-w-0 items-center gap-1.5">
+            <span className="truncate-1 font-mono text-xs">{shortProxyLabel(v)}</span>
+            <CopyButton value={v} />
+          </span>
+        </Tooltip>
+      ),
     },
     {
       title: t("columnIpType"),
@@ -100,7 +126,7 @@ export default function ProxiesTable() {
       width: 96,
       render: (v: ProxyIpType) => {
         const info = IP_TYPE_INFO[v] ?? IP_TYPE_INFO.unknown;
-        return <Tag color={info.tagColor} className="!m-0">{t(info.labelKey)}</Tag>;
+        return <StatusBadge tone={info.tone}>{t(info.labelKey)}</StatusBadge>;
       },
     },
     {
@@ -109,7 +135,7 @@ export default function ProxiesTable() {
       width: 168,
       render: (_: unknown, record: Proxy) => (
         <div className="min-w-0 leading-tight">
-          <div className="text-xs break-words">{record.username || "—"}</div>
+          <div className="truncate-1 text-xs">{record.username || "—"}</div>
           <MaskedText value={record.password} />
         </div>
       ),
@@ -120,7 +146,7 @@ export default function ProxiesTable() {
       width: 124,
       render: (_: unknown, record: Proxy) => {
         const info = poolStatusInfo("proxy", record.pool_status, record.cooldown_until, record.enabled);
-        const tag = <Tag color={info.tagColor} className="!m-0">{t(info.labelKey)}</Tag>;
+        const tag = <StatusBadge tone={toneFromTagColor(info.tagColor)}>{t(info.labelKey)}</StatusBadge>;
         if (info.labelKey === "poolStatusCooldown" && record.cooldown_until) {
           return (
             <Tooltip title={t("cooldownUntilTooltip", { time: new Date(record.cooldown_until).toLocaleString() })}>
@@ -134,15 +160,17 @@ export default function ProxiesTable() {
     {
       title: t("proxyProviderSource"),
       key: "provider",
-      width: 160,
+      width: 168,
       render: (_: unknown, record: Proxy) =>
         record.provider_key ? (
-          <div className="min-w-0 leading-tight">
-            <div className="text-xs break-all">{record.provider_key}</div>
-            {record.provider_ref ? (
-              <div className="text-xs text-[var(--muted)] break-all">{record.provider_ref}</div>
-            ) : null}
-          </div>
+          <Tooltip title={record.provider_ref ? `${record.provider_key} · ${record.provider_ref}` : record.provider_key}>
+            <div className="min-w-0 leading-tight">
+              <div className="truncate-1 text-xs">{record.provider_key}</div>
+              {record.provider_ref ? (
+                <div className="truncate-1 text-xs text-[var(--muted)]">{record.provider_ref}</div>
+              ) : null}
+            </div>
+          </Tooltip>
         ) : (
           <Typography.Text type="secondary">—</Typography.Text>
         ),
@@ -189,17 +217,32 @@ export default function ProxiesTable() {
       align: "right",
       mobileHidden: true,
       render: (_: unknown, record: Proxy) => (
-        <div className="flex justify-end gap-1">
-          <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(record)} />
-          <Popconfirm
-            title={t("removeProxyConfirm")}
-            onConfirm={() => remove.mutate(record.id)}
-            okText={t("remove")}
-            okButtonProps={{ danger: true }}
-          >
-            <Button size="small" danger icon={<DeleteOutlined />} />
-          </Popconfirm>
-        </div>
+        <TableActions
+          actions={[
+            {
+              key: "details",
+              label: t("viewDetails"),
+              icon: <InfoCircleOutlined />,
+              onClick: () => setDetail(record),
+            },
+            {
+              key: "edit",
+              label: t("edit"),
+              icon: <EditOutlined />,
+              onClick: () => openEdit(record),
+            },
+            {
+              key: "delete",
+              label: t("remove"),
+              icon: <DeleteOutlined />,
+              danger: true,
+              confirm: {
+                title: t("removeProxyConfirm"),
+                onConfirm: () => remove.mutate(record.id),
+              },
+            },
+          ]}
+        />
       ),
     },
   ];
@@ -237,15 +280,8 @@ export default function ProxiesTable() {
           pagination={paging}
           title={(record) => (
             <div className="flex gap-1">
+              <Button size="small" icon={<InfoCircleOutlined />} onClick={() => setDetail(record)} />
               <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(record)} />
-              <Popconfirm
-                title={t("removeProxyConfirm")}
-                onConfirm={() => remove.mutate(record.id)}
-                okText={t("remove")}
-                okButtonProps={{ danger: true }}
-              >
-                <Button size="small" danger icon={<DeleteOutlined />} />
-              </Popconfirm>
             </div>
           )}
         />
@@ -257,6 +293,7 @@ export default function ProxiesTable() {
         onCancel={() => setModalOpen(false)}
         onSubmit={handleSubmit}
       />
+      <ProxyDetailDrawer proxy={detail} onClose={() => setDetail(null)} />
     </DashboardCard>
   );
 }

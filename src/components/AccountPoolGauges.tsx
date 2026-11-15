@@ -27,7 +27,7 @@ export default function AccountPoolGauges({ summaries }: { summaries: AccountPoo
           <Link
             key={row.platform}
             href="/settings"
-            className="flex flex-col items-center gap-2 rounded-2xl border border-[var(--line)] bg-[var(--paper-deep)]/40 p-4 text-inherit no-underline transition-shadow hover:shadow-md"
+            className="flex flex-col items-center gap-2 rounded-[10px] border border-[var(--line)] bg-[var(--card)] p-4 text-inherit no-underline transition-colors hover:border-[var(--accent)]"
           >
             <Progress
               type="dashboard"

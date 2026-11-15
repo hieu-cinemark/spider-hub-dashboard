@@ -1,44 +1,33 @@
 "use client";
 
-import { BarChartOutlined, DeleteOutlined, EditOutlined, FireOutlined, PlaySquareOutlined, PlusOutlined } from "@ant-design/icons";
-import { Button, Empty, Input, Table, Tooltip, Typography } from "antd";
+import {
+  BarChartOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  EyeOutlined,
+  FireOutlined,
+  PlaySquareOutlined,
+  PlusOutlined,
+} from "@ant-design/icons";
+import { Button, Empty, Input, Table, Tooltip } from "antd";
 import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
 import DashboardCard, { CardHeading } from "@/components/DashboardCard";
+import MovieDetailDrawer, { PosterThumb } from "@/components/MovieDetailDrawer";
 import MobileTable, { type ResponsiveColumnType } from "@/components/MobileTable";
 import TableActions from "@/components/TableActions";
-
 import { useMdUp } from "@/hooks/useMdUp";
 import { useGenerateReportMutation, useMovieMutations, useMovies, useReportJobStatus } from "@/hooks/useMovies";
 import { usePagedList } from "@/hooks/usePagedList";
 import { useTranslation } from "@/i18n/LocaleProvider";
-import { formatCast } from "@/lib/cast";
+import { castList } from "@/lib/cast";
 import type { Movie, MovieInput } from "@/lib/types";
 
-const { Text } = Typography;
 const MovieFormModal = dynamic(() => import("@/components/MovieFormModal"), { ssr: false });
 const TopPostsModal = dynamic(() => import("@/components/platform/TopPostsModal"), { ssr: false });
 
-function PosterThumb({ url, title }: { url?: string | null; title: string }) {
-  if (!url) {
-    return (
-      <span className="flex h-[52px] w-[36px] items-center justify-center rounded-md bg-[var(--paper-deep)] text-[var(--muted)]">
-        <PlaySquareOutlined />
-      </span>
-    );
-  }
-  return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={url}
-      alt={title}
-      className="h-[52px] w-[36px] rounded-md object-cover"
-      onError={(event) => {
-        event.currentTarget.style.display = "none";
-      }}
-    />
-  );
-}
+/** How many cast names fit in the table before it turns into "+N more". */
+const CAST_PREVIEW = 3;
 
 // Its own component (not inlined in `actions` below) so each row's
 // useReportJobStatus poll is an independent hook instance - `actions` is a
@@ -70,6 +59,7 @@ export default function MoviesTable() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Movie | null>(null);
   const [topMovie, setTopMovie] = useState<Movie | null>(null);
+  const [detail, setDetail] = useState<Movie | null>(null);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -104,6 +94,12 @@ export default function MoviesTable() {
     <TableActions
       actions={[
         {
+          key: "details",
+          label: t("movieViewDetails"),
+          icon: <EyeOutlined />,
+          onClick: () => setDetail(movie),
+        },
+        {
           key: "edit",
           label: t("editMovie"),
           icon: <EditOutlined />,
@@ -134,65 +130,78 @@ export default function MoviesTable() {
     />
   );
 
-  // Every column is kept - no `ellipsis` anywhere, so the desktop table
-  // wraps long values instead of hiding them behind a "...". The same
-  // definition drives the mobile card layout (see MobileTable), so the
-  // phone shows exactly the same fields, in full.
+  /**
+   * The visible columns are exactly what is needed to recognise a film:
+   * title (with its poster and release date), who directed it, who
+   * distributed it, and who is in it. The synopsis and the long cast list
+   * are one click away in the detail drawer - they used to be columns, and
+   * they were what made this table wider than the screen.
+   */
   const columns: ResponsiveColumnType<Movie>[] = [
-    {
-      title: t("movieColumnPoster"),
-      dataIndex: "poster_url",
-      width: 56,
-      mobileHidden: true,
-      render: (url: Movie["poster_url"], movie: Movie) => <PosterThumb url={url} title={movie.title} />,
-    },
     {
       title: t("movieColumnTitle"),
       dataIndex: "title",
       mobilePrimary: true,
       render: (title: string, movie: Movie) => (
-        <div className="min-w-0">
-          <div className="font-medium break-words">{title}</div>
-          {movie.released_at ? (
-            <Text type="secondary" className="text-xs">
-              {movie.released_at}
-            </Text>
-          ) : null}
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="hidden shrink-0 sm:block">
+            <PosterThumb url={movie.poster_url} title={movie.title} />
+          </span>
+          <div className="min-w-0">
+            <div className="truncate-1 font-medium text-[var(--ink)]" title={title}>
+              {title}
+            </div>
+            {movie.released_at ? (
+              <div className="truncate-1 text-xs text-[var(--muted)]">{movie.released_at}</div>
+            ) : null}
+          </div>
         </div>
       ),
     },
     {
       title: t("movieColumnDirector"),
       dataIndex: "director",
-      width: 120,
-      render: (value: string) => value || "—",
-    },
-    {
-      title: t("movieColumnCast"),
-      dataIndex: "cast",
-      render: (cast: string) => formatCast(cast) || "—",
+      width: 160,
+      render: (value: string | null | undefined) =>
+        value ? (
+          <Tooltip title={value}>
+            <span className="truncate-1 block text-[var(--ink-soft)]">{value}</span>
+          </Tooltip>
+        ) : (
+          <span className="text-[var(--muted)]">—</span>
+        ),
     },
     {
       title: t("movieColumnDistributor"),
       dataIndex: "distributor",
-      width: 120,
-      render: (value: string) => value || "—",
-    },
-    {
-      title: t("movieColumnDescription"),
-      dataIndex: "description",
-      width: 240,
-      // Mô tả dài: trên desktop hiện 1 dòng cắt ngắn, hover vào thì thấy
-      // đầy đủ (dữ liệu không bị bỏ). Trên mobile mọi cột đều hiện đầy đủ
-      // trong card, nên không mất gì.
-      render: (description: Movie["description"]) =>
-        description ? (
-          <Tooltip title={description} styles={{ root: { maxWidth: 420 } }}>
-            <div className="truncate whitespace-pre-line">{description}</div>
+      width: 150,
+      render: (value: string | null | undefined) =>
+        value ? (
+          <Tooltip title={value}>
+            <span className="truncate-1 block text-[var(--ink-soft)]">{value}</span>
           </Tooltip>
         ) : (
-          "—"
+          <span className="text-[var(--muted)]">—</span>
         ),
+    },
+    {
+      title: t("movieColumnCast"),
+      dataIndex: "cast",
+      width: 220,
+      render: (cast: string | null | undefined) => {
+        const names = castList(cast);
+        if (names.length === 0) return <span className="text-[var(--muted)]">—</span>;
+        const shown = names.slice(0, CAST_PREVIEW);
+        const rest = names.length - shown.length;
+        return (
+          <Tooltip title={names.join(", ")} styles={{ root: { maxWidth: 420 } }}>
+            <span className="block truncate-1 text-[var(--ink-soft)]">
+              {shown.join(", ")}
+              {rest > 0 ? <span className="ml-1 text-[var(--muted)]">({t("movieMoreCast", { n: rest })})</span> : null}
+            </span>
+          </Tooltip>
+        );
+      },
     },
     {
       title: t("actions"),
@@ -214,7 +223,7 @@ export default function MoviesTable() {
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder={t("movieSearchPlaceholder")}
-            className="w-[200px]"
+            className="w-full sm:w-[220px]"
           />
           <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
             {t("addMovie")}
@@ -249,6 +258,7 @@ export default function MoviesTable() {
         onCancel={() => setModalOpen(false)}
         onSubmit={handleSubmit}
       />
+      <MovieDetailDrawer movie={detail} onClose={() => setDetail(null)} />
       <TopPostsModal
         movieId={topMovie?.id ?? null}
         label={topMovie?.title ?? null}

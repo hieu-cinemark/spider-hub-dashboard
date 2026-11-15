@@ -3,6 +3,7 @@
 import { HeartOutlined, LinkOutlined, MessageOutlined } from "@ant-design/icons";
 import { Button, Empty, List, Modal, Tag, Typography } from "antd";
 import EngagementMetrics from "@/components/EngagementMetrics";
+import CopyButton from "@/components/ui/CopyButton";
 import { PostMediaHero, UserAvatar } from "@/components/UserAvatar";
 import SharedPostCard from "@/components/SharedPostCard";
 import { useComments, useRunComments } from "@/hooks/useStats";
@@ -18,7 +19,7 @@ function CommentsSection({ post }: { post: Post }) {
   const runComments = useRunComments();
 
   return (
-    <div className="flex flex-col gap-3 border-t border-[var(--line)] pt-4">
+    <div className="flex flex-col gap-3 border-t border-[var(--line)] pt-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <Typography.Text strong className="text-[15px]">
           {t("commentsTitle")}
@@ -38,7 +39,7 @@ function CommentsSection({ post }: { post: Post }) {
             className={`modal-comment ${comment.parent_external_id ? "modal-comment-reply" : ""}`}
           >
             {comment.parent_external_id && (
-              <span className="cell-secondary">
+              <span className="modal-comment-quote">
                 {comment.parent_author_name || comment.parent_message
                   ? t("inReplyTo", {
                       author: comment.parent_author_name || "—",
@@ -47,14 +48,12 @@ function CommentsSection({ post }: { post: Post }) {
                   : t("inReplyToUnknown")}
               </span>
             )}
-            <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
               <UserAvatar src={comment.author_profile_picture} name={comment.author_name} size={28} />
-              <span className="cell-primary">{comment.author_name || "—"}</span>
+              <span className="cell-primary truncate-1 !font-semibold">{comment.author_name || "—"}</span>
+              <span className="cell-meta ml-auto shrink-0">{formatRelativeTime(comment.scraped_at, t)}</span>
             </div>
-              <span className="cell-meta shrink-0">{formatRelativeTime(comment.scraped_at, t)}</span>
-            </div>
-            <p className="modal-post-body !text-[14px]">{comment.message || "—"}</p>
+            <p className="modal-comment-body">{comment.message || "—"}</p>
             {(comment.reactions_count > 0 || comment.replies_count > 0) && (
               <div className="metric-grid" style={{ gridTemplateColumns: "repeat(2, minmax(0, auto))" }}>
                 <span className="metric-item">
@@ -87,7 +86,7 @@ export default function PostDetailModal({ post, onClose }: { post: Post | null; 
       width={680}
       destroyOnHidden
       centered
-      styles={{ body: { maxHeight: "82vh", overflowY: "auto" } }}
+      styles={{ body: { maxHeight: "78vh", overflowY: "auto" } }}
     >
       {post && (
         <div className="modal-section">
@@ -100,22 +99,24 @@ export default function PostDetailModal({ post, onClose }: { post: Post | null; 
           </div>
 
           {post.author ? (
-            <div className="mt-10 mb-5 flex items-center gap-2.5">
-              <UserAvatar name={post.author} size={32} />
-              <div className="cell-primary text-[15px]">{post.author}</div>
+            <div className="mt-4 mb-4 flex items-center gap-2.5">
+              <UserAvatar name={post.author} size={34} />
+              <div className="cell-primary truncate-1 text-[15px]">{post.author}</div>
             </div>
           ) : null}
 
           <PostMediaHero mediaUrl={post.media_url} mediaType={post.media_type} alt={post.content} />
 
-          <p className="modal-post-body">{post.content || "—"}</p>
-          <SharedPostCard quoted={post.quoted} />
+          <p className="modal-post-body mt-4">{post.content || "—"}</p>
+          <div className="mt-4">
+            <SharedPostCard quoted={post.quoted} />
+          </div>
 
           <div className="modal-stats mt-5">
             <EngagementMetrics likes={post.like_count} replies={post.reply_count} reposts={post.repost_count} />
           </div>
 
-          <div className="mt-5 pb-5 flex flex-wrap items-center justify-between gap-2 text-[13px] text-[var(--muted)]">
+          <div className="mt-5 mb-1 flex flex-wrap items-center justify-between gap-2 text-[13px] text-[var(--muted)]">
             <span>
               {t("columnScraped")} · {formatRelativeTime(post.scraped_at, t)}
             </span>
@@ -124,6 +125,38 @@ export default function PostDetailModal({ post, onClose }: { post: Post | null; 
                 <LinkOutlined /> {t("openOriginal")}
               </a>
             )}
+          </div>
+
+          <div className="border-t border-[var(--line)] pt-5">
+            <div className="mb-3 text-[11.5px] font-semibold uppercase tracking-wide text-[var(--muted)]">
+              {t("accountTechnicalSection")}
+            </div>
+            <div className="detail-list">
+              <div className="detail-row">
+                <span className="detail-row-label">{t("columnRecordId")}</span>
+                <span className="detail-row-value detail-row-value-mono">
+                  <span className="inline-flex items-center gap-1.5">
+                    {post.id}
+                    <CopyButton value={post.id} />
+                  </span>
+                </span>
+              </div>
+              <div className="detail-row">
+                <span className="detail-row-label">External ID</span>
+                <span className="detail-row-value detail-row-value-mono">
+                  <span className="inline-flex items-center gap-1.5">
+                    {post.external_id}
+                    <CopyButton value={post.external_id} />
+                  </span>
+                </span>
+              </div>
+              <div className="detail-row">
+                <span className="detail-row-label">{t("columnPostedAt")}</span>
+                <span className="detail-row-value">
+                  {post.posted_at ? new Date(post.posted_at).toLocaleString() : "—"}
+                </span>
+              </div>
+            </div>
           </div>
 
           {(COMMENT_SUPPORTED_PLATFORMS as readonly string[]).includes(post.platform) ? (

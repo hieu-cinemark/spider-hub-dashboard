@@ -5,12 +5,17 @@ import type { ReactNode } from "react";
 import DashboardCard from "@/components/DashboardCard";
 import { SkelBlock } from "@/components/PageSkeleton";
 
-// Mặc định một màu duy nhất (--accent) cho mọi KPI: số liệu thường không
-// được "cạnh tranh" với cảnh báo lỗi. Chỉ đổi sang --warn / --danger khi
-// chính chỉ số đó vượt ngưỡng (qua `tone`). Màu theo nền tảng chỉ dùng cho
-// biểu đồ và PlatformBadge, không dùng cho KPI.
-const DEFAULT_ACCENT = "var(--accent)";
-
+/**
+ * The one KPI card.
+ *
+ * Every number in the app that deserves its own tile uses this component, so
+ * the four Overview KPIs, the Queue KPIs and the Logs KPIs are visually
+ * identical: same height, same type scale, same label position.
+ *
+ * Colour is semantic only - a neutral accent for the normal case, and
+ * warning/danger reserved for a metric that is actually off. Numbers should
+ * never compete with the error banner for attention.
+ */
 export default function StatCard({
   title,
   value,
@@ -34,74 +39,60 @@ export default function StatCard({
   hint?: ReactNode;
   href?: string;
 }) {
-  const iconColor = color ?? DEFAULT_ACCENT;
-  const accent = tone === "danger" ? "var(--danger)" : tone === "warning" ? "var(--warn)" : iconColor;
-  const ring =
-    tone === "danger"
-      ? "!border-rose-300 dark:!border-rose-900/70"
-      : tone === "warning"
-        ? "!border-amber-300 dark:!border-amber-900/70"
-        : "";
+  const accent =
+    tone === "danger" ? "var(--danger)" : tone === "warning" ? "var(--warn)" : (color ?? "var(--accent)");
 
   const card = (
-    <DashboardCard
-      className={`h-full w-full transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-[var(--accent)] ${ring} ${href ? "cursor-pointer" : ""}`}
-    >
-      <div className="relative overflow-hidden">
-        {/* A soft wash of the card's own accent in the top-right corner - the
-            same trick the reference console uses to keep flat panels alive. */}
-        <span
-          className="pointer-events-none absolute -right-8 -top-10 h-24 w-24 rounded-full opacity-20 blur-2xl"
-          style={{ backgroundColor: accent }}
-          aria-hidden
-        />
-        <div className="relative flex items-start justify-between gap-3">
-          <div
-            className="flex min-w-0 flex-1 flex-col gap-1.5 border-l-2 pl-2.5"
-            style={{ borderColor: accent }}
-          >
-            <span className="micro-label !text-[var(--ink-soft)]">{title}</span>
-            {loading ? (
-              <>
-                <SkelBlock className="h-7 w-28" />
-                <SkelBlock className="h-3 w-20" />
-              </>
-            ) : (
-              <>
-                <span
-                  className="text-[26px] leading-none font-semibold tracking-tight"
-                  style={{ color: tone ? accent : "var(--accent)" }}
-                >
-                  {typeof value === "number" ? value.toLocaleString() : value}
-                  {suffix && <span className="ml-1 text-base font-medium text-[var(--muted)]">{suffix}</span>}
-                </span>
-                {delta && <div className="text-xs">{delta}</div>}
-                {hint && (
-                  <div
-                    className={`text-[11px] font-semibold leading-snug ${
-                      tone === "danger"
-                        ? "text-[var(--danger)]"
-                        : tone === "warning"
-                          ? "text-[var(--warn)]"
-                          : "text-[var(--muted)]"
-                    }`}
-                  >
-                    {hint}
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-          {icon && (
+    <DashboardCard className={`h-full w-full ${href ? "cursor-pointer" : ""}`}>
+      <div className="flex h-full flex-col justify-between gap-3">
+        <div className="flex min-w-0 items-start justify-between gap-3">
+          <span className="micro-label truncate-1" title={title}>
+            {title}
+          </span>
+          {icon ? (
             <span
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[15px]"
-              style={{
-                backgroundColor: `color-mix(in srgb, ${accent} 16%, transparent)`,
-                color: accent,
-              }}
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[13px]"
+              style={{ background: `color-mix(in srgb, ${accent} 14%, transparent)`, color: accent }}
+              aria-hidden
             >
               {icon}
             </span>
+          ) : null}
+        </div>
+        <div className="min-w-0">
+          {loading ? (
+            <>
+              <SkelBlock className="h-7 w-24" />
+              <SkelBlock className="mt-2 h-3 w-16" />
+            </>
+          ) : (
+            <>
+              <div className="flex min-w-0 items-baseline gap-1.5">
+                <span
+                  className="text-[26px] leading-none font-semibold tracking-tight tabular-nums"
+                  style={{ color: tone ? accent : "var(--ink)" }}
+                >
+                  {typeof value === "number" ? value.toLocaleString() : value}
+                </span>
+                {suffix ? (
+                  <span className="text-[13px] font-medium text-[var(--muted)]">{suffix}</span>
+                ) : null}
+              </div>
+              {delta ? <div className="mt-2">{delta}</div> : null}
+              {hint ? (
+                <div
+                  className={`mt-1 text-[11.5px] leading-snug ${
+                    tone === "danger"
+                      ? "text-[var(--danger)]"
+                      : tone === "warning"
+                        ? "text-[var(--warn)]"
+                        : "text-[var(--muted)]"
+                  }`}
+                >
+                  {hint}
+                </div>
+              ) : null}
+            </>
           )}
         </div>
       </div>

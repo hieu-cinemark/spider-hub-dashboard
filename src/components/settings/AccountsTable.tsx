@@ -24,7 +24,6 @@ import {
   Spin,
   Switch,
   Table,
-  Tag,
   Tooltip,
   Typography,
 } from "antd";
@@ -36,6 +35,9 @@ import MobileTable, { type ResponsiveColumnType } from "@/components/MobileTable
 import { TableRowsSkeleton } from "@/components/PageSkeleton";
 import PlatformBadge from "@/components/PlatformBadge";
 import TableActions from "@/components/TableActions";
+import CopyButton from "@/components/ui/CopyButton";
+import StatusBadge, { toneFromTagColor } from "@/components/ui/StatusBadge";
+import AccountDetailDrawer from "@/components/settings/AccountDetailDrawer";
 
 import NurtureJobBanner from "@/components/settings/NurtureJobBanner";
 import PlatformFilter, { ALL_PLATFORM_QUERY } from "@/components/PlatformFilter";
@@ -176,9 +178,7 @@ function AccountPoolTag({ account }: { account: Account }) {
   const { t } = useTranslation();
   const info = poolStatusInfo("account", account.pool_status, account.cooldown_until, account.enabled);
   const tag = (
-    <Tag className="!m-0" color={info.tagColor}>
-      {t(info.labelKey)}
-    </Tag>
+    <StatusBadge tone={toneFromTagColor(info.tagColor)}>{t(info.labelKey)}</StatusBadge>
   );
   if (info.labelKey === "poolStatusCooldown" && account.cooldown_until) {
     return (
@@ -247,6 +247,7 @@ export default function AccountsTable() {
     ? (query.status as AccountStatusFilter)
     : "all";
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [detail, setDetail] = useState<Account | null>(null);
 
   const platformCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -337,6 +338,12 @@ export default function AccountsTable() {
       <TableActions
         actions={[
           {
+            key: "details",
+            label: t("viewDetails"),
+            icon: <InfoCircleOutlined />,
+            onClick: () => setDetail(record),
+          },
+          {
             key: "edit",
             label: t("edit"),
             icon: <EditOutlined />,
@@ -369,33 +376,32 @@ export default function AccountsTable() {
 
   const columns: ResponsiveColumnType<Account>[] = [
     {
-      title: t("platform"),
-      dataIndex: "platform",
-      width: 108,
-      mobileHidden: true,
-      render: (p: string) => <PlatformBadge platform={p} size={22} showLabel={false} />,
-    },
-    {
       title: t("columnAccountId"),
       key: "account",
       mobilePrimary: true,
       render: (_: unknown, record: Account) => (
-        <div className="min-w-0">
-          <div className="font-medium break-words">{record.account_id}</div>
-          <div className="text-xs break-words text-[var(--muted)]">{record.email || "—"}</div>
+        <div className="flex min-w-0 items-center gap-2.5">
+          <PlatformBadge platform={record.platform} size={22} showLabel={false} />
+          <div className="min-w-0">
+            <div className="flex min-w-0 items-center gap-1.5">
+              <span className="truncate-1 font-medium text-[var(--ink)]">{record.account_id}</span>
+              <CopyButton value={record.account_id} />
+            </div>
+            <div className="truncate-1 text-xs text-[var(--muted)]">{record.email || "—"}</div>
+          </div>
         </div>
       ),
     },
     {
       title: t("columnPoolStatus"),
       key: "health",
-      width: 156,
+      width: 150,
       render: (_: unknown, record: Account) => <AccountPoolTag account={record} />,
     },
     {
       title: t("columnSession"),
       key: "session",
-      width: 156,
+      width: 150,
       render: (_: unknown, record: Account) => (
         <Tooltip
           title={
@@ -404,12 +410,14 @@ export default function AccountsTable() {
               : undefined
           }
         >
-          <div className="flex flex-col items-start gap-0.5">
-            <Tag className="!m-0" color={checkStatusTagColor(record.last_check_status)}>
+          <div className="flex min-w-0 flex-col items-start gap-0.5">
+            <StatusBadge tone={toneFromTagColor(checkStatusTagColor(record.last_check_status))}>
               {t(checkStatusLabelKey(record.last_check_status))}
-            </Tag>
+            </StatusBadge>
             {record.last_checked_at && record.last_check_status ? (
-              <span className="text-[11px] text-[var(--muted)]">{formatRelativeTime(record.last_checked_at, t)}</span>
+              <span className="truncate-1 text-[11px] text-[var(--muted)]">
+                {formatRelativeTime(record.last_checked_at, t)}
+              </span>
             ) : null}
           </div>
         </Tooltip>
@@ -418,7 +426,7 @@ export default function AccountsTable() {
     {
       title: t("columnProxy"),
       key: "proxy",
-      width: 200,
+      width: 190,
       onCell: () => ({ className: "min-w-0" }),
       render: (_: unknown, record: Account) => (
         <ProxyPicker account={record} proxies={proxies ?? []} setProxy={setProxy} resetProxy={resetProxy} />
@@ -427,7 +435,7 @@ export default function AccountsTable() {
     {
       title: t("columnCredentials"),
       key: "credentials",
-      width: 108,
+      width: 96,
       align: "center",
       render: (_: unknown, record: Account) => (
         <CredentialsModal account={record} isTikTok={record.platform === "tiktok"} />
@@ -436,7 +444,7 @@ export default function AccountsTable() {
     {
       title: t("actions"),
       key: "actions",
-      width: 108,
+      width: 116,
       align: "right",
       mobileHidden: true,
       render: (_: unknown, record: Account) => rowActions(record),
@@ -540,8 +548,21 @@ export default function AccountsTable() {
         onCancel={() => setModalOpen(false)}
         onSubmit={handleSubmit}
       />
+      <AccountDetailDrawer account={detail} onClose={() => setDetail(null)} />
     </DashboardCard>
   );
+}
+
+// A proxy address can be a long URL with credentials and a query string.
+// The table only shows the host:port part - the full address stays in the
+// option's tooltip and in the account's detail drawer, so nothing is lost.
+function shortProxyLabel(url: string): string {
+  try {
+    const parsed = new URL(url.includes("://") ? url : `http://${url}`);
+    return `${parsed.host}${parsed.pathname && parsed.pathname !== "/" ? parsed.pathname : ""}`;
+  } catch {
+    return url;
+  }
 }
 
 // Inline picker (not a modal) so re-assigning an account's proxy is a single
@@ -574,17 +595,21 @@ function ProxyPicker({
         (meta.includes(account.platform) && meta.includes(p.platform)),
     );
     return [
-      { value: 0, label: t("autoAssignProxyOption") },
+      { value: 0, label: t("autoAssignProxyOption"), title: t("autoAssignProxyOption") },
       ...matching.map((p) => {
         const address =
           p.platform === account.platform || p.platform === "all"
             ? p.proxy_url
             : `${p.proxy_url} (${p.platform})`;
+        const typeLabel =
+          p.ip_type === "static" || p.ip_type === "rotating"
+            ? ` · ${t(p.ip_type === "static" ? "ipTypeStatic" : "ipTypeRotating")}`
+            : "";
         return {
           value: p.id,
-          label: p.ip_type === "static" || p.ip_type === "rotating"
-            ? `${address} · ${t(p.ip_type === "static" ? "ipTypeStatic" : "ipTypeRotating")}`
-            : address,
+          label: `${shortProxyLabel(address)}${typeLabel}`,
+          // The full address (credentials included) is always one hover away.
+          title: address,
         };
       }),
     ];
