@@ -33,3 +33,16 @@ export function postPreviewUrl(post: {
   }
   return null;
 }
+
+/*
+ * Movie posters are stored by the cinemark web app as a path on ITS origin ("/api/assets/file?key=posters/...").
+ * Served from this dashboard that path 404s, so relative asset paths are resolved against the web app's origin.
+ * Absolute URLs are returned unchanged.
+ */
+const POSTER_BASE_URL = (process.env.NEXT_PUBLIC_POSTER_BASE_URL || "https://cinemark-vn.cinemark-vn.workers.dev").replace(/\/$/, "");
+
+export function posterSrc(url: string | null | undefined): string | null {
+  if (!url) return null;
+  return /^https?:\/\//i.test(url) ? url : `${POSTER_BASE_URL}${url.startsWith("/") ? "" : "/"}${url}`;
+}
+

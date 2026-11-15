@@ -448,46 +448,32 @@ export interface AiPrompt {
 }
 
 /** Kira đã bỏ (2026-10-21) - report luôn do Bee viết; trường này chỉ còn để tương thích API. */
-export type ReportAiProvider = "kira" | "bee";
-
 export interface AiSettings {
   enabled: boolean;
+  // Model of the active provider ("" when none is active).
   model: string;
+  // The active provider has base URL, API key and model.
   configured: boolean;
   prompts: AiPrompt[];
-  // Which provider generates social_topic_reports (cinemark-api's
-  // app/bee/report.py) - independent of `enabled` above, which only gates
-  // ingest-time classifiers.
-  active_report_provider: ReportAiProvider;
-  // Provider row every AI call uses ("beeknoee" = Bee, "kira" = Kira) - picked in the AI card.
+  // The provider every AI call uses ("" when none is chosen).
   active_provider: string;
   updated_at: string | null;
 }
 
+// Only the ingest-time AI switch and per-task prompts live here; provider/model are chosen in the providers card.
 export interface AiSettingsInput {
   enabled: boolean;
-  model: string;
   prompts: Record<string, string>;
-  active_report_provider: ReportAiProvider;
 }
 
-// One LLM provider's credentials (base_url/api_key/model) - see
-// cinemark-api's app/ai_client.py + app/services/platform_config_db.py's
-// ai_providers table. api_key is never sent back by the API, only whether
-// one is stored.
+// One AI provider (OpenAI-compatible): base URL, API key and model. api_key is never sent back by the API, only whether
+// one is stored. Exactly one provider is active and serves every AI task.
 export interface AiProvider {
   key: string;
   base_url: string;
   api_key_set: boolean;
   model: string;
-  // Path appended to base_url for chat (default /chat/completions).
-  chat_path: string;
-  // Image-reading model (Box Office AI) - Kira: agnes-image-2.1-flash, Bee: gemini-3.5-flash.
-  image_model: string;
-  // Decision-model path (Bee: /decisions); empty = none, hard classification cases use chat.
-  decisions_path: string;
-  comment_model: string;
-  post_model: string;
+  active: boolean;
   updated_at: string | null;
 }
 
@@ -496,11 +482,13 @@ export interface AiProviderInput {
   // Omit or blank to keep whatever secret is already stored.
   api_key?: string;
   model: string;
-  chat_path?: string;
-  image_model?: string;
-  decisions_path?: string;
-  comment_model?: string;
-  post_model?: string;
+}
+
+// Ask the provider for its model list (GET {base_url}/models); a blank api_key uses the stored key of `key`.
+export interface AiModelsRequest {
+  base_url: string;
+  api_key?: string;
+  key?: string;
 }
 
 // Proxy behavior tunables spider-hub reads (cinemark-api /settings/proxy).

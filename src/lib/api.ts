@@ -5,6 +5,7 @@ import type {
   Account,
   AccountCredentials,
   AccountInput,
+  AiModelsRequest,
   AiProvider,
   AiProviderInput,
   AiSettings,
@@ -350,6 +351,9 @@ export const api = {
   aiProviders: () => request<AiProvider[]>("/settings/ai/providers"),
   setAiProvider: (key: string, input: AiProviderInput) =>
     request<AiProvider>(`/settings/ai/providers/${key}`, { method: "PUT", body: JSON.stringify(input) }),
+  deleteAiProvider: (key: string) => request<void>(`/settings/ai/providers/${key}`, { method: "DELETE" }),
+  aiModels: (input: AiModelsRequest) =>
+    request<{ models: string[] }>("/settings/ai/models", { method: "POST", body: JSON.stringify(input) }),
 
   proxySettings: () => request<ProxySettingsResponse>("/settings/proxy"),
   setProxySettings: (input: ProxySettings) =>

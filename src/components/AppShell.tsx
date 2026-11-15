@@ -268,7 +268,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
         </div>
 
         <Menu
-          theme="dark"
+          theme="light"
           mode="inline"
           inlineCollapsed={collapsedRail}
           selectedKeys={[selected]}

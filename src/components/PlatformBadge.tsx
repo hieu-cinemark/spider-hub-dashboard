@@ -1,5 +1,5 @@
 import { Tooltip } from "antd";
-import { PlatformIcon, platformCssColor, platformCssSoftBg, platformLabel } from "@/lib/platform";
+import { PlatformIcon, platformAccentColor, platformLabel } from "@/lib/platform";
 
 // A platform's icon in a soft-tinted rounded-square badge, optionally with
 // its label alongside - the shared "which platform is this row/card about"
@@ -24,8 +24,8 @@ export default function PlatformBadge({
         style={{
           width: size,
           height: size,
-          backgroundColor: platformCssSoftBg(platform),
-          color: platformCssColor(platform),
+          backgroundColor: `color-mix(in srgb, ${platformAccentColor(platform)} 16%, transparent)`,
+          color: platformAccentColor(platform),
           fontSize: Math.round(size * 0.55),
         }}
       >

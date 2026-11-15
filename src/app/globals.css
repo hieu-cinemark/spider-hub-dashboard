@@ -237,7 +237,8 @@ samp,
   width: calc(100% - 16px) !important;
   font-size: 13.5px;
   border-radius: 8px;
-  color: var(--ink-soft);
+  /* !important: antd's own menu colours would otherwise win and leave pale text on the light sidebar. */
+  color: var(--ink-soft) !important;
 }
 
 .app-sider .ant-menu-item .anticon {

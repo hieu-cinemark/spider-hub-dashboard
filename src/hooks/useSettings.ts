@@ -7,6 +7,7 @@ import { translateApiError } from "@/lib/apiError";
 import { REFRESH_INTERVAL_MS, QUERY_KEYS } from "@/lib/constants";
 import type {
   AccountInput,
+  AiModelsRequest,
   AiProviderInput,
   AiSettingsInput,
   CleanupSettingsInput,
@@ -370,6 +371,32 @@ export function useSetAiProvider() {
       queryClient.invalidateQueries({ queryKey: AI_PROVIDERS_KEY });
       queryClient.invalidateQueries({ queryKey: AI_SETTINGS_KEY });
     },
+    onError: (err: unknown) => message.error(translateApiError(err, t)),
+  });
+}
+
+export function useDeleteAiProvider() {
+  const { message } = App.useApp();
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (key: string) => api.deleteAiProvider(key),
+    onSuccess: () => {
+      message.success(t("toastAiProviderDeleted"));
+      queryClient.invalidateQueries({ queryKey: AI_PROVIDERS_KEY });
+      queryClient.invalidateQueries({ queryKey: AI_SETTINGS_KEY });
+    },
+    onError: (err: unknown) => message.error(translateApiError(err, t)),
+  });
+}
+
+export function useAiModels() {
+  const { message } = App.useApp();
+  const { t } = useTranslation();
+
+  return useMutation({
+    mutationFn: (input: AiModelsRequest) => api.aiModels(input),
     onError: (err: unknown) => message.error(translateApiError(err, t)),
   });
 }

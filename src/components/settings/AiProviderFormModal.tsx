@@ -1,15 +1,13 @@
 "use client";
 
-import { Form, Input, Modal } from "antd";
-import { useEffect } from "react";
+import { Button, Form, Input, Modal, Select } from "antd";
+import { useEffect, useState } from "react";
+import { useAiModels } from "@/hooks/useSettings";
 import { useTranslation } from "@/i18n/LocaleProvider";
 import type { AiProvider, AiProviderInput } from "@/lib/types";
 
-// api_key is deliberately never pre-filled (the API never returns the raw
-// secret - see AiProvider.api_key_set) - leaving it blank on save keeps
-// whatever is already stored, only overwriting it when the operator types
-// a new one. Adding a brand-new provider (`provider` is null) has no
-// existing secret to keep, so api_key is required there instead.
+// An AI provider is just: a name, a base URL, an API key and one model. The API never returns the raw key
+// (AiProvider.api_key_set), so a blank key on save keeps the stored one; a brand-new provider needs a key.
 export default function AiProviderFormModal({
   open,
   provider,
@@ -25,6 +23,8 @@ export default function AiProviderFormModal({
 }) {
   const { t } = useTranslation();
   const [form] = Form.useForm<AiProviderInput & { key: string }>();
+  const [models, setModels] = useState<string[]>([]);
+  const fetchModels = useAiModels();
 
   useEffect(() => {
     if (open) {
@@ -33,14 +33,17 @@ export default function AiProviderFormModal({
         base_url: provider?.base_url ?? "",
         api_key: "",
         model: provider?.model ?? "",
-        chat_path: provider?.chat_path ?? "/chat/completions",
-        image_model: provider?.image_model ?? "",
-        decisions_path: provider?.decisions_path ?? "",
-        comment_model: provider?.comment_model ?? "",
-        post_model: provider?.post_model ?? "",
       });
     }
   }, [open, provider, form]);
+
+  function loadModels() {
+    const { base_url, api_key, key } = form.getFieldsValue();
+    fetchModels.mutate(
+      { base_url: base_url?.trim() ?? "", api_key: api_key?.trim() || undefined, key: provider?.key ?? (key?.trim() || undefined) },
+      { onSuccess: (data) => setModels(data.models) },
+    );
+  }
 
   return (
     <Modal
@@ -49,7 +52,7 @@ export default function AiProviderFormModal({
       onCancel={onCancel}
       onOk={() =>
         form.validateFields().then(({ key, ...input }) => {
-          onSubmit(key.trim(), { ...input, api_key: input.api_key?.trim() || undefined });
+          onSubmit(key.trim(), { ...input, model: input.model.trim(), api_key: input.api_key?.trim() || undefined });
         })
       }
       confirmLoading={loading}
@@ -64,38 +67,37 @@ export default function AiProviderFormModal({
           tooltip={t("aiProviderKeyHint")}
           rules={[{ required: true }, { pattern: /^[a-z0-9_-]+$/, message: t("aiProviderKeyInvalid") }]}
         >
-          <Input placeholder="bee" disabled={!!provider} />
+          <Input placeholder="openai" disabled={!!provider} />
         </Form.Item>
         <Form.Item name="base_url" label={t("aiProviderBaseUrl")} rules={[{ required: true }]}>
           <Input placeholder="https://api.example.com/v1" />
         </Form.Item>
-        <Form.Item name="chat_path" label={t("aiProviderChatPath")} tooltip={t("aiProviderChatPathHint")}>
-          <Input placeholder="/chat/completions" />
-        </Form.Item>
-        <Form.Item name="model" label={t("aiProviderChatModel")} tooltip={t("aiProviderChatModelHint")} rules={[{ required: true }]}>
-          <Input placeholder="qwen3.8-flash" />
-        </Form.Item>
-        <Form.Item name="image_model" label={t("aiProviderImageModel")} tooltip={t("aiProviderImageModelHint")}>
-          <Input placeholder="agnes-image-2.1-flash" />
-        </Form.Item>
-        <Form.Item name="decisions_path" label={t("aiProviderDecisionsPath")} tooltip={t("aiProviderDecisionsPathHint")}>
-          <Input placeholder="/decisions" />
-        </Form.Item>
-        <div className="grid grid-cols-2 gap-3">
-          <Form.Item name="comment_model" label={t("aiProviderCommentModel")}>
-            <Input placeholder="typesafe/jev-1.14" />
-          </Form.Item>
-          <Form.Item name="post_model" label={t("aiProviderPostModel")}>
-            <Input placeholder="openai/gpt-6-luna-decisions" />
-          </Form.Item>
-        </div>
         <Form.Item
           name="api_key"
           label={t("aiProviderApiKey")}
           extra={provider ? t("aiProviderApiKeyHintKeep") : undefined}
           rules={provider ? [] : [{ required: true }]}
         >
-          <Input.Password placeholder={provider?.api_key_set ? "••••••••" : ""} />
+          <Input.Password placeholder={provider?.api_key_set ? "••••••••" : ""} autoComplete="off" />
+        </Form.Item>
+        <Form.Item label={t("aiProviderModel")} required>
+          <div className="flex gap-2">
+            <Form.Item name="model" noStyle rules={[{ required: true }]}>
+              <Select
+                showSearch
+                allowClear
+                className="min-w-0 flex-1"
+                placeholder={t("aiProviderModelPlaceholder")}
+                options={models.map((id) => ({ value: id, label: id }))}
+                notFoundContent={null}
+                // Free text is allowed: if the provider has no /models endpoint, type the model id and press Enter.
+                onSearch={(value) => form.setFieldValue("model", value)}
+              />
+            </Form.Item>
+            <Button onClick={loadModels} loading={fetchModels.isPending}>
+              {t("aiFetchModels")}
+            </Button>
+          </div>
         </Form.Item>
       </Form>
     </Modal>

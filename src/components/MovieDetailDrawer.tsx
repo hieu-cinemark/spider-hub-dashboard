@@ -1,10 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { PlaySquareOutlined } from "@ant-design/icons";
 import DetailDrawer from "@/components/ui/DetailDrawer";
 import { DetailRow, DetailSection } from "@/components/ui/CopyableValue";
 import { useTranslation } from "@/i18n/LocaleProvider";
 import { castList } from "@/lib/cast";
+import { posterSrc } from "@/lib/media";
 import type { Movie } from "@/lib/types";
 
 /**
@@ -35,10 +37,10 @@ export default function MovieDetailDrawer({
       title={movie.title}
       subtitle={movie.released_at ?? undefined}
       extra={
-        movie.poster_url ? (
+        posterSrc(movie.poster_url) ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={movie.poster_url}
+            src={posterSrc(movie.poster_url) ?? undefined}
             alt={t("moviePosterAlt", { title: movie.title })}
             className="h-14 w-10 shrink-0 rounded-md border border-[var(--line)] object-cover"
           />
@@ -94,11 +96,13 @@ export default function MovieDetailDrawer({
   );
 }
 
-/** Small poster used in the table's first column. */
+/** Small poster used in the table's first column; a missing or dead poster URL shows a placeholder instead of a broken image. */
 export function PosterThumb({ url, title }: { url?: string | null; title: string }) {
-  if (!url) {
+  const [failed, setFailed] = useState(false);
+  const src = posterSrc(url);
+  if (!src || failed) {
     return (
-      <span className="flex h-[46px] w-[32px] items-center justify-center rounded-md bg-[var(--paper-deep)] text-[var(--muted)]">
+      <span className="flex h-[58px] w-[40px] items-center justify-center rounded-md bg-[var(--paper-deep)] text-[var(--muted)]">
         <PlaySquareOutlined />
       </span>
     );
@@ -106,14 +110,11 @@ export function PosterThumb({ url, title }: { url?: string | null; title: string
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={url}
+      src={src}
       alt={title}
-      className="h-[46px] w-[32px] rounded-md border border-[var(--line)] object-cover"
+      className="h-[58px] w-[40px] rounded-md border border-[var(--line)] object-cover"
       loading="lazy"
-      onError={(event) => {
-        // A dead poster URL must not leave a broken image in the row.
-        event.currentTarget.style.display = "none";
-      }}
+      onError={() => setFailed(true)}
     />
   );
 }
