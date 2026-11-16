@@ -446,6 +446,8 @@ export default function AccountsTable() {
       key: "actions",
       width: 116,
       align: "right",
+      // Ghim bên phải: bảng nhiều cột thì cột này (nút bật/tắt) bị đẩy ra ngoài khung và mất hẳn.
+      fixed: "right",
       mobileHidden: true,
       render: (_: unknown, record: Account) => rowActions(record),
     },
@@ -524,6 +526,7 @@ export default function AccountsTable() {
           onChange: (keys) => setSelectedIds(keys as number[]),
         }}
         columns={columns}
+        scroll={{ x: "max-content" }}
       />
       )
       ) : (
