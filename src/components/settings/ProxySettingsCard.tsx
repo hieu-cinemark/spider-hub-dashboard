@@ -76,6 +76,7 @@ const SECTIONS: SectionMeta[] = [
       { name: "tiktok_synthetic_provider", kind: "provider", label: "proxyTiktokProvider", hint: "proxyTiktokProviderHint" },
       { name: "tiktok_hashtag_max_attempts", kind: "int", label: "proxyTiktokHashtagAttempts", hint: "proxyTiktokHashtagAttemptsHint", unit: "unitTimes", min: 1, max: 50 },
       { name: "tiktok_comments_max_attempts", kind: "int", label: "proxyTiktokCommentsAttempts", hint: "proxyTiktokCommentsAttemptsHint", unit: "unitTimes", min: 1, max: 50 },
+      { name: "tiktok_combine_search", kind: "switch", label: "proxyTiktokCombine", hint: "proxyTiktokCombineHint" },
     ],
   },
   {
@@ -98,6 +99,9 @@ const SECTIONS: SectionMeta[] = [
       { name: "threads_channel_workers", kind: "int", label: "crawlThreadsWorkers", hint: "crawlThreadsWorkersHint", min: 0, max: 16 },
       { name: "threads_channels_queue_target", kind: "int", label: "crawlThreadsQueue", hint: "crawlThreadsQueueHint", min: 0, max: 200 },
       { name: "facebook_account_page_feed", kind: "switch", label: "crawlFbAccountPageFeed", hint: "crawlFbAccountPageFeedHint" },
+      { name: "youtube_continuous", kind: "switch", label: "crawlYoutubeContinuous", hint: "crawlYoutubeContinuousHint" },
+      { name: "youtube_transcripts", kind: "switch", label: "crawlYoutubeTranscripts", hint: "crawlYoutubeTranscriptsHint" },
+      { name: "threads_channels_continuous", kind: "switch", label: "crawlThreadsContinuous", hint: "crawlThreadsContinuousHint" },
     ],
   },
 ];

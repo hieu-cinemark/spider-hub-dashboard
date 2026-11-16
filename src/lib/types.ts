@@ -523,6 +523,10 @@ export interface ProxySettings {
   public_pages_queue_target: number;
   threads_channels_queue_target: number;
   youtube_comments_per_round: number;
+  tiktok_combine_search: boolean;
+  youtube_continuous: boolean;
+  youtube_transcripts: boolean;
+  threads_channels_continuous: boolean;
 }
 
 export interface ProxySettingsResponse {
