@@ -118,7 +118,7 @@ Bỏ: 11px, 11.5px, 12px, 13px, 14px, 15px, 17px, 20px, 22px rải rác → gom 
 | Vấn đề | Vị trí | Đề xuất |
 | --- | --- | --- |
 | **6 tab** nhưng "Tài khoản" + "Proxy" gộp vào 1 tab (`accounts-proxies`) → tab đó nặng nhất, phải cuộn. | `:63-90` | Tách thành 2 tab: `accounts` và `proxies`. Giữ `?tab=accounts-proxies` làm alias redirect → `accounts` (không phá link cũ). |
-| Tab "Omar" chỉ là thẻ bảo "Omar đã chuyển sang TikTok" — 1 tab cho 1 thông báo. | `:133-167` | Bỏ tab Omar khỏi Settings; chỉ còn link tới `/?tab=tiktok&sub=omar`. **Cần xác nhận** — không muốn mất link cũ. |
+| Tab "ShortVid" chỉ là thẻ bảo "ShortVid đã chuyển sang TikTok" — 1 tab cho 1 thông báo. | `:133-167` | Bỏ tab ShortVid khỏi Settings; chỉ còn link tới `/?tab=tiktok&sub=shortvid`. **Cần xác nhận** — không muốn mất link cũ. |
 | `SettingsSummary` 4 KPI dùng 4 hex | `SettingsSummary.tsx:38-73` | `tone` prop. |
 | Form nhóm: `ProxySettingsCard` dùng `Collapse` — tốt, nhưng **nút Lưu nằm ngoài** collapse, ở đáy card, cách xa nhóm đang sửa. | `ProxySettingsCard.tsx:169` | Nút lưu **dính cuối card** (`position: sticky; bottom`) hoặc đặt trong header card. Tương tự cho `AiSettingsCard` (nút Lưu ở `:118`). |
 | `AiSettingsCard` — 1 card chứa 3 việc không liên quan (chọn provider / bật-tắt / prompt). | toàn file | Tách thành 2 card: "Nhà cung cấp đang dùng" + "Prompt hệ thống". |
@@ -172,14 +172,14 @@ Bỏ: 11px, 11.5px, 12px, 13px, 14px, 15px, 17px, 20px, 22px rải rác → gom 
 | Bảng 7 cột: poster / title / director / cast / distributor / description / actions. `description` rộng 240px + `cast` không giới hạn → bảng rất rộng. | `:127-180` | `description` → ẩn sau tooltip (Tooltip title = mô tả đầy đủ), `cast` giới hạn 2 tên + "+N". `director`/`distributor` giữ. Actions gom: hiện 4 nút → `Dropdown` (tiêu chí "dropdown nếu > 2 nút"). |
 | Không có trạng thái rỗng/đang tải thống nhất — `Table` có `loading` mặc định của antd, mobile `MobileTable` có skeleton riêng. | `:202-221` | `DataTable` wrapper loại cả. |
 
-### 3.8 Omar — `src/components/omar/OmarTab.tsx` (895 dòng)
+### 3.8 ShortVid — `src/components/shortvid/ShortVidTab.tsx` (895 dòng)
 
 | Vấn đề | Vị trí | Đề xuất |
 | --- | --- | --- |
-| **File lớn nhất repo.** 8 card, 12 mutation, 4 bảng, 1 cây chọn — tất cả trong 1 component. | toàn file | Tách thành: `OmarKeyCard.tsx` (key + quota + rate cap), `OmarRunCard.tsx` (chạy/dừng + trạng thái vòng), `OmarYieldCard.tsx` (bảng hiệu quả), `OmarTrendingCard.tsx` (video nổi), `OmarSearchCard.tsx` (bảng tìm kiếm), `OmarChannelsCard.tsx`, `OmarCommentsCard.tsx` (kèm `CommentKeywordPicker`), `OmarHashtagProgressCard.tsx`. File chính còn ~120 dòng. **Chỉ tách, không viết lại logic.** |
-| Bảng `omarYield` có cột "Hashtag" hard-code **tiếng Anh** (`:269`) — lỗi song ngữ. | `:269` | `t("omarYieldSourceHashtag")` hoặc key tương ứng. |
-| Bảng `omarYield` dùng `scroll={{ x: true }}` → bảng cuộn ngang. | `:500` | Bỏ `scroll` (cột ít, tự vừa). |
-| Card "từ khoá bình luận" (CommentKeywordPicker) nằm **trong** card OmarComments, không có nút lưu rõ ràng — nút lưu nằm giữa form. | `:859-891` | Nút lưu dính đáy nhóm. |
+| **File lớn nhất repo.** 8 card, 12 mutation, 4 bảng, 1 cây chọn — tất cả trong 1 component. | toàn file | Tách thành: `ShortVidKeyCard.tsx` (key + quota + rate cap), `ShortVidRunCard.tsx` (chạy/dừng + trạng thái vòng), `ShortVidYieldCard.tsx` (bảng hiệu quả), `ShortVidTrendingCard.tsx` (video nổi), `ShortVidSearchCard.tsx` (bảng tìm kiếm), `ShortVidChannelsCard.tsx`, `ShortVidCommentsCard.tsx` (kèm `CommentKeywordPicker`), `ShortVidHashtagProgressCard.tsx`. File chính còn ~120 dòng. **Chỉ tách, không viết lại logic.** |
+| Bảng `shortvidYield` có cột "Hashtag" hard-code **tiếng Anh** (`:269`) — lỗi song ngữ. | `:269` | `t("shortvidYieldSourceHashtag")` hoặc key tương ứng. |
+| Bảng `shortvidYield` dùng `scroll={{ x: true }}` → bảng cuộn ngang. | `:500` | Bỏ `scroll` (cột ít, tự vừa). |
+| Card "từ khoá bình luận" (CommentKeywordPicker) nằm **trong** card ShortVidComments, không có nút lưu rõ ràng — nút lưu nằm giữa form. | `:859-891` | Nút lưu dính đáy nhóm. |
 | Bảng `search`: cột "Video" hiển thị `n (published)` — số trong ngoặc không giải thích. | `:239-247` | Tooltip đã có; thêm chữ rõ nghĩa. |
 | Nhiều nút "Lưu" (key, rate cap, keywords) rải rác. | 3 chỗ | Mỗi nhóm form có nút lưu riêng ở cuối nhóm (đã là vậy) — giữ, nhưng nhất quán style (nút chính + nút phụ). |
 
@@ -245,7 +245,7 @@ Hiện có 3 cách khác nhau:
 5. **Logs** (đẩy lỗi lên trên, tone KPI).
 6. **Posts / Comments** (gộp filter bar, đồng nhất Segmented).
 7. **Movies** (filter bar, tooltip cho description, dropdown actions).
-8. **Omar** (tách 8 file con).
+8. **ShortVid** (tách 8 file con).
 9. **AppShell + Backdrop** (PageHeader, bỏ gradient chồng, giảm alpha).
 10. **Biểu đồ** (token màu, format số/ngày, ChartPanel).
 
@@ -255,7 +255,7 @@ Hiện có 3 cách khác nhau:
 
 1. **Tiêu đề trang**: đưa `PageHeader` vào từng trang (header chỉ giữ nav + chip) — OK?
    Nếu không, giữ tiêu đề ở header như hiện tại và bỏ `PageHeader`.
-2. **Tab Omar trong Settings**: bỏ hẳn (chỉ còn link sang TikTok) hay giữ?
+2. **Tab ShortVid trong Settings**: bỏ hẳn (chỉ còn link sang TikTok) hay giữ?
 3. **Tab Settings**: tách `accounts-proxies` thành `accounts` + `proxies`?
 4. **Hiển thị "không có lỗi"**: có nên hiện 1 dòng xanh "mọi nền tảng ổn" ở Tổng quan
    khi không có cảnh báo nào? (hiện tại: trống hoàn toàn)
@@ -272,6 +272,6 @@ Hiện có 3 cách khác nhau:
 
 - **Không** đổi `src/lib/api.ts`, `src/lib/types.ts`, query key, interval polling, logic `src/hooks/*`.
 - **Không** thêm thư viện mới.
-- **Không** đổi nội dung chữ (trừ 1 chỗ: cột "Hashtag" trong OmarYield đang hard-code tiếng Anh).
+- **Không** đổi nội dung chữ (trừ 1 chỗ: cột "Hashtag" trong ShortVidYield đang hard-code tiếng Anh).
 - **Không** thêm màu hex mới ngoài `globals.css` / `providers.tsx`.
 - **Không** xoá tính năng / cột / cảnh báo nào.

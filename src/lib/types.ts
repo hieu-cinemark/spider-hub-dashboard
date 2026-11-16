@@ -682,8 +682,8 @@ export type RefreshSocketMessage =
   | { type: "line"; line: string }
   | { type: "status"; status: RefreshStatus; finished_at?: string | null };
 
-// GET /omar/status (cinemark-api app/api/routes/omar.py).
-export interface OmarHashtagProgress {
+// GET /shortvid/status (cinemark-api app/api/routes/shortvid.py).
+export interface ShortVidHashtagProgress {
   keyword_id: string;
   hashtag: string;
   movie: string | null;
@@ -697,7 +697,7 @@ export interface OmarHashtagProgress {
   missing_at: string | null;
 }
 
-export interface OmarCommentsJob {
+export interface ShortVidCommentsJob {
   week: string;
   trigger: string;
   queued_at: string;
@@ -710,7 +710,7 @@ export interface OmarCommentsJob {
   published: number;
 }
 
-export interface OmarSearchQuery {
+export interface ShortVidSearchQuery {
   query: string;
   movie: string;
   movie_id: string;
@@ -719,27 +719,27 @@ export interface OmarSearchQuery {
   last: { at: string; videos: number; published: number } | null;
 }
 
-export interface OmarSearchResponse {
-  queries: OmarSearchQuery[];
+export interface ShortVidSearchResponse {
+  queries: ShortVidSearchQuery[];
   modes: { date?: string; sort?: string }[];
   pages: number;
 }
 
-export interface OmarYieldMetrics {
+export interface ShortVidYieldMetrics {
   requests: number;
   sent: number;
   new: number;
   new_per_100?: number | null;
 }
 
-export interface OmarYieldResponse {
-  days: { day: string; sources: Record<string, OmarYieldMetrics> }[];
-  totals: Record<string, OmarYieldMetrics>;
+export interface ShortVidYieldResponse {
+  days: { day: string; sources: Record<string, ShortVidYieldMetrics> }[];
+  totals: Record<string, ShortVidYieldMetrics>;
   shares: Record<string, number>;
   base_shares: Record<string, number>;
 }
 
-export interface OmarTrendingVideo {
+export interface ShortVidTrendingVideo {
   video_id: string;
   url: string | null;
   author: string | null;
@@ -752,23 +752,26 @@ export interface OmarTrendingVideo {
   hot: boolean;
 }
 
-export interface OmarTrendingResponse {
+export interface ShortVidTrendingResponse {
   hours: number;
-  movies: { movie_id: string; title: string; hot: number; videos: OmarTrendingVideo[] }[];
+  movies: { movie_id: string; title: string; hot: number; videos: ShortVidTrendingVideo[] }[];
 }
 
-export interface OmarStatus {
+export interface ShortVidStatus {
   key_set: boolean;
-  /** Trần request/phút đặt ở tab Omar; 0 = theo gói. */
+  /** Trần request/phút đặt ở tab ShortVid; 0 = theo gói. */
   requests_per_minute?: number;
   usage: {
     plan: string | null;
     status: string | null;
     expires_at: string | null;
-    day?: { limit: number; used: number; remaining: number; resets_in: number };
+    /** Credit còn lại (header x-credits-remaining của request ShortVid gần nhất); null khi chưa có request nào. */
+    credits_remaining?: number | null;
+    /** limit/remaining thiếu khi SHORTVID_DAILY_REQUESTS = 0 (không đặt hạn mức ngày). */
+    day?: { limit?: number; used: number; remaining?: number; resets_in: number };
     minute?: { limit: number; used: number; remaining: number; resets_in: number };
   } | null;
-  /** Lượt Omar đang dừng chờ hạn mức reset (quota) hoặc key mới (key); null khi chạy bình thường. */
+  /** Lượt ShortVid đang dừng chờ hạn mức reset (quota) hoặc key mới (key); null khi chạy bình thường. */
   paused?: { reason: "quota" | "key"; until: string; at: string } | null;
   round: {
     running: boolean;
@@ -800,7 +803,7 @@ export interface OmarStatus {
     };
   };
   mode: "continuous" | "spread_daily";
-  hashtags: OmarHashtagProgress[];
+  hashtags: ShortVidHashtagProgress[];
   channels?: {
     tracked: number;
     done_today: number;
@@ -809,7 +812,7 @@ export interface OmarStatus {
     latest: { handle: string; newest_video_at: string | null }[];
   };
   comments: {
-    last: OmarCommentsJob | null;
+    last: ShortVidCommentsJob | null;
     pending_videos: number;
     weekday: number;
     time: string;

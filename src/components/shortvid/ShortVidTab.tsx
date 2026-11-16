@@ -6,20 +6,20 @@ import { App, Button, Checkbox, Input, InputNumber, Progress, Select, Space, Tab
 import { useMemo, useState } from "react";
 import DashboardCard, { CardHeading } from "@/components/DashboardCard";
 import MobileTable, { type ResponsiveColumnType } from "@/components/MobileTable";
-import OmarTrendingChart from "@/components/omar/OmarTrendingChart";
+import ShortVidTrendingChart from "@/components/shortvid/ShortVidTrendingChart";
 import { useIsMobile } from "@/hooks/useMediaQuery";
 import { useTranslation } from "@/i18n/LocaleProvider";
 import { useMovies } from "@/hooks/useMovies";
 import { useKeywords } from "@/hooks/useKeywords";
 import { api } from "@/lib/api";
 import { formatRelativeTime } from "@/lib/format";
-import type { OmarHashtagProgress, OmarSearchQuery } from "@/lib/types";
+import type { ShortVidHashtagProgress, ShortVidSearchQuery } from "@/lib/types";
 import Hint from "@/components/Hint";
 
-// Tab Omar (Settings): key Omar API, hạn mức của gói, lượt cào hashtag TikTok đang chạy (Chạy ngay / Dừng) và tiến độ
-// từng hashtag - xem cinemark-api app/services/omar_tiktok.py và app/api/routes/omar.py.
+// Tab ShortVid (Settings): key ShortVid API, hạn mức của gói, lượt cào hashtag TikTok đang chạy (Chạy ngay / Dừng) và tiến độ
+// từng hashtag - xem cinemark-api app/services/shortvid_tiktok.py và app/api/routes/shortvid.py.
 
-const STATUS_KEY = ["omar", "status"] as const;
+const STATUS_KEY = ["shortvid", "status"] as const;
 
 function fmtNumber(n: number | null | undefined) {
   return n == null ? "—" : n.toLocaleString();
@@ -37,7 +37,7 @@ function fmtDuration(seconds: number | null | undefined) {
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
-export default function OmarTab() {
+export default function ShortVidTab() {
   const { t, locale } = useTranslation();
   const isMobile = useIsMobile();
   const { message } = App.useApp();
@@ -52,95 +52,95 @@ export default function OmarTab() {
   const [searchMovie, setSearchMovie] = useState<string | undefined>();
   const [newQuery, setNewQuery] = useState("");
   const [searchFilter, setSearchFilter] = useState("");
-  const yieldQuery = useQuery({ queryKey: ["omar", "yield"], queryFn: () => api.omarYield(7), refetchInterval: 5 * 60_000 });
-  const trending = useQuery({ queryKey: ["omar", "trending"], queryFn: () => api.omarTrending(24), refetchInterval: 10 * 60_000 });
-  const search = useQuery({ queryKey: ["omar", "search"], queryFn: api.omarSearch, refetchInterval: 60_000 });
-  const refreshSearch = () => queryClient.invalidateQueries({ queryKey: ["omar", "search"] });
-  // Thêm câu tìm cho một phim - tìm ngay, các ngày sau tìm cùng lượt Omar (POST /omar/search).
+  const yieldQuery = useQuery({ queryKey: ["shortvid", "yield"], queryFn: () => api.shortvidYield(7), refetchInterval: 5 * 60_000 });
+  const trending = useQuery({ queryKey: ["shortvid", "trending"], queryFn: () => api.shortvidTrending(24), refetchInterval: 10 * 60_000 });
+  const search = useQuery({ queryKey: ["shortvid", "search"], queryFn: api.shortvidSearch, refetchInterval: 60_000 });
+  const refreshSearch = () => queryClient.invalidateQueries({ queryKey: ["shortvid", "search"] });
+  // Thêm câu tìm cho một phim - tìm ngay, các ngày sau tìm cùng lượt ShortVid (POST /shortvid/search).
   const addQuery = useMutation({
-    mutationFn: () => api.omarAddSearch(searchMovie!, newQuery.trim()),
+    mutationFn: () => api.shortvidAddSearch(searchMovie!, newQuery.trim()),
     onSuccess: () => {
-      message.success(t("omarSearchAdded", { query: newQuery.trim() }));
+      message.success(t("shortvidSearchAdded", { query: newQuery.trim() }));
       setNewQuery("");
       refreshSearch();
     },
     onError: (err: Error) => message.error(err.message),
   });
   const deleteQuery = useMutation({
-    mutationFn: (id: string) => api.omarDeleteSearch(id),
+    mutationFn: (id: string) => api.shortvidDeleteSearch(id),
     onSuccess: refreshSearch,
     onError: (err: Error) => message.error(err.message),
   });
 
   const status = useQuery({
     queryKey: STATUS_KEY,
-    queryFn: api.omarStatus,
+    queryFn: api.shortvidStatus,
     refetchInterval: (query) => (query.state.data?.round.running ? 10_000 : 60_000),
   });
   const refresh = () => queryClient.invalidateQueries({ queryKey: STATUS_KEY });
 
   const run = useMutation({
-    mutationFn: api.omarRun,
+    mutationFn: api.shortvidRun,
     onSuccess: (res) => {
-      if (res.started) message.success(t("omarRunStarted"));
-      else message.info(t("omarAlreadyRunning"));
+      if (res.started) message.success(t("shortvidRunStarted"));
+      else message.info(t("shortvidAlreadyRunning"));
       refresh();
     },
     onError: (err: Error) => message.error(err.message),
   });
   const stop = useMutation({
-    mutationFn: api.omarStop,
+    mutationFn: api.shortvidStop,
     onSuccess: (res) => {
-      if (res.stopping) message.success(t("omarStopRequested"));
+      if (res.stopping) message.success(t("shortvidStopRequested"));
       refresh();
     },
     onError: (err: Error) => message.error(err.message),
   });
   const runComments = useMutation({
-    mutationFn: api.omarCommentsRun,
+    mutationFn: api.shortvidCommentsRun,
     onSuccess: (res) => {
-      message.success(t("omarCommentsQueued", { queued: fmtNumber(res.queued), pending: fmtNumber(res.pending) }));
+      message.success(t("shortvidCommentsQueued", { queued: fmtNumber(res.queued), pending: fmtNumber(res.pending) }));
       refresh();
     },
     onError: (err: Error) => message.error(err.message),
   });
-  // Người dùng tự gõ hashtag cho một phim: kiểm tra có trên TikTok, tạo từ khoá rồi cào ngay tới hết (POST /omar/hashtags).
+  // Người dùng tự gõ hashtag cho một phim: kiểm tra có trên TikTok, tạo từ khoá rồi cào ngay tới hết (POST /shortvid/hashtags).
   const addTag = useMutation({
-    mutationFn: () => api.omarAddHashtag(tagMovie!, newTag.trim()),
+    mutationFn: () => api.shortvidAddHashtag(tagMovie!, newTag.trim()),
     onSuccess: (res) => {
       setNewTag("");
-      message.success(t(res.started ? "omarTagAdded" : "omarTagAlreadyRunning", { tag: res.keyword.keyword }));
+      message.success(t(res.started ? "shortvidTagAdded" : "shortvidTagAlreadyRunning", { tag: res.keyword.keyword }));
       refresh();
     },
     onError: (err: Error) => message.error(err.message),
   });
-  // Cào ngay một kênh TikTok qua Omar /posts (POST /tiktok/channels/run).
+  // Cào ngay một kênh TikTok qua ShortVid /posts (POST /tiktok/channels/run).
   const crawlChannel = useMutation({
     mutationFn: () => api.runChannelVideos({ username: channel.trim() }),
     onSuccess: (res) => {
       if (res.published) {
-        message.success(t("omarChannelStarted", { handle: channel.trim().replace(/^@/, "") }));
+        message.success(t("shortvidChannelStarted", { handle: channel.trim().replace(/^@/, "") }));
         setChannel("");
-      } else message.error(t("omarChannelInvalid"));
+      } else message.error(t("shortvidChannelInvalid"));
       refresh();
     },
     onError: (err: Error) => message.error(err.message),
   });
   const saveKey = useMutation({
-    mutationFn: (key: string) => api.setOmarApiKey(key),
+    mutationFn: (key: string) => api.setShortVidApiKey(key),
     onSuccess: () => {
       setNewKey("");
-      message.success(t("omarKeySaved"));
+      message.success(t("shortvidKeySaved"));
       refresh();
     },
     onError: (err: Error) => message.error(err.message),
   });
 
   const saveRateCap = useMutation({
-    mutationFn: (perMinute: number) => api.setOmarRequestsPerMinute(perMinute),
+    mutationFn: (perMinute: number) => api.setShortVidRequestsPerMinute(perMinute),
     onSuccess: () => {
       setRateCap(null);
-      message.success(t("omarRateCapSaved"));
+      message.success(t("shortvidRateCapSaved"));
       refresh();
     },
     onError: (err: Error) => message.error(err.message),
@@ -173,22 +173,22 @@ export default function OmarTab() {
 
   const yieldColumns: ResponsiveColumnType<{ source: string } & Record<string, unknown>>[] = [
     {
-      title: t("omarYieldSource"),
+      title: t("shortvidYieldSource"),
       dataIndex: "source",
       mobilePrimary: true,
-      render: (v: string) => t(`omarYieldSource_${v as "hashtag" | "search" | "channel" | "comments"}`),
+      render: (v: string) => t(`shortvidYieldSource_${v as "hashtag" | "search" | "channel" | "comments"}`),
     },
-    { title: t("omarYieldRequests"), dataIndex: "requests", align: "right", render: (v: number) => fmtNumber(v) },
-    { title: t("omarYieldSent"), dataIndex: "sent", align: "right", render: (v: number) => fmtNumber(v) },
-    { title: t("omarYieldNew"), dataIndex: "new", align: "right", render: (v: number) => fmtNumber(v) },
+    { title: t("shortvidYieldRequests"), dataIndex: "requests", align: "right", render: (v: number) => fmtNumber(v) },
+    { title: t("shortvidYieldSent"), dataIndex: "sent", align: "right", render: (v: number) => fmtNumber(v) },
+    { title: t("shortvidYieldNew"), dataIndex: "new", align: "right", render: (v: number) => fmtNumber(v) },
     {
-      title: t("omarYieldPer100"),
+      title: t("shortvidYieldPer100"),
       dataIndex: "new_per_100",
       align: "right",
       render: (v: number | null) => (v == null ? "—" : v.toLocaleString()),
     },
     {
-      title: t("omarYieldShare"),
+      title: t("shortvidYieldShare"),
       key: "share",
       align: "right",
       render: (_: unknown, row: { source: string }) => {
@@ -196,7 +196,7 @@ export default function OmarTab() {
         const base = yieldQuery.data?.base_shares?.[row.source];
         if (share == null) return "—";
         return (
-          <Tooltip title={t("omarYieldShareHint", { base: Math.round((base ?? share) * 100) })}>
+          <Tooltip title={t("shortvidYieldShareHint", { base: Math.round((base ?? share) * 100) })}>
             <span>{Math.round(share * 100)}%</span>
           </Tooltip>
         );
@@ -209,34 +209,34 @@ export default function OmarTab() {
     return !needle || row.query.toLowerCase().includes(needle) || row.movie.toLowerCase().includes(needle);
   });
 
-  const searchColumns: ResponsiveColumnType<OmarSearchQuery>[] = [
+  const searchColumns: ResponsiveColumnType<ShortVidSearchQuery>[] = [
     {
-      title: t("omarSearchColQuery"),
+      title: t("shortvidSearchColQuery"),
       dataIndex: "query",
       mobilePrimary: true,
       render: (v: string) => <span className="font-medium break-words">{v}</span>,
     },
-    { title: t("omarColMovie"), dataIndex: "movie", render: (v: string) => v || "—" },
+    { title: t("shortvidColMovie"), dataIndex: "movie", render: (v: string) => v || "—" },
     {
-      title: t("omarSearchColSource"),
+      title: t("shortvidSearchColSource"),
       dataIndex: "source",
-      render: (v: OmarSearchQuery["source"]) => (
-        <Tag color={v === "custom" ? "purple" : v === "social" ? "blue" : undefined}>{t(`omarSearchSource_${v}`)}</Tag>
+      render: (v: ShortVidSearchQuery["source"]) => (
+        <Tag color={v === "custom" ? "purple" : v === "social" ? "blue" : undefined}>{t(`shortvidSearchSource_${v}`)}</Tag>
       ),
     },
     {
-      title: t("omarSearchColLast"),
+      title: t("shortvidSearchColLast"),
       key: "last",
-      render: (_: unknown, row: OmarSearchQuery) =>
-        row.last ? formatRelativeTime(row.last.at, t) : <Tag>{t("omarNotStarted")}</Tag>,
+      render: (_: unknown, row: ShortVidSearchQuery) =>
+        row.last ? formatRelativeTime(row.last.at, t) : <Tag>{t("shortvidNotStarted")}</Tag>,
     },
     {
-      title: t("omarSearchColVideos"),
+      title: t("shortvidSearchColVideos"),
       key: "videos",
       align: "right",
-      render: (_: unknown, row: OmarSearchQuery) =>
+      render: (_: unknown, row: ShortVidSearchQuery) =>
         row.last ? (
-          <Tooltip title={t("omarSearchVideosHint")}>
+          <Tooltip title={t("shortvidSearchVideosHint")}>
             <span>
               {fmtNumber(row.last.videos)} <span className="text-xs text-[var(--muted)]">({fmtNumber(row.last.published)})</span>
             </span>
@@ -249,7 +249,7 @@ export default function OmarTab() {
       title: "",
       key: "actions",
       mobileHidden: true,
-      render: (_: unknown, row: OmarSearchQuery) =>
+      render: (_: unknown, row: ShortVidSearchQuery) =>
         row.source === "custom" && row.id ? (
           <Button
             size="small"
@@ -263,32 +263,32 @@ export default function OmarTab() {
     },
   ];
 
-  const hashtagColumns: ResponsiveColumnType<OmarHashtagProgress>[] = [
+  const hashtagColumns: ResponsiveColumnType<ShortVidHashtagProgress>[] = [
     {
       title: "Hashtag",
       dataIndex: "hashtag",
       mobilePrimary: true,
       render: (v: string) => <span className="font-medium break-words">{v}</span>,
     },
-    { title: t("omarColMovie"), dataIndex: "movie", render: (v: string | null) => v ?? "—" },
-    { title: t("omarColPages"), dataIndex: "pages", align: "right", render: (v: number) => fmtNumber(v) },
+    { title: t("shortvidColMovie"), dataIndex: "movie", render: (v: string | null) => v ?? "—" },
+    { title: t("shortvidColPages"), dataIndex: "pages", align: "right", render: (v: number) => fmtNumber(v) },
     {
-      title: t("omarColVideos"),
+      title: t("shortvidColVideos"),
       key: "videos",
       align: "right",
-      render: (_: unknown, row: OmarHashtagProgress) => (
-        <Tooltip title={t("omarColVideosHint")}>
+      render: (_: unknown, row: ShortVidHashtagProgress) => (
+        <Tooltip title={t("shortvidColVideosHint")}>
           <span>~{fmtNumber(row.pages * 20)}</span>
         </Tooltip>
       ),
     },
     {
-      title: t("omarColTiktokVideos"),
+      title: t("shortvidColTiktokVideos"),
       key: "tiktok",
       align: "right",
-      render: (_: unknown, row: OmarHashtagProgress) =>
+      render: (_: unknown, row: ShortVidHashtagProgress) =>
         row.video_count ? (
-          <Tooltip title={t("omarColTiktokVideosHint")}>
+          <Tooltip title={t("shortvidColTiktokVideosHint")}>
             <span>
               {fmtNumber(row.video_count)}{" "}
               <span className="text-xs text-[var(--muted)]">
@@ -301,19 +301,19 @@ export default function OmarTab() {
         ),
     },
     {
-      title: t("omarColStatus"),
+      title: t("shortvidColStatus"),
       key: "status",
-      render: (_: unknown, row: OmarHashtagProgress) =>
+      render: (_: unknown, row: ShortVidHashtagProgress) =>
         row.missing_at ? (
-          <Tooltip title={t("omarMissingHint")}>
-            <Tag color="orange">{t("omarMissing", { time: formatRelativeTime(row.missing_at, t) })}</Tag>
+          <Tooltip title={t("shortvidMissingHint")}>
+            <Tag color="orange">{t("shortvidMissing", { time: formatRelativeTime(row.missing_at, t) })}</Tag>
           </Tooltip>
         ) : row.done_at ? (
-          <Tag color="green">{t("omarDone", { time: formatRelativeTime(row.done_at, t) })}</Tag>
+          <Tag color="green">{t("shortvidDone", { time: formatRelativeTime(row.done_at, t) })}</Tag>
         ) : row.pages > 0 ? (
-          <Tag color="blue">{t("omarInProgress")}</Tag>
+          <Tag color="blue">{t("shortvidInProgress")}</Tag>
         ) : (
-          <Tag>{t("omarNotStarted")}</Tag>
+          <Tag>{t("shortvidNotStarted")}</Tag>
         ),
     },
   ];
@@ -322,19 +322,19 @@ export default function OmarTab() {
     <div className="flex flex-col gap-4">
       <DashboardCard
         loading={status.isLoading}
-        title={<CardHeading icon={<ApiOutlined />} title={t("omarTitle")} desc={t("omarDesc")} />}
+        title={<CardHeading icon={<ApiOutlined />} title={t("shortvidTitle")} desc={t("shortvidDesc")} />}
       >
         <div className="grid gap-6 lg:grid-cols-2">
           <div className="flex flex-col gap-3">
             <div className="flex flex-wrap items-center gap-2">
-              <Typography.Text strong>{t("omarKey")}</Typography.Text>
-              {data?.key_set ? <Tag color="green">{t("omarKeySet")}</Tag> : <Tag color="red">{t("omarKeyMissing")}</Tag>}
+              <Typography.Text strong>{t("shortvidKey")}</Typography.Text>
+              {data?.key_set ? <Tag color="green">{t("shortvidKeySet")}</Tag> : <Tag color="red">{t("shortvidKeyMissing")}</Tag>}
               {usage?.plan && <Tag>{usage.plan}</Tag>}
               {usage?.status && <Tag color={usage.status === "active" ? "blue" : "orange"}>{usage.status}</Tag>}
             </div>
             <Space.Compact className="w-full">
               <Input.Password
-                placeholder={t("omarKeyPlaceholder")}
+                placeholder={t("shortvidKeyPlaceholder")}
                 value={newKey}
                 onChange={(e) => setNewKey(e.target.value)}
                 autoComplete="off"
@@ -343,20 +343,24 @@ export default function OmarTab() {
                 {t("save")}
               </Button>
             </Space.Compact>
-            {usage?.expires_at && (
-              <Typography.Text type="secondary" className="text-xs">
-                {t("omarExpires", { date: new Date(usage.expires_at).toLocaleDateString() })}
+            {/* ShortVid trả trước theo credit (không có hạn gói): số credit còn lại đọc từ header của request gần nhất. */}
+            {typeof usage?.credits_remaining === "number" && (
+              <Typography.Text type={usage.credits_remaining < 20_000 ? "danger" : "secondary"} className="text-xs">
+                {t("shortvidCredits", {
+                  credits: fmtNumber(usage.credits_remaining),
+                  usd: (usage.credits_remaining / 10_000).toFixed(2),
+                })}
               </Typography.Text>
             )}
           </div>
 
           <div className="flex flex-col gap-2">
-            <Typography.Text strong>{t("omarQuotaToday")}</Typography.Text>
+            <Typography.Text strong>{t("shortvidQuotaToday")}</Typography.Text>
             {day ? (
               <>
                 <Progress percent={dayPct} status={dayPct >= 100 ? "exception" : "active"} />
                 <Typography.Text type="secondary" className="text-xs">
-                  {t("omarQuotaLine", {
+                  {t("shortvidQuotaLine", {
                     used: fmtNumber(day.used),
                     limit: fmtNumber(day.limit),
                     remaining: fmtNumber(day.remaining),
@@ -366,11 +370,11 @@ export default function OmarTab() {
                 </Typography.Text>
               </>
             ) : (
-              <Typography.Text type="secondary">{t("omarQuotaUnknown")}</Typography.Text>
+              <Typography.Text type="secondary">{t("shortvidQuotaUnknown")}</Typography.Text>
             )}
             <div className="mt-2 flex flex-wrap items-center gap-2">
-              <Typography.Text strong>{t("omarRateCap")}</Typography.Text>
-              <Hint text={t("omarRateCapHint", { plan: fmtNumber(usage?.minute?.limit) })} />
+              <Typography.Text strong>{t("shortvidRateCap")}</Typography.Text>
+              <Hint text={t("shortvidRateCapHint", { plan: fmtNumber(usage?.minute?.limit) })} />
             </div>
             <Space.Compact>
               <InputNumber
@@ -391,11 +395,11 @@ export default function OmarTab() {
               </Button>
             </Space.Compact>
             <Typography.Text type="secondary" className="text-xs">
-              {t("omarRateCapActive", {
+              {t("shortvidRateCapActive", {
                 value:
                   savedRateCap > 0 && (!planPerMinute || savedRateCap < planPerMinute)
                     ? fmtNumber(savedRateCap)
-                    : `${fmtNumber(planPerMinute)} (${t("omarRateCapPlan")})`,
+                    : `${fmtNumber(planPerMinute)} (${t("shortvidRateCapPlan")})`,
               })}
             </Typography.Text>
           </div>
@@ -410,17 +414,17 @@ export default function OmarTab() {
               disabled={!data?.key_set || round?.running}
               onClick={() => run.mutate()}
             >
-              {t("omarRunNow")}
+              {t("shortvidRunNow")}
             </Button>
             <Button danger icon={<PauseCircleOutlined />} loading={stop.isPending} disabled={!round?.running || round?.stop_requested} onClick={() => stop.mutate()}>
-              {round?.stop_requested ? t("omarStopping") : t("omarStop")}
+              {round?.stop_requested ? t("shortvidStopping") : t("shortvidStop")}
             </Button>
             {round?.running ? (
-              <Tag color="processing">{t("omarRunning", { trigger: round.trigger ?? "" })}</Tag>
+              <Tag color="processing">{t("shortvidRunning", { trigger: round.trigger ?? "" })}</Tag>
             ) : data?.paused ? (
-              <Tooltip title={t(data.paused.reason === "key" ? "omarPausedKeyHint" : "omarPausedQuotaHint")}>
+              <Tooltip title={t(data.paused.reason === "key" ? "shortvidPausedKeyHint" : "shortvidPausedQuotaHint")}>
                 <Tag color="warning">
-                  {t(data.paused.reason === "key" ? "omarPausedKey" : "omarPausedQuota", {
+                  {t(data.paused.reason === "key" ? "shortvidPausedKey" : "shortvidPausedQuota", {
                     time: new Date(data.paused.until).toLocaleString(locale === "vi" ? "vi-VN" : "en-US", {
                       hour: "2-digit",
                       minute: "2-digit",
@@ -431,19 +435,19 @@ export default function OmarTab() {
                 </Tag>
               </Tooltip>
             ) : (
-              <Tag>{t("omarIdle")}</Tag>
+              <Tag>{t("shortvidIdle")}</Tag>
             )}
             <Typography.Text type="secondary" className="text-xs">
-              {data?.mode === "continuous" ? t("omarModeContinuous") : t("omarModeSpread")}
+              {data?.mode === "continuous" ? t("shortvidModeContinuous") : t("shortvidModeSpread")}
             </Typography.Text>
           </div>
           {round && (round.running || round.finished_at) && (
             <Typography.Text type="secondary" className="text-xs">
               {round.running
-                ? t("omarRoundSince", { time: formatRelativeTime(round.started_at, t) })
-                : t("omarRoundFinished", { time: formatRelativeTime(round.finished_at, t) })}
+                ? t("shortvidRoundSince", { time: formatRelativeTime(round.started_at, t) })
+                : t("shortvidRoundFinished", { time: formatRelativeTime(round.finished_at, t) })}
               {" · "}
-              {t("omarRoundStats", {
+              {t("shortvidRoundStats", {
                 requests: fmtNumber(round.stats.requests),
                 budget: fmtNumber(round.stats.budget),
                 videos: fmtNumber(round.stats.videos),
@@ -454,21 +458,21 @@ export default function OmarTab() {
               })}
               {round.stats.stopped ? ` · ${round.stats.stopped}` : ""}
               {round.stats.search_requests
-                ? ` · ${t("omarRoundSearch", {
+                ? ` · ${t("shortvidRoundSearch", {
                     queries: fmtNumber(round.stats.search_queries),
                     requests: fmtNumber(round.stats.search_requests),
                     videos: fmtNumber(round.stats.search_videos),
                   })}`
                 : ""}
               {round.stats.channel_requests
-                ? ` · ${t("omarRoundChannels", {
+                ? ` · ${t("shortvidRoundChannels", {
                     channels: fmtNumber(round.stats.channels),
                     videos: fmtNumber(round.stats.channel_videos),
                     matched: fmtNumber(round.stats.channel_matched),
                   })}`
                 : ""}
               {round.stats.comment_requests
-                ? ` · ${t("omarRoundComments", {
+                ? ` · ${t("shortvidRoundComments", {
                     videos: fmtNumber(round.stats.comment_videos),
                     comments: fmtNumber(round.stats.comments),
                     replies: fmtNumber(round.stats.comment_replies),
@@ -482,7 +486,7 @@ export default function OmarTab() {
 
       <DashboardCard
         loading={yieldQuery.isLoading}
-        title={<CardHeading icon={<BarChartOutlined />} title={t("omarYieldTitle")} desc={t("omarYieldDesc")} />}
+        title={<CardHeading icon={<BarChartOutlined />} title={t("shortvidYieldTitle")} desc={t("shortvidYieldDesc")} />}
       >
         {isMobile ? (
           <MobileTable
@@ -505,13 +509,13 @@ export default function OmarTab() {
 
       <DashboardCard
         loading={trending.isLoading}
-        title={<CardHeading icon={<FireOutlined />} title={t("omarTrendingTitle")} desc={t("omarTrendingDesc")} />}
+        title={<CardHeading icon={<FireOutlined />} title={t("shortvidTrendingTitle")} desc={t("shortvidTrendingDesc")} />}
       >
         {trendingVideos.length === 0 ? (
-          <Typography.Text type="secondary">{t("omarTrendingEmpty")}</Typography.Text>
+          <Typography.Text type="secondary">{t("shortvidTrendingEmpty")}</Typography.Text>
         ) : (
           <div className="flex flex-col gap-5">
-            <OmarTrendingChart videos={trendingVideos} />
+            <ShortVidTrendingChart videos={trendingVideos} />
             <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
               {trendingMovies.map((movie) => (
                 <div key={movie.movie_id}>
@@ -519,13 +523,13 @@ export default function OmarTab() {
                   <ul className="mt-1 flex flex-col gap-1">
                     {movie.videos.slice(0, 5).map((video) => (
                       <li key={video.video_id} className="flex flex-wrap items-center gap-2 text-sm">
-                        {video.hot && <Tag color="red">{t("omarTrendingHot")}</Tag>}
+                        {video.hot && <Tag color="red">{t("shortvidTrendingHot")}</Tag>}
                         <a href={video.url ?? "#"} target="_blank" rel="noreferrer" className="max-w-[420px] break-words">
                           {video.desc || video.video_id}
                         </a>
                         <span className="text-xs text-[var(--muted)]">
                           @{video.author ?? "?"} ·{" "}
-                          {t("omarTrendingSpeed", {
+                          {t("shortvidTrendingSpeed", {
                             views: fmtNumber(Math.round(video.velocity.views_per_hour)),
                             comments: fmtNumber(Math.round(video.velocity.comments_per_hour)),
                           })}
@@ -545,10 +549,10 @@ export default function OmarTab() {
         title={
           <CardHeading
             icon={<SearchOutlined />}
-            title={t("omarSearchTitle")}
+            title={t("shortvidSearchTitle")}
             desc={
               search.data
-                ? t("omarSearchDesc", {
+                ? t("shortvidSearchDesc", {
                     n: search.data.queries.length,
                     modes: search.data.modes.map((mode) => `${mode.date ?? "all"}/${mode.sort ?? "relevance"}`).join(" + "),
                     pages: search.data.pages,
@@ -562,7 +566,7 @@ export default function OmarTab() {
           <Select
             showSearch
             className="min-w-[220px]"
-            placeholder={t("omarTagMovie")}
+            placeholder={t("shortvidTagMovie")}
             value={searchMovie}
             onChange={setSearchMovie}
             optionFilterProp="label"
@@ -570,7 +574,7 @@ export default function OmarTab() {
           />
           <Input
             className="max-w-[320px]"
-            placeholder={t("omarSearchPlaceholder")}
+            placeholder={t("shortvidSearchPlaceholder")}
             value={newQuery}
             onChange={(e) => setNewQuery(e.target.value)}
             onPressEnter={() => searchMovie && newQuery.trim() && addQuery.mutate()}
@@ -582,13 +586,13 @@ export default function OmarTab() {
             loading={addQuery.isPending}
             onClick={() => addQuery.mutate()}
           >
-            {t("omarSearchAdd")}
+            {t("shortvidSearchAdd")}
           </Button>
           <Input
             allowClear
             className="ml-auto max-w-[220px]"
             prefix={<SearchOutlined />}
-            placeholder={t("omarSearchFilter")}
+            placeholder={t("shortvidSearchFilter")}
             value={searchFilter}
             onChange={(e) => setSearchFilter(e.target.value)}
           />
@@ -601,7 +605,7 @@ export default function OmarTab() {
             columns={searchColumns}
           />
         ) : (
-        <Table<OmarSearchQuery>
+        <Table<ShortVidSearchQuery>
           size="small"
           rowKey={(row) => `${row.movie_id}:${row.query}`}
           loading={search.isLoading}
@@ -618,10 +622,10 @@ export default function OmarTab() {
         title={
           <CardHeading
             icon={<UserOutlined />}
-            title={t("omarChannelsTitle")}
+            title={t("shortvidChannelsTitle")}
             desc={
               data?.channels
-                ? t("omarChannelsDesc", { max: data.channels.max_channels, days: data.channels.days })
+                ? t("shortvidChannelsDesc", { max: data.channels.max_channels, days: data.channels.days })
                 : undefined
             }
           />
@@ -629,14 +633,14 @@ export default function OmarTab() {
       >
         <div className="flex flex-col gap-3">
           <div className="flex flex-wrap items-center gap-2">
-            <Tag>{t("omarChannelsTracked", { n: fmtNumber(data?.channels?.tracked) })}</Tag>
-            <Tag color="blue">{t("omarChannelsToday", { n: fmtNumber(data?.channels?.done_today) })}</Tag>
+            <Tag>{t("shortvidChannelsTracked", { n: fmtNumber(data?.channels?.tracked) })}</Tag>
+            <Tag color="blue">{t("shortvidChannelsToday", { n: fmtNumber(data?.channels?.done_today) })}</Tag>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Input
               className="max-w-[320px]"
               prefix="@"
-              placeholder={t("omarChannelPlaceholder")}
+              placeholder={t("shortvidChannelPlaceholder")}
               value={channel}
               onChange={(e) => setChannel(e.target.value.replace(/^@/, ""))}
               onPressEnter={() => channel.trim() && crawlChannel.mutate()}
@@ -647,14 +651,14 @@ export default function OmarTab() {
               loading={crawlChannel.isPending}
               onClick={() => crawlChannel.mutate()}
             >
-              {t("omarChannelCrawl")}
+              {t("shortvidChannelCrawl")}
             </Button>
-            <Hint text={t("omarChannelHint")} />
+            <Hint text={t("shortvidChannelHint")} />
           </div>
           {!!data?.channels?.latest.length && (
             <div className="flex flex-wrap gap-1.5">
               <Typography.Text type="secondary" className="text-xs">
-                {t("omarChannelsLatest")}
+                {t("shortvidChannelsLatest")}
               </Typography.Text>
               {data.channels.latest.map((item) => (
                 <Tooltip
@@ -676,10 +680,10 @@ export default function OmarTab() {
         title={
           <CardHeading
             icon={<CommentOutlined />}
-            title={t("omarCommentsTitle")}
+            title={t("shortvidCommentsTitle")}
             desc={
               comments
-                ? t("omarCommentsDesc", {
+                ? t("shortvidCommentsDesc", {
                     weekday: WEEKDAYS[locale === "vi" ? "vi" : "en"][comments.weekday] ?? String(comments.weekday),
                     time: comments.time,
                     top: comments.top_per_hashtag,
@@ -695,7 +699,7 @@ export default function OmarTab() {
             disabled={!data?.key_set}
             onClick={() => runComments.mutate()}
           >
-            {t("omarCommentsRun")}
+            {t("shortvidCommentsRun")}
           </Button>
         }
       >
@@ -704,7 +708,7 @@ export default function OmarTab() {
           <div className="flex flex-col gap-2">
             <div className="flex flex-wrap items-center gap-2">
               <Typography.Text>
-                {t("omarCommentsLast", {
+                {t("shortvidCommentsLast", {
                   week: job.week,
                   trigger: job.trigger,
                   time: formatRelativeTime(job.queued_at, t),
@@ -713,9 +717,9 @@ export default function OmarTab() {
                 })}
               </Typography.Text>
               {job.finished_at ? (
-                <Tag color="green">{t("omarCommentsDone", { time: formatRelativeTime(job.finished_at, t) })}</Tag>
+                <Tag color="green">{t("shortvidCommentsDone", { time: formatRelativeTime(job.finished_at, t) })}</Tag>
               ) : (
-                <Tag color="blue">{t("omarInProgress")}</Tag>
+                <Tag color="blue">{t("shortvidInProgress")}</Tag>
               )}
             </div>
             {job.videos + job.kept_from_before > 0 && (
@@ -727,7 +731,7 @@ export default function OmarTab() {
               />
             )}
             <Typography.Text type="secondary" className="text-xs">
-              {t("omarCommentsProgress", {
+              {t("shortvidCommentsProgress", {
                 comments: fmtNumber(job.comments),
                 replies: fmtNumber(job.replies),
                 published: fmtNumber(job.published),
@@ -736,7 +740,7 @@ export default function OmarTab() {
             </Typography.Text>
           </div>
         ) : (
-          <Typography.Text type="secondary">{t("omarCommentsNone")}</Typography.Text>
+          <Typography.Text type="secondary">{t("shortvidCommentsNone")}</Typography.Text>
         )}
       </DashboardCard>
 
@@ -744,10 +748,10 @@ export default function OmarTab() {
         title={
           <CardHeading
             icon={<TagsOutlined />}
-            title={t("omarProgressTitle")}
+            title={t("shortvidProgressTitle")}
             desc={
               data
-                ? t("omarProgressDesc", {
+                ? t("shortvidProgressDesc", {
                     finished: data.totals.finished,
                     started: data.totals.started,
                     total: data.totals.hashtags,
@@ -762,7 +766,7 @@ export default function OmarTab() {
           <Select
             showSearch
             className="min-w-[240px]"
-            placeholder={t("omarTagMovie")}
+            placeholder={t("shortvidTagMovie")}
             value={tagMovie}
             onChange={setTagMovie}
             loading={movies.isLoading}
@@ -772,7 +776,7 @@ export default function OmarTab() {
           <Input
             className="max-w-[320px]"
             prefix="#"
-            placeholder={t("omarTagPlaceholder")}
+            placeholder={t("shortvidTagPlaceholder")}
             value={newTag}
             onChange={(e) => setNewTag(e.target.value.replace(/^#/, ""))}
             onPressEnter={() => tagMovie && newTag.trim() && addTag.mutate()}
@@ -784,9 +788,9 @@ export default function OmarTab() {
             loading={addTag.isPending}
             onClick={() => addTag.mutate()}
           >
-            {t("omarTagAdd")}
+            {t("shortvidTagAdd")}
           </Button>
-          <Hint text={t("omarTagHint")} />
+          <Hint text={t("shortvidTagHint")} />
         </div>
         {isMobile ? (
           <MobileTable
@@ -796,7 +800,7 @@ export default function OmarTab() {
             columns={hashtagColumns}
           />
         ) : (
-        <Table<OmarHashtagProgress>
+        <Table<ShortVidHashtagProgress>
           size="small"
           rowKey="keyword_id"
           loading={status.isLoading}
@@ -817,7 +821,7 @@ function CommentKeywordPicker() {
   const { message } = App.useApp();
   const queryClient = useQueryClient();
   const { data: keywords, isLoading: keywordsLoading } = useKeywords("tiktok");
-  const saved = useQuery({ queryKey: ["omar", "comment-keywords"], queryFn: api.omarCommentKeywords });
+  const saved = useQuery({ queryKey: ["shortvid", "comment-keywords"], queryFn: api.shortvidCommentKeywords });
   // Bản nháp chưa lưu; null = đang hiện đúng danh sách đã lưu.
   const [draft, setDraft] = useState<string[] | null>(null);
   const value = draft ?? saved.data?.keyword_ids ?? [];
@@ -844,12 +848,12 @@ function CommentKeywordPicker() {
   }, [keywords]);
 
   const save = useMutation({
-    mutationFn: () => api.setOmarCommentKeywords(selectedIds, allVideos),
+    mutationFn: () => api.setShortVidCommentKeywords(selectedIds, allVideos),
     onSuccess: (res) => {
-      queryClient.setQueryData(["omar", "comment-keywords"], res);
+      queryClient.setQueryData(["shortvid", "comment-keywords"], res);
       setDraft(null);
       setAllDraft(null);
-      message.success(res.keyword_ids.length ? t("omarCommentKeywordsSaved", { n: res.keyword_ids.length }) : t("omarCommentKeywordsReset"));
+      message.success(res.keyword_ids.length ? t("shortvidCommentKeywordsSaved", { n: res.keyword_ids.length }) : t("shortvidCommentKeywordsReset"));
     },
   });
   const dirty =
@@ -858,7 +862,7 @@ function CommentKeywordPicker() {
 
   return (
     <div className="mb-4 flex flex-col gap-1.5">
-      <span className="text-[11px] font-semibold tracking-wide text-[var(--muted)] uppercase">{t("omarCommentKeywords")}</span>
+      <span className="text-[11px] font-semibold tracking-wide text-[var(--muted)] uppercase">{t("shortvidCommentKeywords")}</span>
       <div className="flex gap-2">
         <TreeSelect
           multiple
@@ -870,26 +874,26 @@ function CommentKeywordPicker() {
           maxTagCount="responsive"
           className="min-w-0 flex-1"
           loading={keywordsLoading || saved.isLoading}
-          placeholder={t("omarCommentKeywordsPlaceholder", { n: hashtagCount })}
+          placeholder={t("shortvidCommentKeywordsPlaceholder", { n: hashtagCount })}
           value={value}
           onChange={(next) => setDraft(next as string[])}
           treeData={treeData}
         />
         <Button type="primary" disabled={!dirty} loading={save.isPending} onClick={() => save.mutate()}>
-          {t("omarCommentKeywordsSave")}
+          {t("shortvidCommentKeywordsSave")}
         </Button>
       </div>
-      <Tooltip title={selectedIds.length ? t("omarCommentAllVideosHint") : t("omarCommentAllVideosNeedKeywords")} placement="topLeft">
+      <Tooltip title={selectedIds.length ? t("shortvidCommentAllVideosHint") : t("shortvidCommentAllVideosNeedKeywords")} placement="topLeft">
         <Checkbox
           className="self-start"
           checked={allVideos && selectedIds.length > 0}
           disabled={selectedIds.length === 0}
           onChange={(e) => setAllDraft(e.target.checked)}
         >
-          {t("omarCommentAllVideos")}
+          {t("shortvidCommentAllVideos")}
         </Checkbox>
       </Tooltip>
-      <Hint text={allVideos && selectedIds.length > 0 ? t("omarCommentKeywordsHintAll") : t("omarCommentKeywordsHint")} />
+      <Hint text={allVideos && selectedIds.length > 0 ? t("shortvidCommentKeywordsHintAll") : t("shortvidCommentKeywordsHint")} />
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import { Area } from "@ant-design/plots";
 import { memo, useMemo } from "react";
-import type { OmarTrendingVideo } from "@/lib/types";
+import type { ShortVidTrendingVideo } from "@/lib/types";
 import { useColorTheme } from "@/theme/ThemeProvider";
 
 const VIEWS_COLOR = "#00c8d7";
@@ -25,7 +25,7 @@ function fmtNumber(n: number | null | undefined): string {
  * hiện tại - hình dạng "bật lên" là hình dạy thật của dữ liệu này. Số
  * giờ đã trôi qua (`span_hours`) quyết định vị trí điểm cuối.
  */
-function OmarTrendingChart({ videos }: { videos: OmarTrendingVideo[] }) {
+function ShortVidTrendingChart({ videos }: { videos: ShortVidTrendingVideo[] }) {
   const { theme } = useColorTheme();
   const isDark = theme === "dark";
 
@@ -107,4 +107,4 @@ function OmarTrendingChart({ videos }: { videos: OmarTrendingVideo[] }) {
   );
 }
 
-export default memo(OmarTrendingChart);
+export default memo(ShortVidTrendingChart);
