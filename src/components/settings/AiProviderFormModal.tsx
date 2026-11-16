@@ -33,6 +33,7 @@ export default function AiProviderFormModal({
         base_url: provider?.base_url ?? "",
         api_key: "",
         model: provider?.model ?? "",
+        reasoning_effort: provider?.reasoning_effort ?? "",
       });
     }
   }, [open, provider, form]);
@@ -98,6 +99,15 @@ export default function AiProviderFormModal({
               {t("aiFetchModels")}
             </Button>
           </div>
+        </Form.Item>
+        {/* Model suy luận (vd Meta Muse): phần "nghĩ" ẩn tính vào giới hạn token, không đặt mức thì câu trả lời ngắn có thể rỗng. */}
+        <Form.Item name="reasoning_effort" label={t("aiProviderReasoning")} extra={t("aiProviderReasoningHint")}>
+          <Select
+            options={[
+              { value: "", label: t("aiProviderReasoningNone") },
+              ...["minimal", "low", "medium", "high"].map((value) => ({ value, label: value })),
+            ]}
+          />
         </Form.Item>
       </Form>
     </Modal>

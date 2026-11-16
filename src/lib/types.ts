@@ -473,6 +473,7 @@ export interface AiProvider {
   base_url: string;
   api_key_set: boolean;
   model: string;
+  reasoning_effort: string;
   active: boolean;
   updated_at: string | null;
 }
@@ -482,6 +483,8 @@ export interface AiProviderInput {
   // Omit or blank to keep whatever secret is already stored.
   api_key?: string;
   model: string;
+  // Mức suy luận cho model suy luận; "" = không gửi.
+  reasoning_effort?: string;
 }
 
 // Ask the provider for its model list (GET {base_url}/models); a blank api_key uses the stored key of `key`.
