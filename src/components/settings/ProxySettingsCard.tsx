@@ -83,7 +83,9 @@ const SECTIONS: SectionMeta[] = [
     title: "crawlSectionPerformance",
     desc: "crawlSectionPerformanceDesc",
     fields: [
-      { name: "youtube_lanes", kind: "int", label: "crawlYoutubeLanes", hint: "crawlYoutubeLanesHint", min: 1, max: 64 },
+      { name: "lanes_total", kind: "int", label: "crawlLanesTotal", hint: "crawlLanesTotalHint", min: 4, max: 128 },
+      { name: "youtube_lanes", kind: "int", label: "crawlYoutubeLanes", hint: "crawlYoutubeLanesHint", min: 0, max: 64 },
+      { name: "public_pages_workers", kind: "int", label: "crawlPublicWorkers", hint: "crawlPublicWorkersHint", min: 0, max: 32 },
       { name: "youtube_filter_concurrency", kind: "int", label: "crawlYoutubeFilters", hint: "crawlYoutubeFiltersHint", min: 1, max: 12 },
       { name: "youtube_search_pages", kind: "int", label: "crawlYoutubePages", hint: "crawlYoutubePagesHint", min: 1, max: 200 },
       { name: "youtube_reply_pages", kind: "int", label: "crawlYoutubeReplyPages", hint: "crawlYoutubeReplyPagesHint", min: 0, max: 500 },

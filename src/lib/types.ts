@@ -514,6 +514,8 @@ export interface ProxySettings {
   tiktok_synthetic_provider: string;
   tiktok_hashtag_max_attempts: number;
   tiktok_comments_max_attempts: number;
+  lanes_total: number;
+  public_pages_workers: number;
   youtube_lanes: number;
   youtube_filter_concurrency: number;
   youtube_search_pages: number;
