@@ -102,6 +102,10 @@ const SECTIONS: SectionMeta[] = [
       { name: "youtube_continuous", kind: "switch", label: "crawlYoutubeContinuous", hint: "crawlYoutubeContinuousHint" },
       { name: "youtube_transcripts", kind: "switch", label: "crawlYoutubeTranscripts", hint: "crawlYoutubeTranscriptsHint" },
       { name: "threads_channels_continuous", kind: "switch", label: "crawlThreadsContinuous", hint: "crawlThreadsContinuousHint" },
+      { name: "public_comments_proxy_id", kind: "int", label: "crawlPubCommentsProxy", hint: "crawlPubCommentsProxyHint", min: 1, max: 1000000 },
+      { name: "public_comments_daily_cap", kind: "int", label: "crawlPubCommentsDaily", hint: "crawlPubCommentsDailyHint", min: 1, max: 100000 },
+      { name: "public_comments_interval_seconds", kind: "float", label: "crawlPubCommentsGap", hint: "crawlPubCommentsGapHint", unit: "unitSeconds", min: 1, max: 600 },
+      { name: "public_comments_max_requests", kind: "int", label: "crawlPubCommentsJob", hint: "crawlPubCommentsJobHint", min: 1, max: 100000 },
     ],
   },
 ];

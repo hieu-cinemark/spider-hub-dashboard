@@ -530,6 +530,10 @@ export interface ProxySettings {
   youtube_continuous: boolean;
   youtube_transcripts: boolean;
   threads_channels_continuous: boolean;
+  public_comments_proxy_id: number;
+  public_comments_daily_cap: number;
+  public_comments_interval_seconds: number;
+  public_comments_max_requests: number;
 }
 
 export interface ProxySettingsResponse {
