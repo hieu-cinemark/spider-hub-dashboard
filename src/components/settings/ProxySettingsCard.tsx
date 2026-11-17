@@ -80,11 +80,6 @@ const SECTIONS: SectionMeta[] = [
     ],
   },
   {
-    title: "proxySectionFbLoggedOut",
-    desc: "proxySectionFbLoggedOutDesc",
-    fields: [{ name: "fb_logged_out_metrics_enabled", kind: "switch", label: "proxyFbLoggedOut", hint: "proxyFbLoggedOutHint" }],
-  },
-  {
     title: "crawlSectionPerformance",
     desc: "crawlSectionPerformanceDesc",
     fields: [
@@ -98,7 +93,6 @@ const SECTIONS: SectionMeta[] = [
       { name: "public_pages_queue_target", kind: "int", label: "crawlPublicQueue", hint: "crawlPublicQueueHint", min: 0, max: 500 },
       { name: "threads_channel_workers", kind: "int", label: "crawlThreadsWorkers", hint: "crawlThreadsWorkersHint", min: 0, max: 16 },
       { name: "threads_channels_queue_target", kind: "int", label: "crawlThreadsQueue", hint: "crawlThreadsQueueHint", min: 0, max: 200 },
-      { name: "facebook_account_page_feed", kind: "switch", label: "crawlFbAccountPageFeed", hint: "crawlFbAccountPageFeedHint" },
       { name: "youtube_continuous", kind: "switch", label: "crawlYoutubeContinuous", hint: "crawlYoutubeContinuousHint" },
       { name: "youtube_transcripts", kind: "switch", label: "crawlYoutubeTranscripts", hint: "crawlYoutubeTranscriptsHint" },
       { name: "threads_channels_continuous", kind: "switch", label: "crawlThreadsContinuous", hint: "crawlThreadsContinuousHint" },
@@ -135,6 +129,27 @@ const SECTIONS: SectionMeta[] = [
       { name: "fb_logged_out_block_strikes", kind: "int", label: "pubFbLoggedOutBlockStrikes", hint: "pubFbLoggedOutBlockStrikesHint", min: 1, max: 20 },
       { name: "fb_logged_out_cooldown_minutes", kind: "int", label: "pubFbLoggedOutCooldownMinutes", hint: "pubFbLoggedOutCooldownMinutesHint", min: 1, max: 1440 },
       { name: "youtube_proxy_rest_seconds", kind: "int", label: "pubYoutubeProxyRestSeconds", hint: "pubYoutubeProxyRestSecondsHint", min: 10, max: 86400 },
+    ],
+  },
+  {
+    title: "crawlSectionBudget",
+    desc: "crawlSectionBudgetDesc",
+    fields: [
+      { name: "fb_daily_request_cap", kind: "int", label: "budFbDailyRequestCap", hint: "budFbDailyRequestCapHint", min: 0, max: 100000 },
+      { name: "fb_cap_rest_until", kind: "text", label: "budFbCapRestUntil", hint: "budFbCapRestUntilHint" },
+      { name: "fb_budget_periods", kind: "text", label: "budFbBudgetPeriods", hint: "budFbBudgetPeriodsHint" },
+      { name: "fb_fresh_share", kind: "float", label: "budFbFreshShare", hint: "budFbFreshShareHint", min: 0, max: 1 },
+      { name: "fb_hourly_request_cap", kind: "int", label: "budFbHourlyRequestCap", hint: "budFbHourlyRequestCapHint", min: 0, max: 100000 },
+      { name: "threads_hourly_request_cap", kind: "int", label: "budThreadsHourlyRequestCap", hint: "budThreadsHourlyRequestCapHint", min: 0, max: 100000 },
+      { name: "fb_fresh_periods", kind: "text", label: "budFbFreshPeriods", hint: "budFbFreshPeriodsHint" },
+      { name: "fb_deep_periods", kind: "text", label: "budFbDeepPeriods", hint: "budFbDeepPeriodsHint" },
+      { name: "fb_new_account_ramp", kind: "text", label: "budFbNewAccountRamp", hint: "budFbNewAccountRampHint" },
+      { name: "fb_new_account_daily_cap", kind: "int", label: "budFbNewAccountDailyCap", hint: "budFbNewAccountDailyCapHint", min: 0, max: 100000 },
+      { name: "fb_restart_daily_caps", kind: "text", label: "budFbRestartDailyCaps", hint: "budFbRestartDailyCapsHint" },
+      { name: "fb_restart_idle_days", kind: "int", label: "budFbRestartIdleDays", hint: "budFbRestartIdleDaysHint", min: 0, max: 365 },
+      { name: "fb_run_max_requests", kind: "int", label: "budFbRunMaxRequests", hint: "budFbRunMaxRequestsHint", min: 0, max: 100000 },
+      { name: "fb_run_max_seconds", kind: "int", label: "budFbRunMaxSeconds", hint: "budFbRunMaxSecondsHint", min: 0, max: 86400 },
+      { name: "fb_run_rest_seconds", kind: "int", label: "budFbRunRestSeconds", hint: "budFbRunRestSecondsHint", min: 0, max: 86400 },
     ],
   },
 ];

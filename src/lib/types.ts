@@ -514,7 +514,6 @@ export interface ProxySettings {
   tiktok_synthetic_provider: string;
   tiktok_hashtag_max_attempts: number;
   tiktok_comments_max_attempts: number;
-  fb_logged_out_metrics_enabled: boolean;
   youtube_lanes: number;
   youtube_filter_concurrency: number;
   youtube_search_pages: number;
@@ -522,7 +521,6 @@ export interface ProxySettings {
   public_pages_per_proxy: number;
   public_pages_gap_seconds: number;
   threads_channel_workers: number;
-  facebook_account_page_feed: boolean;
   public_pages_queue_target: number;
   threads_channels_queue_target: number;
   youtube_comments_per_round: number;
@@ -534,6 +532,21 @@ export interface ProxySettings {
   public_comments_daily_cap: number;
   public_comments_interval_seconds: number;
   public_comments_max_requests: number;
+  fb_daily_request_cap: number;
+  fb_cap_rest_until: string;
+  fb_budget_periods: string;
+  fb_fresh_share: number;
+  fb_hourly_request_cap: number;
+  threads_hourly_request_cap: number;
+  fb_fresh_periods: string;
+  fb_deep_periods: string;
+  fb_new_account_ramp: string;
+  fb_new_account_daily_cap: number;
+  fb_restart_daily_caps: string;
+  fb_restart_idle_days: number;
+  fb_run_max_requests: number;
+  fb_run_max_seconds: number;
+  fb_run_rest_seconds: number;
   fb_public_discovery_proxy_id: number;
   fb_public_pages_block_strikes: number;
   fb_public_pages_cooldown_minutes: number;
