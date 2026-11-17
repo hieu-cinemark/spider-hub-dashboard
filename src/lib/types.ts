@@ -447,7 +447,7 @@ export interface AiPrompt {
   default_system_prompt: string;
 }
 
-/** Kira đã bỏ (2026-10-21) - report luôn do Bee viết; trường này chỉ còn để tương thích API. */
+/** AI đã bỏ (2026-10-21) - report luôn do Bee viết; trường này chỉ còn để tương thích API. */
 export interface AiSettings {
   enabled: boolean;
   // Model of the active provider ("" when none is active).
@@ -534,6 +534,29 @@ export interface ProxySettings {
   public_comments_daily_cap: number;
   public_comments_interval_seconds: number;
   public_comments_max_requests: number;
+  fb_public_discovery_proxy_id: number;
+  fb_public_pages_block_strikes: number;
+  fb_public_pages_cooldown_minutes: number;
+  fb_public_pages_max_pages: number;
+  fb_public_pages_since_days: number;
+  fb_public_pages_window_days: number;
+  fb_public_pages_ip_check_seconds: number;
+  fb_public_pages_request_interval: number;
+  fb_public_pages_max_pace: number;
+  fb_public_pages_min_rest_seconds: number;
+  fb_public_pages_doc_id: string;
+  fb_public_yield_to_search: boolean;
+  threads_channel_since_days: number;
+  threads_channel_max_pages: number;
+  threads_channel_request_interval: number;
+  threads_channel_cooldown_minutes: number;
+  threads_channel_rotating_retries: number;
+  fb_logged_out_proxy_ids: string;
+  fb_logged_out_delay_seconds: number;
+  fb_logged_out_jitter_seconds: number;
+  fb_logged_out_block_strikes: number;
+  fb_logged_out_cooldown_minutes: number;
+  youtube_proxy_rest_seconds: number;
 }
 
 export interface ProxySettingsResponse {

@@ -10,7 +10,7 @@ import type { TranslationKey } from "@/i18n/translations";
 import type { ProxySettings } from "@/lib/types";
 import Hint from "@/components/Hint";
 
-type FieldKind = "int" | "float" | "url" | "provider" | "switch";
+type FieldKind = "int" | "float" | "url" | "provider" | "switch" | "text";
 
 interface FieldMeta {
   name: keyof ProxySettings;
@@ -108,6 +108,35 @@ const SECTIONS: SectionMeta[] = [
       { name: "public_comments_max_requests", kind: "int", label: "crawlPubCommentsJob", hint: "crawlPubCommentsJobHint", min: 1, max: 100000 },
     ],
   },
+  {
+    title: "crawlSectionPublic",
+    desc: "crawlSectionPublicDesc",
+    fields: [
+      { name: "fb_public_discovery_proxy_id", kind: "int", label: "pubFbPublicDiscoveryProxyId", hint: "pubFbPublicDiscoveryProxyIdHint", min: 1, max: 1000000 },
+      { name: "fb_public_pages_block_strikes", kind: "int", label: "pubFbPublicPagesBlockStrikes", hint: "pubFbPublicPagesBlockStrikesHint", min: 1, max: 20 },
+      { name: "fb_public_pages_cooldown_minutes", kind: "int", label: "pubFbPublicPagesCooldownMinutes", hint: "pubFbPublicPagesCooldownMinutesHint", min: 1, max: 1440 },
+      { name: "fb_public_pages_max_pages", kind: "int", label: "pubFbPublicPagesMaxPages", hint: "pubFbPublicPagesMaxPagesHint", min: 0, max: 1000 },
+      { name: "fb_public_pages_since_days", kind: "int", label: "pubFbPublicPagesSinceDays", hint: "pubFbPublicPagesSinceDaysHint", min: 1, max: 3650 },
+      { name: "fb_public_pages_window_days", kind: "int", label: "pubFbPublicPagesWindowDays", hint: "pubFbPublicPagesWindowDaysHint", min: 0, max: 365 },
+      { name: "fb_public_pages_ip_check_seconds", kind: "int", label: "pubFbPublicPagesIpCheckSeconds", hint: "pubFbPublicPagesIpCheckSecondsHint", min: 5, max: 3600 },
+      { name: "fb_public_pages_request_interval", kind: "float", label: "pubFbPublicPagesRequestInterval", hint: "pubFbPublicPagesRequestIntervalHint", min: 0.0, max: 120.0 },
+      { name: "fb_public_pages_max_pace", kind: "int", label: "pubFbPublicPagesMaxPace", hint: "pubFbPublicPagesMaxPaceHint", min: 1, max: 64 },
+      { name: "fb_public_pages_min_rest_seconds", kind: "int", label: "pubFbPublicPagesMinRestSeconds", hint: "pubFbPublicPagesMinRestSecondsHint", min: 0, max: 86400 },
+      { name: "fb_public_pages_doc_id", kind: "text", label: "pubFbPublicPagesDocId", hint: "pubFbPublicPagesDocIdHint" },
+      { name: "fb_public_yield_to_search", kind: "switch", label: "pubFbPublicYieldToSearch", hint: "pubFbPublicYieldToSearchHint" },
+      { name: "threads_channel_since_days", kind: "int", label: "pubThreadsChannelSinceDays", hint: "pubThreadsChannelSinceDaysHint", min: 1, max: 3650 },
+      { name: "threads_channel_max_pages", kind: "int", label: "pubThreadsChannelMaxPages", hint: "pubThreadsChannelMaxPagesHint", min: 1, max: 500 },
+      { name: "threads_channel_request_interval", kind: "float", label: "pubThreadsChannelRequestInterval", hint: "pubThreadsChannelRequestIntervalHint", min: 0.0, max: 120.0 },
+      { name: "threads_channel_cooldown_minutes", kind: "int", label: "pubThreadsChannelCooldownMinutes", hint: "pubThreadsChannelCooldownMinutesHint", min: 1, max: 1440 },
+      { name: "threads_channel_rotating_retries", kind: "int", label: "pubThreadsChannelRotatingRetries", hint: "pubThreadsChannelRotatingRetriesHint", min: 0, max: 20 },
+      { name: "fb_logged_out_proxy_ids", kind: "text", label: "pubFbLoggedOutProxyIds", hint: "pubFbLoggedOutProxyIdsHint" },
+      { name: "fb_logged_out_delay_seconds", kind: "float", label: "pubFbLoggedOutDelaySeconds", hint: "pubFbLoggedOutDelaySecondsHint", min: 0.0, max: 120.0 },
+      { name: "fb_logged_out_jitter_seconds", kind: "float", label: "pubFbLoggedOutJitterSeconds", hint: "pubFbLoggedOutJitterSecondsHint", min: 0.0, max: 60.0 },
+      { name: "fb_logged_out_block_strikes", kind: "int", label: "pubFbLoggedOutBlockStrikes", hint: "pubFbLoggedOutBlockStrikesHint", min: 1, max: 20 },
+      { name: "fb_logged_out_cooldown_minutes", kind: "int", label: "pubFbLoggedOutCooldownMinutes", hint: "pubFbLoggedOutCooldownMinutesHint", min: 1, max: 1440 },
+      { name: "youtube_proxy_rest_seconds", kind: "int", label: "pubYoutubeProxyRestSeconds", hint: "pubYoutubeProxyRestSecondsHint", min: 10, max: 86400 },
+    ],
+  },
 ];
 
 export default function ProxySettingsCard() {
@@ -126,6 +155,7 @@ export default function ProxySettingsCard() {
 
   function renderInput(field: FieldMeta) {
     if (field.kind === "url") return <Input placeholder="https://" />;
+    if (field.kind === "text") return <Input allowClear />;
     if (field.kind === "provider") return <Select options={providerOptions} loading={!providers} />;
     if (field.kind === "switch") return <Switch />;
     return (
@@ -174,7 +204,7 @@ export default function ProxySettingsCard() {
                     name={field.name}
                     label={t(field.label)}
                     valuePropName={field.kind === "switch" ? "checked" : "value"}
-                    rules={field.kind === "switch" ? [] : [{ required: true }, ...(field.kind === "url" ? [{ type: "url" as const }] : [])]}
+                    rules={field.kind === "switch" || field.kind === "text" ? [] : [{ required: true }, ...(field.kind === "url" ? [{ type: "url" as const }] : [])]}
                     extra={
                       <span>
                         {t(field.hint)}
