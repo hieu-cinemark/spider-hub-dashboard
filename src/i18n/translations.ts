@@ -756,6 +756,8 @@ const en = {
   crawlYoutubeCommentsPerRoundHint: "Related videos queued for comments every hour.",
   crawlCommentsMinCount: "Skip posts with fewer comments than",
   crawlCommentsMinCountHint: "Automatic comment rounds (Facebook, Threads, TikTok, YouTube, Omar) skip posts with fewer comments than this. 0 = off. Manually crawling one post still runs.",
+  crawlAuthorModelThreshold: "Author tier model: auto-label threshold",
+  crawlAuthorModelThresholdHint: "The local model labels authors without a tier (owned / pro / media / outsider) every day when its probability is at least this. Higher = fewer mistakes but fewer labels; unsure authors are left to the AI job.",
   crawlPublicPerProxy: "Facebook page reads per proxy",
   crawlPublicPerProxyHint: "Logged-out page reads at the same time on each 'public' proxy.",
   crawlPublicGap: "Gap between pages on one proxy",

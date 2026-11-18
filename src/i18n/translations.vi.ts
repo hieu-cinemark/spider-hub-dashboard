@@ -722,6 +722,8 @@ export const vi: Record<TranslationKey, string> = {
   crawlYoutubeCommentsPerRoundHint: "Số video liên quan được xếp cào bình luận mỗi giờ.",
   crawlCommentsMinCount: "Bỏ qua bài ít bình luận (dưới)",
   crawlCommentsMinCountHint: "Lượt cào bình luận tự động (Facebook, Threads, TikTok, YouTube, Omar) bỏ qua bài có ít hơn chừng này bình luận. 0 = tắt. Nút cào tay một bài vẫn chạy.",
+  crawlAuthorModelThreshold: "Mô hình tầng tác giả: ngưỡng tự gắn",
+  crawlAuthorModelThresholdHint: "Mô hình chạy local mỗi ngày tự gắn tầng (owned / pro / media / outsider) cho tác giả chưa có nhãn khi xác suất từ ngưỡng này trở lên. Tăng lên thì ít nhầm hơn nhưng gắn được ít hơn; tác giả chưa chắc để job AI.",
   crawlPublicPerProxy: "Page Facebook mỗi proxy",
   crawlPublicPerProxyHint: "Số page đọc không tài khoản cùng lúc trên mỗi proxy 'public'.",
   crawlPublicGap: "Nghỉ giữa hai page trên một proxy",

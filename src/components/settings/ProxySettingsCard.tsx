@@ -92,6 +92,7 @@ const SECTIONS: SectionMeta[] = [
       { name: "youtube_reply_pages", kind: "int", label: "crawlYoutubeReplyPages", hint: "crawlYoutubeReplyPagesHint", min: 0, max: 500 },
       { name: "youtube_comments_per_round", kind: "int", label: "crawlYoutubeCommentsPerRound", hint: "crawlYoutubeCommentsPerRoundHint", min: 0, max: 10000 },
       { name: "comments_min_count", kind: "int", label: "crawlCommentsMinCount", hint: "crawlCommentsMinCountHint", min: 0, max: 100000 },
+      { name: "author_model_threshold", kind: "float", label: "crawlAuthorModelThreshold", hint: "crawlAuthorModelThresholdHint", min: 0.5, max: 1 },
       { name: "public_pages_per_proxy", kind: "int", label: "crawlPublicPerProxy", hint: "crawlPublicPerProxyHint", min: 1, max: 10 },
       { name: "public_pages_gap_seconds", kind: "float", label: "crawlPublicGap", hint: "crawlPublicGapHint", unit: "unitSeconds", min: 0, max: 600 },
       { name: "public_pages_queue_target", kind: "int", label: "crawlPublicQueue", hint: "crawlPublicQueueHint", min: 0, max: 500 },

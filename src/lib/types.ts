@@ -514,6 +514,7 @@ export interface ProxySettings {
   threads_channels_queue_target: number;
   youtube_comments_per_round: number;
   comments_min_count: number;
+  author_model_threshold: number;
   tiktok_combine_search: boolean;
   youtube_continuous: boolean;
   youtube_transcripts: boolean;
