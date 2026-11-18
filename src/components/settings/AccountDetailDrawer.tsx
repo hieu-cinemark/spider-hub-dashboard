@@ -77,9 +77,6 @@ export default function AccountDetailDrawer({
           </span>
         </DetailRow>
         <DetailRow label={t("accountCreated")}>{new Date(account.created_at).toLocaleString()}</DetailRow>
-        <DetailRow label={t("columnProxy")} mono>
-          {account.assigned_proxy_id ? `#${account.assigned_proxy_id}` : t("autoAssignProxyOption")}
-        </DetailRow>
         <DetailRow label="Enabled">{account.enabled ? t("enabled") : t("accountFilterDisabled")}</DetailRow>
       </DetailSection>
     </DetailDrawer>

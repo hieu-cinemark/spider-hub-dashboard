@@ -176,13 +176,6 @@ export default function ProxiesTable() {
         ),
     },
     {
-      title: t("columnProxyLoad"),
-      dataIndex: "assigned_account_count",
-      width: 72,
-      align: "center",
-      render: (n: number) => <span className="tabular-nums">{n}</span>,
-    },
-    {
       title: t("columnUseForLogin"),
       dataIndex: "login_use_proxy",
       width: 88,

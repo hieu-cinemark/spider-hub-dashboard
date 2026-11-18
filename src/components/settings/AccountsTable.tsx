@@ -44,14 +44,14 @@ import PlatformFilter, { ALL_PLATFORM_QUERY } from "@/components/PlatformFilter"
 import { useMdUp } from "@/hooks/useMdUp";
 import { usePagedList } from "@/hooks/usePagedList";
 import { useQueryRecord } from "@/hooks/useQueryParam";
-import { useAccountMutations, useAccounts, useProxies } from "@/hooks/useSettings";
+import { useAccountMutations, useAccounts } from "@/hooks/useSettings";
 import { useTranslation } from "@/i18n/LocaleProvider";
 import { TRIGGERABLE_PLATFORMS } from "@/lib/constants";
 import { api } from "@/lib/api";
 import { poolStatusInfo } from "@/lib/poolStatus";
 import { checkStatusLabelKey, checkStatusTagColor } from "@/lib/accountHealth";
 import { formatRelativeTime } from "@/lib/format";
-import type { Account, AccountInput, ProxyIpType } from "@/lib/types";
+import type { Account, AccountInput } from "@/lib/types";
 
 // Credentials are cached under a per-account key so that closing the modal
 // for one account cannot leave another account's secrets behind, and so the
@@ -234,8 +234,7 @@ export default function AccountsTable() {
   const mdUp = useMdUp();
   const { modal } = App.useApp();
   const { data: accounts, isLoading } = useAccounts();
-  const { data: proxies } = useProxies();
-  const { create, update, remove, check, nurture, resetProxy, setProxy, setEnabled, bulkRemove } = useAccountMutations();
+  const { create, update, remove, check, nurture, setEnabled, bulkRemove } = useAccountMutations();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Account | null>(null);
   const [query, setQuery] = useQueryRecord(ACCOUNTS_QUERY);
@@ -424,15 +423,6 @@ export default function AccountsTable() {
       ),
     },
     {
-      title: t("columnProxy"),
-      key: "proxy",
-      width: 190,
-      onCell: () => ({ className: "min-w-0" }),
-      render: (_: unknown, record: Account) => (
-        <ProxyPicker account={record} proxies={proxies ?? []} setProxy={setProxy} resetProxy={resetProxy} />
-      ),
-    },
-    {
       title: t("columnCredentials"),
       key: "credentials",
       width: 96,
@@ -553,99 +543,5 @@ export default function AccountsTable() {
       />
       <AccountDetailDrawer account={detail} onClose={() => setDetail(null)} />
     </DashboardCard>
-  );
-}
-
-// A proxy address can be a long URL with credentials and a query string.
-// The table only shows the host:port part - the full address stays in the
-// option's tooltip and in the account's detail drawer, so nothing is lost.
-function shortProxyLabel(url: string): string {
-  try {
-    const parsed = new URL(url.includes("://") ? url : `http://${url}`);
-    return `${parsed.host}${parsed.pathname && parsed.pathname !== "/" ? parsed.pathname : ""}`;
-  } catch {
-    return url;
-  }
-}
-
-// Inline picker (not a modal) so re-assigning an account's proxy is a single
-// click from the row it's already showing "Health" for, instead of a
-// separate action button that opens something else - see the FE-usability
-// feedback this replaced (a "re-pin to least-loaded" icon button only).
-function ProxyPicker({
-  account,
-  proxies,
-  setProxy,
-  resetProxy,
-}: {
-  account: Account;
-  proxies: { id: number; platform: string; proxy_url: string; ip_type?: ProxyIpType }[];
-  setProxy: ReturnType<typeof useAccountMutations>["setProxy"];
-  resetProxy: ReturnType<typeof useAccountMutations>["resetProxy"];
-}) {
-  const { t } = useTranslation();
-  const { modal } = App.useApp();
-  const options = useMemo(() => {
-    // Meta links Facebook and Threads by IP, so a port of either platform can
-    // be offered; the API refuses a pin that breaks the IP policy. A proxy
-    // pinned from elsewhere must still show its address instead of a bare id.
-    const meta = ["facebook", "threads"];
-    const matching = proxies.filter(
-      (p) =>
-        p.platform === account.platform ||
-        p.platform === "all" ||
-        p.id === account.assigned_proxy_id ||
-        (meta.includes(account.platform) && meta.includes(p.platform)),
-    );
-    return [
-      { value: 0, label: t("autoAssignProxyOption"), title: t("autoAssignProxyOption") },
-      ...matching.map((p) => {
-        const address =
-          p.platform === account.platform || p.platform === "all"
-            ? p.proxy_url
-            : `${p.proxy_url} (${p.platform})`;
-        const typeLabel =
-          p.ip_type === "static" || p.ip_type === "rotating"
-            ? ` · ${t(p.ip_type === "static" ? "ipTypeStatic" : "ipTypeRotating")}`
-            : "";
-        return {
-          value: p.id,
-          label: `${shortProxyLabel(address)}${typeLabel}`,
-          // The full address (credentials included) is always one hover away.
-          title: address,
-        };
-      }),
-    ];
-  }, [proxies, account.platform, account.assigned_proxy_id, t]);
-
-  const pending =
-    (setProxy.isPending && setProxy.variables?.id === account.id) ||
-    (resetProxy.isPending && resetProxy.variables === account.id);
-
-  return (
-    <Select
-      size="small"
-      className="w-full font-mono text-xs"
-      popupMatchSelectWidth={false}
-      value={account.assigned_proxy_id ?? 0}
-      options={options}
-      loading={pending}
-      disabled={pending}
-      onChange={(proxyId: number) => {
-        if (proxyId === 0) {
-          // Bỏ ghim proxy là hành động phá huỷ ghim hiện tại - hỏi lại
-          // trước, vì tài khoản sẽ được ghim lại vào một proxy trống nào đó.
-          modal.confirm({
-            title: t("unpinProxyConfirm"),
-            content: t("unpinProxyHint"),
-            okText: t("unpinProxyAction"),
-            okButtonProps: { danger: true },
-            onOk: () => resetProxy.mutate(account.id),
-          });
-          return;
-        }
-        setProxy.mutate({ id: account.id, proxyId });
-      }}
-    />
   );
 }

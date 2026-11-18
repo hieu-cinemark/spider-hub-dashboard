@@ -256,9 +256,6 @@ export const api = {
   resetTiktokCookies: (id: number) => request<{ ok: boolean }>(`/settings/accounts/${id}/reset-cookies`, { method: "POST" }),
   setAccountEnabled: (id: number, enabled: boolean) =>
     request<Account>(`/settings/accounts/${id}/enabled`, { method: "POST", body: JSON.stringify({ enabled }) }),
-  resetAccountProxy: (id: number) => request<Account>(`/settings/accounts/${id}/reset-proxy`, { method: "POST" }),
-  setAccountProxy: (id: number, proxyId: number) =>
-    request<Account>(`/settings/accounts/${id}/set-proxy`, { method: "POST", body: JSON.stringify({ proxy_id: proxyId }) }),
 
   proxies: (platform?: string) => request<Proxy[]>(`/settings/proxies${platform ? `?platform=${platform}` : ""}`),
   createProxy: (input: ProxyInput) =>

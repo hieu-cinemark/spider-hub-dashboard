@@ -217,7 +217,6 @@ export interface Account {
   cooldown_until: string | null;
   consecutive_failures: number;
   last_used_at: string | null;
-  assigned_proxy_id: number | null;
   // The secret fields above always come back "" from the list/update
   // endpoints - this names which ones actually hold a value. Real values:
   // api.accountCredentials (GET /settings/accounts/{id}/credentials).
@@ -262,7 +261,6 @@ export type AccountInput = Partial<
     | "cooldown_until"
     | "consecutive_failures"
     | "last_used_at"
-    | "assigned_proxy_id"
   >
 > & {
   // Facebook/Threads: UA of the browser that produced the cookie. cinemark-api
@@ -292,7 +290,6 @@ export interface Proxy {
   last_used_at: string | null;
   // How many accounts are currently sticky-pinned to this proxy - see
   // cinemark-api's platform_config_db.list_proxies.
-  assigned_account_count: number;
   // Which vendor source owns this proxy row (null = hand-entered/static) - the
   // source is one reset link + one key, so there is no per-vendor adapter.
   provider_key: string | null;
@@ -314,7 +311,6 @@ export type ProxyInput = Partial<
     | "cooldown_until"
     | "consecutive_failures"
     | "last_used_at"
-    | "assigned_account_count"
     | "provider_last_used_at"
     | "provider_last_status"
   >
@@ -540,6 +536,18 @@ export interface ProxySettings {
   fb_run_max_requests: number;
   fb_run_max_seconds: number;
   fb_run_rest_seconds: number;
+  meta_quiet_hours: string;
+  facebook_job_pause_min_seconds: number;
+  facebook_job_pause_max_seconds: number;
+  facebook_comments_pause_min_seconds: number;
+  facebook_comments_pause_max_seconds: number;
+  threads_job_pause_min_seconds: number;
+  threads_job_pause_max_seconds: number;
+  other_job_pause_min_seconds: number;
+  other_job_pause_max_seconds: number;
+  facebook_stale_job_hours: number;
+  facebook_fresh_stale_job_hours: number;
+  facebook_deep_stale_job_hours: number;
   fb_public_discovery_proxy_id: number;
   fb_public_pages_block_strikes: number;
   fb_public_pages_cooldown_minutes: number;

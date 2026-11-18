@@ -155,6 +155,24 @@ const SECTIONS: SectionMeta[] = [
       { name: "fb_run_rest_seconds", kind: "int", label: "budFbRunRestSeconds", hint: "budFbRunRestSecondsHint", min: 0, max: 86400 },
     ],
   },
+  {
+    title: "crawlSectionMetaPacing",
+    desc: "crawlSectionMetaPacingDesc",
+    fields: [
+      { name: "meta_quiet_hours", kind: "text", label: "paceMetaQuietHours", hint: "paceMetaQuietHoursHint" },
+      { name: "facebook_job_pause_min_seconds", kind: "float", label: "paceFacebookJobPauseMinSeconds", hint: "paceFacebookJobPauseMinSecondsHint", min: 0, max: 3600 },
+      { name: "facebook_job_pause_max_seconds", kind: "float", label: "paceFacebookJobPauseMaxSeconds", hint: "paceFacebookJobPauseMaxSecondsHint", min: 0, max: 3600 },
+      { name: "facebook_comments_pause_min_seconds", kind: "float", label: "paceFacebookCommentsPauseMinSeconds", hint: "paceFacebookCommentsPauseMinSecondsHint", min: 0, max: 3600 },
+      { name: "facebook_comments_pause_max_seconds", kind: "float", label: "paceFacebookCommentsPauseMaxSeconds", hint: "paceFacebookCommentsPauseMaxSecondsHint", min: 0, max: 3600 },
+      { name: "threads_job_pause_min_seconds", kind: "float", label: "paceThreadsJobPauseMinSeconds", hint: "paceThreadsJobPauseMinSecondsHint", min: 0, max: 3600 },
+      { name: "threads_job_pause_max_seconds", kind: "float", label: "paceThreadsJobPauseMaxSeconds", hint: "paceThreadsJobPauseMaxSecondsHint", min: 0, max: 3600 },
+      { name: "other_job_pause_min_seconds", kind: "float", label: "paceOtherJobPauseMinSeconds", hint: "paceOtherJobPauseMinSecondsHint", min: 0, max: 3600 },
+      { name: "other_job_pause_max_seconds", kind: "float", label: "paceOtherJobPauseMaxSeconds", hint: "paceOtherJobPauseMaxSecondsHint", min: 0, max: 3600 },
+      { name: "facebook_stale_job_hours", kind: "float", label: "paceFacebookStaleJobHours", hint: "paceFacebookStaleJobHoursHint", min: 0, max: 72 },
+      { name: "facebook_fresh_stale_job_hours", kind: "float", label: "paceFacebookFreshStaleJobHours", hint: "paceFacebookFreshStaleJobHoursHint", min: 0, max: 72 },
+      { name: "facebook_deep_stale_job_hours", kind: "float", label: "paceFacebookDeepStaleJobHours", hint: "paceFacebookDeepStaleJobHoursHint", min: 0, max: 72 },
+    ],
+  },
 ];
 
 export default function ProxySettingsCard() {

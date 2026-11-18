@@ -15,12 +15,6 @@ const ERROR_CODE_KEYS: Record<string, TranslationKey> = {
   internal_error: "errorInternal",
 };
 
-const PROXY_POLICY_KEYS: Record<string, TranslationKey> = {
-  rotating_ip: "proxyPolicyRotating",
-  shared_ip: "proxyPolicyShared",
-  public_proxy: "proxyPolicyPublic",
-  ip_type_not_static: "proxyPolicyNotStatic",
-};
 
 const COOKIE_PROBLEM_KEYS: Record<string, TranslationKey> = {
   missing_c_user: "cookieProblemMissingCUser",
@@ -37,10 +31,6 @@ const COOKIE_PROBLEM_KEYS: Record<string, TranslationKey> = {
 export function translateApiError(err: unknown, t: (key: TranslationKey, vars?: Record<string, string | number>) => string): string {
   if (err instanceof ApiError) {
     // These carry a reason the operator must read to fix it, not just "request failed".
-    if (err.code === "proxy_policy") {
-      const reason = PROXY_POLICY_KEYS[err.message];
-      return reason ? t(reason) : t("errorConflict");
-    }
     if (err.code === "cookie_refused") {
       const problems = err.message.split(",").map((code) => {
         const problem = COOKIE_PROBLEM_KEYS[code];

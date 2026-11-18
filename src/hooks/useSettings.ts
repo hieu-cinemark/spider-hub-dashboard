@@ -140,26 +140,6 @@ export function useAccountMutations() {
     onError,
   });
 
-  const resetProxy = useMutation({
-    mutationFn: (id: number) => api.resetAccountProxy(id),
-    onSuccess: () => {
-      message.success(t("toastProxyResetRequested"));
-      invalidate();
-      queryClient.invalidateQueries({ queryKey: PROXIES_KEY });
-    },
-    onError,
-  });
-
-  const setProxy = useMutation({
-    mutationFn: ({ id, proxyId }: { id: number; proxyId: number }) => api.setAccountProxy(id, proxyId),
-    onSuccess: () => {
-      message.success(t("toastProxyResetRequested"));
-      invalidate();
-      queryClient.invalidateQueries({ queryKey: PROXIES_KEY });
-    },
-    onError,
-  });
-
   // Bật/tắt từng tài khoản (27/10/2026). Pool của spider-hub vẫn tự tắt khi
   // checkpoint / tự bật khi khôi phục phiên; bật tay ở đây cũng gỡ status
   // checkpoint + cooldown (backend), nếu không pool vẫn bỏ qua tài khoản.
@@ -187,7 +167,7 @@ export function useAccountMutations() {
     onError,
   });
 
-  return { create, update, remove, check, nurture, totpCode, resetCookies, resetProxy, setProxy, setEnabled, bulkRemove };
+  return { create, update, remove, check, nurture, totpCode, resetCookies, setEnabled, bulkRemove };
 }
 
 export function useProxies() {

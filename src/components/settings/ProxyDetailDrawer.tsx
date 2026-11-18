@@ -56,7 +56,6 @@ export default function ProxyDetailDrawer({
         <DetailRow label={t("columnPoolStatus")}>
           <StatusBadge tone={toneFromTagColor(pool.tagColor)}>{t(pool.labelKey)}</StatusBadge>
         </DetailRow>
-        <DetailRow label={t("columnProxyLoad")}>{proxy.assigned_account_count}</DetailRow>
         <DetailRow label={t("columnLastUsed")}>
           {proxy.last_used_at ? formatRelativeTime(proxy.last_used_at, t) : "—"}
         </DetailRow>
