@@ -720,6 +720,8 @@ export const vi: Record<TranslationKey, string> = {
   crawlYoutubeReplyPagesHint: "Số trang trả lời đọc dưới mỗi bình luận YouTube.",
   crawlYoutubeCommentsPerRound: "Video YouTube mỗi lượt bình luận",
   crawlYoutubeCommentsPerRoundHint: "Số video liên quan được xếp cào bình luận mỗi giờ.",
+  crawlCommentsMinCount: "Bỏ qua bài ít bình luận (dưới)",
+  crawlCommentsMinCountHint: "Lượt cào bình luận tự động (Facebook, Threads, TikTok, YouTube, Omar) bỏ qua bài có ít hơn chừng này bình luận. 0 = tắt. Nút cào tay một bài vẫn chạy.",
   crawlPublicPerProxy: "Page Facebook mỗi proxy",
   crawlPublicPerProxyHint: "Số page đọc không tài khoản cùng lúc trên mỗi proxy 'public'.",
   crawlPublicGap: "Nghỉ giữa hai page trên một proxy",

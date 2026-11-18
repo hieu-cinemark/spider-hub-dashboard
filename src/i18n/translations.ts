@@ -754,6 +754,8 @@ const en = {
   crawlYoutubeReplyPagesHint: "Pages of replies read under each comment.",
   crawlYoutubeCommentsPerRound: "YouTube videos per comment round",
   crawlYoutubeCommentsPerRoundHint: "Related videos queued for comments every hour.",
+  crawlCommentsMinCount: "Skip posts with fewer comments than",
+  crawlCommentsMinCountHint: "Automatic comment rounds (Facebook, Threads, TikTok, YouTube, Omar) skip posts with fewer comments than this. 0 = off. Manually crawling one post still runs.",
   crawlPublicPerProxy: "Facebook page reads per proxy",
   crawlPublicPerProxyHint: "Logged-out page reads at the same time on each 'public' proxy.",
   crawlPublicGap: "Gap between pages on one proxy",
