@@ -16,7 +16,6 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import DashboardCard, { CardHeading } from "@/components/DashboardCard";
 import CrawlTriggerForm from "@/components/platform/CrawlTriggerForm";
-import ChannelVideosForm from "@/components/platform/ChannelVideosForm";
 import SourcePagesCard from "@/components/platform/SourcePagesCard";
 import { useJobStatus } from "@/hooks/useJobStatus";
 import { useRefreshTokenStream } from "@/hooks/useRefreshTokenStream";
@@ -200,24 +199,12 @@ export default function PlatformActions({ platform }: { platform: string }) {
     <div className="flex flex-col gap-4">
       <div className={`grid items-stretch gap-4 ${hasTokenRefresh ? "lg:grid-cols-2" : ""}`}>
         <div className="flex flex-col gap-4">
-          {/* h-full only when this is the column's only card (matches the
-              token-refresh column's height) - with ChannelVideosForm also
-              stacked below it (TikTok), height:100% on this first card
-              fights its sibling for the items-stretch'd column's height,
-              and DashboardCard's own overflow:hidden then clips the
-              sibling's bottom content (its Max pages field + Run button -
-              confirmed happening for real on the TikTok actions page). */}
           <DashboardCard
-            className={isTiktok ? "" : "h-full"}
+            className="h-full"
             title={<CardHeading icon={<PlayCircleOutlined />} title={t("runACrawl")} />}
           >
             <CrawlTriggerForm platform={platform} />
           </DashboardCard>
-          {isTiktok && (
-            <DashboardCard title={<CardHeading icon={<PlayCircleOutlined />} title={t("channelVideosTitle")} />}>
-              <ChannelVideosForm />
-            </DashboardCard>
-          )}
         </div>
 
         {hasTokenRefresh && (

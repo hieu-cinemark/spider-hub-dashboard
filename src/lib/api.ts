@@ -1,7 +1,8 @@
 import { currentAuthKey, logout } from "./auth";
 import { API_BASE_URL } from "./constants";
 import type {
-  ShortVidStatus,
+  OmarApiSettings,
+  OmarStatus,
   Account,
   AccountCredentials,
   AccountInput,
@@ -48,8 +49,6 @@ import type {
   PostsQuery,
   Proxy,
   ProxyInput,
-  RunChannelVideosParams,
-  RunChannelVideosResponse,
   RunCommentsResponse,
   RunScraperParams,
   RunScraperResponse,
@@ -60,10 +59,6 @@ import type {
   TokenStatus,
   TotpCodeResponse,
   TriggerTokenRefreshResponse,
-  ShortVidSearchQuery,
-  ShortVidSearchResponse,
-  ShortVidTrendingResponse,
-  ShortVidYieldResponse,
   KeywordYield,
   SourcePage,
   SourcePageSuggestion,
@@ -183,11 +178,6 @@ export const api = {
       `/${platform}/posts/${postId}/comments/run${bypassDrain === false ? "?bypass_drain=false" : ""}`,
       { method: "POST" },
     ),
-  runChannelVideos: (params: RunChannelVideosParams) =>
-    request<RunChannelVideosResponse>("/tiktok/channels/run", {
-      method: "POST",
-      body: JSON.stringify(params),
-    }),
   spiderHubLogs: (lines = 300) => request<LogTailResponse>(`/logs/spider-hub?lines=${lines}`),
   ingestLogs: (lines = 300) => request<LogTailResponse>(`/logs/ingest?lines=${lines}`),
   tokenStatus: (platform: string) => request<TokenStatus>(`/${platform}/token-status`),
@@ -311,36 +301,27 @@ export const api = {
   cleanupHistory: (limit = 20) =>
     request<CleanupRunSummary[]>(`/settings/cleanup/history?limit=${limit}`),
 
-  shortvidStatus: () => request<ShortVidStatus>("/shortvid/status"),
-  shortvidRun: () => request<{ started: boolean }>("/shortvid/run", { method: "POST" }),
-  shortvidStop: () => request<{ stopping: boolean }>("/shortvid/stop", { method: "POST" }),
-  shortvidAddHashtag: (movieId: string, hashtag: string) =>
-    request<{ keyword: { id: string; keyword: string }; started: boolean; verified: boolean }>("/shortvid/hashtags", {
+  omarStatus: () => request<OmarStatus>("/omar/status"),
+  omarRun: () => request<{ started: boolean }>("/omar/run", { method: "POST" }),
+  omarStop: () => request<{ stopping: boolean }>("/omar/stop", { method: "POST" }),
+  omarAddHashtag: (movieId: string, hashtag: string) =>
+    request<{ keyword: { id: string; keyword: string }; started: boolean; verified: boolean }>("/omar/hashtags", {
       method: "POST",
       body: JSON.stringify({ movie_id: movieId, hashtag }),
     }),
-  shortvidYield: (days = 7) => request<ShortVidYieldResponse>(`/shortvid/yield?days=${days}`),
-  shortvidTrending: (hours = 24) => request<ShortVidTrendingResponse>(`/shortvid/trending?hours=${hours}&limit=10`),
-  shortvidSearch: () => request<ShortVidSearchResponse>("/shortvid/search"),
-  shortvidAddSearch: (movieId: string, query: string) =>
-    request<{ query: ShortVidSearchQuery }>("/shortvid/search", { method: "POST", body: JSON.stringify({ movie_id: movieId, query }) }),
-  shortvidDeleteSearch: (id: string) => request<{ ok: boolean }>(`/shortvid/search/${id}`, { method: "DELETE" }),
-  shortvidCommentKeywords: () => request<{ keyword_ids: string[]; all_videos: boolean }>("/shortvid/comments/keywords"),
-  setShortVidCommentKeywords: (keywordIds: string[], allVideos: boolean) =>
-    request<{ keyword_ids: string[]; all_videos: boolean }>("/shortvid/comments/keywords", {
+  omarCommentKeywords: () => request<{ keyword_ids: string[]; all_videos: boolean }>("/omar/comments/keywords"),
+  setOmarCommentKeywords: (keywordIds: string[], allVideos: boolean) =>
+    request<{ keyword_ids: string[]; all_videos: boolean }>("/omar/comments/keywords", {
       method: "PUT",
       body: JSON.stringify({ keyword_ids: keywordIds, all_videos: allVideos }),
     }),
-  shortvidCommentsRun: () =>
-    request<{ queued: number; pending: number; started: boolean }>("/shortvid/comments/run", { method: "POST" }),
-  setShortVidApiKey: (apiKey: string) =>
-    request<{ api_key_set: boolean }>("/settings/shortvid-api", { method: "PUT", body: JSON.stringify({ api_key: apiKey }) }),
-  /** Trần request/phút cho mọi lời gọi ShortVid; 0 = theo giới hạn của gói. */
-  setShortVidRequestsPerMinute: (perMinute: number) =>
-    request<{ requests_per_minute: number }>("/settings/shortvid-api", {
-      method: "PUT",
-      body: JSON.stringify({ requests_per_minute: perMinute }),
-    }),
+  omarCommentsRun: () => request<{ queued: number; pending: number; started: boolean }>("/omar/comments/run", { method: "POST" }),
+  /**
+   * Lưu key Omar và/hoặc giới hạn (bỏ trường nào thì giữ nguyên; 0 = theo gói / mặc định). Lưu key mới: server kiểm tra key
+   * (GET /usage), key đúng thì lượt cào chạy ngay và chạy liên tục - xem key_valid trong kết quả.
+   */
+  saveOmarSettings: (body: { api_key?: string; requests_per_minute?: number; daily_requests?: number; concurrency?: number }) =>
+    request<OmarApiSettings>("/settings/omar-api", { method: "PUT", body: JSON.stringify(body) }),
 
   aiSettings: () => request<AiSettings>("/settings/ai"),
   setAiSettings: (input: AiSettingsInput) =>

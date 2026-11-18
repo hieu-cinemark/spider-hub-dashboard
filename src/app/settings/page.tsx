@@ -52,10 +52,10 @@ const AiProvidersCard = dynamic(() => import("@/components/settings/AiProvidersC
   loading: () => <TabSkeleton />,
 });
 
-// Tab "ShortVid" đã bỏ khỏi Cài đặt - nội dung của nó nằm ở tab TikTok trong
-// Tổng quan. Link cũ (`/settings?tab=shortvid`) vẫn phải mở được nên được
+// Tab "Omar" (trước đó "ShortVid") không nằm ở Cài đặt - nội dung của nó nằm ở tab TikTok trong
+// Tổng quan. Link cũ (`/settings?tab=shortvid` hoặc `?tab=omar`) vẫn phải mở được nên được
 // chuyển hướng, không để trang trống.
-const SHORTVID_TAB = "shortvid";
+const OMAR_TABS = ["shortvid", "omar"];
 // Tab cũ gộp "Tài khoản" + "Proxy" thành một - nay tách riêng. Mọi link
 // cũ (bookmark, tin nhắn) vẫn dùng tên tab này nên cần alias.
 const LEGACY_ACCOUNTS_TAB = "accounts-proxies";
@@ -68,8 +68,8 @@ export default function SettingsPage() {
   const tab = searchParams.get("tab") ?? "accounts";
 
   useEffect(() => {
-    if (tab === SHORTVID_TAB) {
-      router.replace("/?tab=tiktok&sub=shortvid", { scroll: false });
+    if (OMAR_TABS.includes(tab)) {
+      router.replace("/?tab=tiktok&sub=omar", { scroll: false });
       return;
     }
     if (tab === LEGACY_ACCOUNTS_TAB) {
@@ -81,7 +81,7 @@ export default function SettingsPage() {
     }
   }, [tab, pathname, router, searchParams]);
 
-  const activeTab = tab === SHORTVID_TAB || tab === LEGACY_ACCOUNTS_TAB ? "accounts" : tab;
+  const activeTab = OMAR_TABS.includes(tab) || tab === LEGACY_ACCOUNTS_TAB ? "accounts" : tab;
 
   return (
     <div className="flex flex-col gap-5">

@@ -75,6 +75,7 @@ const SECTIONS: SectionMeta[] = [
     fields: [
       { name: "tiktok_synthetic_provider", kind: "provider", label: "proxyTiktokProvider", hint: "proxyTiktokProviderHint" },
       { name: "tiktok_hashtag_max_attempts", kind: "int", label: "proxyTiktokHashtagAttempts", hint: "proxyTiktokHashtagAttemptsHint", unit: "unitTimes", min: 1, max: 50 },
+      { name: "tiktok_probe_requests", kind: "int", label: "proxyTiktokProbe", hint: "proxyTiktokProbeHint", unit: "unitTimes", min: 0, max: 500 },
       { name: "tiktok_comments_max_attempts", kind: "int", label: "proxyTiktokCommentsAttempts", hint: "proxyTiktokCommentsAttemptsHint", unit: "unitTimes", min: 1, max: 50 },
       { name: "tiktok_combine_search", kind: "switch", label: "proxyTiktokCombine", hint: "proxyTiktokCombineHint" },
     ],

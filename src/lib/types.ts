@@ -111,16 +111,6 @@ export interface RunCommentsResponse {
   published: boolean;
 }
 
-export interface RunChannelVideosParams {
-  username: string;
-  max_pages?: number;
-  keyword_id?: string;
-}
-
-export interface RunChannelVideosResponse {
-  published: boolean;
-}
-
 export interface CommentWithPost extends Comment {
   post_content: string | null;
   post_url: string | null;
@@ -513,6 +503,7 @@ export interface ProxySettings {
   exhausted_max_requeues: number;
   tiktok_synthetic_provider: string;
   tiktok_hashtag_max_attempts: number;
+  tiktok_probe_requests: number;
   tiktok_comments_max_attempts: number;
   lanes_total: number;
   public_pages_workers: number;
@@ -731,8 +722,8 @@ export type RefreshSocketMessage =
   | { type: "line"; line: string }
   | { type: "status"; status: RefreshStatus; finished_at?: string | null };
 
-// GET /shortvid/status (cinemark-api app/api/routes/shortvid.py).
-export interface ShortVidHashtagProgress {
+// GET /omar/status (cinemark-api app/api/routes/omar.py).
+export interface OmarHashtagProgress {
   keyword_id: string;
   hashtag: string;
   movie: string | null;
@@ -746,7 +737,7 @@ export interface ShortVidHashtagProgress {
   missing_at: string | null;
 }
 
-export interface ShortVidCommentsJob {
+export interface OmarCommentsJob {
   week: string;
   trigger: string;
   queued_at: string;
@@ -759,68 +750,26 @@ export interface ShortVidCommentsJob {
   published: number;
 }
 
-export interface ShortVidSearchQuery {
-  query: string;
-  movie: string;
-  movie_id: string;
-  source: "title" | "title_plain" | "social" | "custom" | "suggest";
-  id: string | null;
-  last: { at: string; videos: number; published: number } | null;
+/** GET /usage của Omar: giới hạn ngày / phút của gói. */
+export interface OmarUsage {
+  plan: string | null;
+  status: string | null;
+  expires_at: string | null;
+  day?: { limit?: number; used: number; remaining?: number; resets_in: number };
+  minute?: { limit: number; used: number; remaining: number; resets_in: number };
 }
 
-export interface ShortVidSearchResponse {
-  queries: ShortVidSearchQuery[];
-  modes: { date?: string; sort?: string }[];
-  pages: number;
-}
-
-export interface ShortVidYieldMetrics {
-  requests: number;
-  sent: number;
-  new: number;
-  new_per_100?: number | null;
-}
-
-export interface ShortVidYieldResponse {
-  days: { day: string; sources: Record<string, ShortVidYieldMetrics> }[];
-  totals: Record<string, ShortVidYieldMetrics>;
-  shares: Record<string, number>;
-  base_shares: Record<string, number>;
-}
-
-export interface ShortVidTrendingVideo {
-  video_id: string;
-  url: string | null;
-  author: string | null;
-  desc: string | null;
-  views: number;
-  likes: number;
-  comments: number;
-  shares: number;
-  velocity: { views_per_hour: number; comments_per_hour: number; growth_pct_per_hour: number | null; span_hours: number };
-  hot: boolean;
-}
-
-export interface ShortVidTrendingResponse {
-  hours: number;
-  movies: { movie_id: string; title: string; hot: number; videos: ShortVidTrendingVideo[] }[];
-}
-
-export interface ShortVidStatus {
+export interface OmarStatus {
   key_set: boolean;
-  /** Trần request/phút đặt ở tab ShortVid; 0 = theo gói. */
-  requests_per_minute?: number;
-  usage: {
-    plan: string | null;
-    status: string | null;
-    expires_at: string | null;
-    /** Credit còn lại (header x-credits-remaining của request ShortVid gần nhất); null khi chưa có request nào. */
-    credits_remaining?: number | null;
-    /** limit/remaining thiếu khi SHORTVID_DAILY_REQUESTS = 0 (không đặt hạn mức ngày). */
-    day?: { limit?: number; used: number; remaining?: number; resets_in: number };
-    minute?: { limit: number; used: number; remaining: number; resets_in: number };
-  } | null;
-  /** Lượt ShortVid đang dừng chờ hạn mức reset (quota) hoặc key mới (key); null khi chạy bình thường. */
+  /** GET /usage đọc được = key dùng được; null khi chưa có key. */
+  key_valid: boolean | null;
+  usage: OmarUsage | null;
+  /** Giới hạn người dùng đặt ở tab Omar; 0 = theo gói / mặc định. */
+  requests_per_minute: number;
+  daily_requests: number;
+  concurrency: number;
+  default_concurrency: number;
+  /** Lượt Omar đang dừng chờ hạn mức reset (quota) hoặc key mới (key); null khi chạy bình thường. */
   paused?: { reason: "quota" | "key"; until: string; at: string } | null;
   round: {
     running: boolean;
@@ -842,32 +791,30 @@ export interface ShortVidStatus {
       comments?: number;
       comment_replies?: number;
       comments_published?: number;
-      search_queries?: number;
-      search_requests?: number;
-      search_videos?: number;
-      channels?: number;
-      channel_requests?: number;
-      channel_videos?: number;
-      channel_matched?: number;
     };
   };
   mode: "continuous" | "spread_daily";
-  hashtags: ShortVidHashtagProgress[];
-  channels?: {
-    tracked: number;
-    done_today: number;
-    max_channels: number;
-    days: number;
-    latest: { handle: string; newest_video_at: string | null }[];
-  };
+  hashtags: OmarHashtagProgress[];
   comments: {
-    last: ShortVidCommentsJob | null;
+    last: OmarCommentsJob | null;
     pending_videos: number;
     weekday: number;
     time: string;
     top_per_hashtag: number;
+    cadence?: string;
   };
   totals: { hashtags: number; finished: number; started: number; pages: number; tiktok_videos: number };
+}
+
+/** PUT /settings/omar-api: key đã lưu, giới hạn và (khi vừa đổi key) kết quả kiểm tra key. */
+export interface OmarApiSettings {
+  api_key_set: boolean;
+  base_url: string;
+  requests_per_minute: number;
+  daily_requests: number;
+  concurrency: number;
+  key_valid: boolean | null;
+  usage: OmarUsage | null;
 }
 
 /** Hiệu quả một từ khoá Facebook/Threads 14 ngày qua (cinemark-api app/services/keyword_yield.py). */
