@@ -1,8 +1,8 @@
 "use client";
 
-import { ApiOutlined, CommentOutlined, PauseCircleOutlined, PlayCircleOutlined, TagsOutlined } from "@ant-design/icons";
+import { ApiOutlined, CommentOutlined, PauseCircleOutlined, PlayCircleOutlined, ReloadOutlined, TagsOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { App, Button, Checkbox, Input, InputNumber, Progress, Select, Space, Table, Tag, Tooltip, TreeSelect, Typography } from "antd";
+import { App, Button, Checkbox, Input, InputNumber, Popconfirm, Progress, Select, Space, Table, Tag, Tooltip, TreeSelect, Typography } from "antd";
 import { useMemo, useState } from "react";
 import DashboardCard, { CardHeading } from "@/components/DashboardCard";
 import MobileTable, { type ResponsiveColumnType } from "@/components/MobileTable";
@@ -86,6 +86,15 @@ export default function OmarTab() {
     onSuccess: (res) => {
       setNewTag("");
       message.success(t(res.started ? "omarTagAdded" : "omarTagAlreadyRunning", { tag: res.keyword.keyword }));
+      refresh();
+    },
+    onError: (err: Error) => message.error(err.message),
+  });
+  // Nút "Cào lại" từng hashtag: xoá con trỏ rồi cào lại từ trang đầu ngay (POST /omar/hashtags/{id}/recrawl).
+  const recrawl = useMutation({
+    mutationFn: (row: OmarHashtagProgress) => api.omarRecrawlHashtag(row.keyword_id),
+    onSuccess: (res) => {
+      message.success(t(res.started ? "omarRecrawlStarted" : "omarRecrawlAlreadyRunning", { tag: res.hashtag }));
       refresh();
     },
     onError: (err: Error) => message.error(err.message),
@@ -183,6 +192,23 @@ export default function OmarTab() {
         ) : (
           <Tag>{t("omarNotStarted")}</Tag>
         ),
+    },
+    {
+      title: t("omarColActions"),
+      key: "actions",
+      align: "right",
+      render: (_: unknown, row: OmarHashtagProgress) => (
+        <Popconfirm
+          title={t("omarRecrawlTitle", { tag: row.hashtag })}
+          description={t("omarRecrawlDesc")}
+          okText={t("omarRecrawl")}
+          onConfirm={() => recrawl.mutate(row)}
+        >
+          <Button size="small" icon={<ReloadOutlined />} loading={recrawl.isPending && recrawl.variables?.keyword_id === row.keyword_id}>
+            {t("omarRecrawl")}
+          </Button>
+        </Popconfirm>
+      ),
     },
   ];
 

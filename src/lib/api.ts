@@ -306,6 +306,10 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ movie_id: movieId, hashtag }),
     }),
+  omarRecrawlHashtag: (keywordId: string) =>
+    request<{ keyword_id: string; hashtag: string; started: boolean }>(`/omar/hashtags/${encodeURIComponent(keywordId)}/recrawl`, {
+      method: "POST",
+    }),
   omarCommentKeywords: () => request<{ keyword_ids: string[]; all_videos: boolean }>("/omar/comments/keywords"),
   setOmarCommentKeywords: (keywordIds: string[], allVideos: boolean) =>
     request<{ keyword_ids: string[]; all_videos: boolean }>("/omar/comments/keywords", {
